@@ -1084,3 +1084,15 @@ independent Rust reimplementation, also released under LGPL-2.1 — see
 
 This statement is not legal advice; downstream users with strict provenance
 requirements should perform their own review.
+
+## Disclaimer
+
+This software is provided "as is", without warranty of any kind. To the extent
+permitted by law, the authors and contributors are not liable for any damage, loss
+or claim arising from its use or misuse. You are responsible for how you use it and
+for following the laws and rules that apply to you. The full terms are in
+[LICENSE](LICENSE).
+
+This is research software. It has not been validated for engineering design,
+certification or safety-critical use. Check its results independently before you
+rely on them.
