@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.5.4] - 2026-10-10
+
+### Removed
+
+- `.github/workflows/wheels.yml` went. minuit2 has no PyPI release, and the
+  Python package stays a build-from-source option with maturin.
+
+### Fixed
+
+- The 0.5.3 README told readers to run `pip install minuit2`, but no `minuit2`
+  package exists on PyPI, so the command would install whatever someone else
+  registers under that name. The README now gives only the maturin build
+  steps. The code does not change.
+
 ## [0.5.3] - 2026-10-10
 
 ### Added
@@ -14,10 +28,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   design, certification, or safety-critical use. This release puts it on the
   crates.io page.
 - `.github/workflows/wheels.yml` built the `minuit2` Python package (abi3,
-  Python 3.9 and newer) for Linux x86_64 and aarch64, Windows x64, and macOS
-  universal2, plus an sdist. A `v*` tag now publishes it to PyPI through
-  trusted publishing, after the Python tests pass on the Linux wheel. 0.5.3 is
-  the first PyPI release.
+  Python 3.9 and newer) for Linux, Windows, and macOS. Its PyPI upload never
+  succeeded, and 0.5.4 removed the workflow: minuit2 is not on PyPI.
 
 ### Changed
 
@@ -310,7 +322,8 @@ changes; the Rust library surface is identical to 0.4.1.
 - `MnStrategy` (low/medium/high optimization presets)
 - `nalgebra` for all linear algebra
 
-[Unreleased]: https://github.com/ricardofrantz/minuit2-rs/compare/v0.5.3...HEAD
+[Unreleased]: https://github.com/ricardofrantz/minuit2-rs/compare/v0.5.4...HEAD
+[0.5.4]: https://github.com/ricardofrantz/minuit2-rs/compare/v0.5.3...v0.5.4
 [0.5.3]: https://github.com/ricardofrantz/minuit2-rs/compare/v0.5.2...v0.5.3
 [0.5.2]: https://github.com/ricardofrantz/minuit2-rs/compare/v0.5.1...v0.5.2
 [0.5.1]: https://github.com/ricardofrantz/minuit2-rs/compare/v0.5.0...v0.5.1
