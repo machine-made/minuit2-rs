@@ -53,7 +53,7 @@ No hand-written `unsafe`. No ROOT, GSL, C, or C++ dependency.
 - **Pure Rust.** No C++ toolchain, no hand-written `unsafe`. Compiles on all tier-1 Rust targets (Linux, macOS, Windows).
 - **Minimizers and error analysis.** Migrad (Variable Metric / DFP), Simplex (Nelder-Mead with rho-extrapolation), Hesse (exact Hessian), Minos (asymmetric errors via likelihood contour walking), Scan (1D profiles), Contours (2D confidence regions).
 - **Analytical gradients.** Supply derivatives through the `FCNGradient` trait to cut function evaluations, which matters most in high-dimensional fits.
-- **Python bindings.** [PyO3](https://pyo3.rs/) bindings exposing a measured `iminuit.Minuit`-compatible subset. Build with [maturin](https://www.maturin.rs/).
+- **Python bindings.** [PyO3](https://pyo3.rs/) bindings exposing a measured `iminuit.Minuit`-compatible subset. Install with `pip install minuit2`, or build from source with [maturin](https://www.maturin.rs/).
 - **Parallel scans.** Optional [`rayon`](https://docs.rs/rayon) support for 1D parameter scans.
 - **Numerical stability.** Tests cover FCNs that return NaN or infinity near invalid regions, and non-positive-definite covariance matrices are corrected via eigenvalue shift.
 - **Checked against ROOT.** Differential testing against ROOT `v6-36-08`: 12 workloads, 415 traced symbols, automated CI gates.
@@ -531,7 +531,7 @@ Run the full example: `cargo run --example gaussian_fit`
 
 ## Python Bindings
 
-Enabled with the `python` feature flag. Built with [PyO3](https://pyo3.rs/) (v0.28) and [maturin](https://www.maturin.rs/).
+Enabled with the `python` feature flag. Built with [PyO3](https://pyo3.rs/) (v0.29) and [maturin](https://www.maturin.rs/).
 
 The binding targets a measured `iminuit.Minuit`-compatible subset. The current
 claim is bounded by `python/compat/diff_iminuit.py` plus the Python runtime
@@ -583,7 +583,16 @@ m.fixed["y"] = True
 m.simplex()
 ```
 
-**Building:**
+**Installing:**
+
+```bash
+pip install minuit2
+```
+
+The PyPI wheels are abi3 builds for Python 3.9 and newer on Linux (x86_64,
+aarch64), Windows (x64), and macOS (universal2).
+
+**Building from source:**
 
 ```bash
 # Using maturin
