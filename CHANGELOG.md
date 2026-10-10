@@ -5,6 +5,51 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.5.3] - 2026-10-10
+
+### Added
+
+- `README.md` gained a Disclaimer section. It states that the software comes
+  "as is", without warranty, and that it is not validated for engineering
+  design, certification, or safety-critical use. This release puts it on the
+  crates.io page.
+- `.github/workflows/wheels.yml` built the `minuit2` Python package (abi3,
+  Python 3.9 and newer) for Linux x86_64 and aarch64, Windows x64, and macOS
+  universal2, plus an sdist. A `v*` tag now publishes it to PyPI through
+  trusted publishing, after the Python tests pass on the Linux wheel. 0.5.3 is
+  the first PyPI release.
+
+### Changed
+
+- The project entered maintenance mode. The README states that the crate is
+  feature-complete. Dependabot now opens security updates only; the
+  `cargo-audit` and `cargo-deny` CI gates stay.
+
+### Security
+
+- The optional `python` feature now uses `pyo3` 0.29 and `numpy` 0.29 (was
+  0.28). `pyo3` 0.28 had RUSTSEC-2026-0176 (out-of-bounds read in `nth` and
+  `nth_back` for `PyList` and `PyTuple` iterators) and RUSTSEC-2026-0177
+  (missing `Sync` bound on `PyCFunction::new_closure` closures). The Python
+  tests pass on a wheel built with 0.29.
+- `Cargo.lock` now pins `crossbeam-epoch` 0.9.21 (was 0.9.18) for
+  RUSTSEC-2026-0204, reached through the optional `rayon` feature, and `anyhow`
+  1.0.104 (was 1.0.102) for RUSTSEC-2026-0190, a development dependency only.
+  The `Security audit` and `cargo-deny` CI jobs pass again.
+
+### Docs
+
+- The README now reports measured wall-clock results against C++ Minuit2
+  instead of "not benchmarked": Rust is faster on USGS EQ (0.79x) and CERN
+  dimuon (0.78x), and slower on NOAA CO2 (1.6x) and NIST StRD (2.6x), with
+  runs pinned to one core. `examples/comparison.png` and the CERN dimuon fits
+  were regenerated against v0.5.2.
+- The README verification section now matches v0.5.2: the differential suite
+  gives 12 pass, 0 warn, 0 fail. Lanczos3 and MGH09 remain the out-of-the-box
+  failures, shared with C++ Minuit2.
+- The README banner now loads from an absolute URL, so it also shows on
+  crates.io.
+
 ## [0.5.2] - 2026-06-11
 
 ### Fixed
@@ -265,7 +310,8 @@ changes; the Rust library surface is identical to 0.4.1.
 - `MnStrategy` (low/medium/high optimization presets)
 - `nalgebra` for all linear algebra
 
-[Unreleased]: https://github.com/ricardofrantz/minuit2-rs/compare/v0.5.2...HEAD
+[Unreleased]: https://github.com/ricardofrantz/minuit2-rs/compare/v0.5.3...HEAD
+[0.5.3]: https://github.com/ricardofrantz/minuit2-rs/compare/v0.5.2...v0.5.3
 [0.5.2]: https://github.com/ricardofrantz/minuit2-rs/compare/v0.5.1...v0.5.2
 [0.5.1]: https://github.com/ricardofrantz/minuit2-rs/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/ricardofrantz/minuit2-rs/compare/v0.4.2...v0.5.0
