@@ -1,0 +1,32 @@
+{
+  "executed_functions_total": 618,
+  "mapped_implemented_total": 145,
+  "unmapped_total": 473,
+  "priority_counts": {
+    "P0": 0,
+    "P1": 48,
+    "P2": 425
+  },
+  "gate": {
+    "rule": "P0 == 0 and P1 == 0",
+    "pass": false
+  },
+  "workloads": [
+    "quadratic3_fixx_migrad",
+    "quadratic3_fixx_hesse",
+    "rosenbrock2_migrad",
+    "quadratic2_minos_p0",
+    "quadratic2_simplex",
+    "rosenbrock2_minimize",
+    "quadratic2_minos_p1",
+    "quadratic2_lower_limited_migrad",
+    "rosenbrock2_migrad_strategy2",
+    "quadratic2_scan_p0",
+    "quadratic2_contours_01",
+    "quadratic2_no_g2_migrad"
+  ],
+  "artifacts": {
+    "mapping_md": "/Users/rfrantz/Documents/projects/minuit2-rs/reports/verification/executed_surface_mapping.md",
+    "gaps_csv": "/Users/rfrantz/Documents/projects/minuit2-rs/reports/verification/executed_surface_gaps.csv"
+  }
+}

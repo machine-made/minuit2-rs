@@ -1,0 +1,20 @@
+minuit2 (minuit2-rs)
+An independent, pure-Rust reimplementation of the Minuit2 minimization library.
+
+Licensed under the GNU Lesser General Public License, version 2.1 or later
+(LGPL-2.1-or-later). See the LICENSE file for the full text.
+
+------------------------------------------------------------------------------
+Upstream reference
+------------------------------------------------------------------------------
+This crate reimplements the algorithms of ROOT Minuit2:
+
+    Minuit2 is part of ROOT (https://root.cern).
+    Copyright (c) 2005 LCG ROOT Math team, CERN/PH-SFT
+    Authors: M. Winkler, F. James, L. Moneta, A. Zsenei  (2003-2005)
+    Licensed under LGPL-2.1-or-later.
+
+ROOT Minuit2 is used only as a numerical/behavioral reference for parity
+testing. It is not a build dependency of this crate, and no ROOT/Minuit2 source
+code is included here. This project is not affiliated with or endorsed by CERN
+or the ROOT project.

@@ -1,0 +1,83 @@
+{
+  "generated_at_utc": "2026-02-11T13:57:34Z",
+  "project": {
+    "name": "minuit2-rs",
+    "git_branch": "master",
+    "git_commit": "3de1c79776e9c226606ead74fe556f5e06aa3457",
+    "git_dirty": true
+  },
+  "environment": {
+    "rustc": "rustc 1.93.0 (254b59607 2026-01-19)",
+    "cargo": "cargo 1.93.0 (083ac5135 2025-12-15)",
+    "python3": "Python 3.14.1"
+  },
+  "reference": {
+    "repo": "https://github.com/root-project/root",
+    "subdir": "math/minuit2",
+    "tag": "v6-36-08",
+    "commit": "a8ca1b23e38d7dbe0ff24027894ca0f2ad65f1bd"
+  },
+  "differential": {
+    "workloads_total": 12,
+    "status_counts": {
+      "pass": 10,
+      "warn": 2,
+      "fail": 0
+    },
+    "gate_pass": true
+  },
+  "traceability": {
+    "symbols_total": 415,
+    "status_counts": {
+      "implemented": 303,
+      "waived": 112,
+      "unresolved": 0
+    },
+    "gate_pass": true
+  },
+  "root_p0_tests": {
+    "known_gap_count": 0,
+    "gate_pass": true
+  },
+  "coverage": {
+    "core_no_default_features": {
+      "regions_pct": 73.09,
+      "functions_pct": 70.87,
+      "lines_pct": 73.12
+    },
+    "all_features": {
+      "regions_pct": 68.88,
+      "functions_pct": 66.62,
+      "lines_pct": 69.51
+    }
+  },
+  "reference_coverage": {
+    "functions_in_scope": 1840,
+    "functions_executed": 618,
+    "function_coverage_pct": 33.587,
+    "line_coverage_pct": 48.9611
+  },
+  "executed_surface": {
+    "executed_functions_total": 618,
+    "mapped_implemented_total": 145,
+    "unmapped_total": 473,
+    "priority_counts": {
+      "P0": 0,
+      "P1": 48,
+      "P2": 425
+    },
+    "gate_pass": false
+  },
+  "benchmarks": {
+    "scan_serial_default": "2.441 \u00b5s",
+    "scan_serial_parallel_feature": "2.138 \u00b5s",
+    "scan_parallel_parallel_feature": "28.89 \u00b5s",
+    "scan_speedup_serial_over_parallel": 0.07400650789255055
+  },
+  "claims": {
+    "numerical_parity_on_covered_workloads": true,
+    "executed_surface_mapping_gate": false,
+    "full_1_to_1_functional_coverage_vs_reference": false,
+    "full_100_percent_verifiable_coverage": false
+  }
+}

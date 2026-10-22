@@ -1,0 +1,30 @@
+{
+  "algorithm": "migrad_no_g2",
+  "covariance": [
+    [
+      1,
+      0
+    ],
+    [
+      0,
+      1
+    ]
+  ],
+  "edm": 0,
+  "errors": [
+    1,
+    1
+  ],
+  "fval": 0,
+  "has_covariance": true,
+  "has_minos": false,
+  "minos": null,
+  "nfcn": 2,
+  "params": [
+    1,
+    -2
+  ],
+  "runner": "root-minuit2",
+  "valid": true,
+  "workload": "quadratic2_no_g2_migrad"
+}

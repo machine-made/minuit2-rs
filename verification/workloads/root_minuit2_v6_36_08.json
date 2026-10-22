@@ -1,0 +1,139 @@
+{
+  "reference": {
+    "repo": "https://github.com/root-project/root",
+    "subdir": "math/minuit2",
+    "tag": "v6-36-08",
+    "commit": "a8ca1b23e38d7dbe0ff24027894ca0f2ad65f1bd"
+  },
+  "workloads": [
+    {
+      "id": "quadratic3_fixx_migrad",
+      "description": "Quadratic FCN with one fixed parameter; compare migrad minimum statistics.",
+      "tolerances": {
+        "fval_abs": 2e-5,
+        "edm_abs": 5e-5,
+        "param_abs": 5e-4,
+        "nfcn_rel_warn": 0.5,
+        "nfcn_rel_waiver": "D-001: ROOT v6-36-08 seed generation counts central-difference FCN probes in Numerical2PGradientCalculator after MnSeedGenerator evaluates the starting point; minuit2-rs reaches the same fixed-parameter result without reproducing those extra seed probes."
+      }
+    },
+    {
+      "id": "quadratic3_fixx_hesse",
+      "description": "Same workload with Hesse covariance extraction after Migrad.",
+      "tolerances": {
+        "fval_abs": 2e-5,
+        "edm_abs": 5e-5,
+        "param_abs": 5e-4,
+        "cov_abs": 1e-4,
+        "nfcn_rel_warn": 0.5,
+        "nfcn_rel_waiver": "D-001: inherits the fixed-parameter Migrad seed NFCN accounting divergence; ROOT v6-36-08 counts the seed central-difference probes before Hesse, while minuit2-rs covariance remains within tolerance."
+      }
+    },
+    {
+      "id": "rosenbrock2_migrad",
+      "description": "Nonlinear Rosenbrock minimum comparison for Migrad.",
+      "tolerances": {
+        "fval_abs": 5e-5,
+        "edm_abs": 1e-4,
+        "param_abs": 5e-3,
+        "cov_abs": 0.5,
+        "nfcn_rel_warn": 0.7
+      }
+    },
+    {
+      "id": "quadratic2_minos_p0",
+      "description": "Asymmetric Minos interval for parameter 0 after Migrad+Hesse.",
+      "tolerances": {
+        "fval_abs": 1e-8,
+        "edm_abs": 1e-6,
+        "param_abs": 1e-5,
+        "minos_abs": 2e-3,
+        "nfcn_rel_warn": 0.7
+      }
+    },
+    {
+      "id": "quadratic2_simplex",
+      "description": "Derivative-free Simplex on a smooth quadratic objective.",
+      "tolerances": {
+        "fval_abs": 1e-8,
+        "edm_abs": 1e-6,
+        "param_abs": 1e-5,
+        "nfcn_rel_warn": 0.7
+      }
+    },
+    {
+      "id": "rosenbrock2_minimize",
+      "description": "Hybrid MnMinimize (Simplex+Migrad) on Rosenbrock objective.",
+      "tolerances": {
+        "fval_abs": 5e-5,
+        "edm_abs": 1e-4,
+        "param_abs": 5e-3,
+        "cov_abs": 0.5,
+        "nfcn_rel_warn": 0.7
+      }
+    },
+    {
+      "id": "quadratic2_minos_p1",
+      "description": "Asymmetric Minos interval for parameter 1 after Migrad+Hesse.",
+      "tolerances": {
+        "fval_abs": 1e-8,
+        "edm_abs": 1e-6,
+        "param_abs": 1e-5,
+        "minos_abs": 2e-3,
+        "nfcn_rel_warn": 0.7
+      }
+    },
+    {
+      "id": "quadratic2_lower_limited_migrad",
+      "description": "Migrad on quadratic with lower limits to exercise bounded transforms.",
+      "tolerances": {
+        "fval_abs": 2e-7,
+        "edm_abs": 5e-6,
+        "param_abs": 7e-5,
+        "nfcn_rel_warn": 0.8
+      }
+    },
+    {
+      "id": "rosenbrock2_migrad_strategy2",
+      "description": "Rosenbrock Migrad using strategy=2 for deeper derivative checks.",
+      "tolerances": {
+        "fval_abs": 7e-5,
+        "edm_abs": 2e-4,
+        "param_abs": 8e-3,
+        "cov_abs": 0.8,
+        "nfcn_rel_warn": 0.8
+      }
+    },
+    {
+      "id": "quadratic2_scan_p0",
+      "description": "Migrad minimum followed by MnScan over parameter 0.",
+      "tolerances": {
+        "fval_abs": 1e-8,
+        "edm_abs": 5e-5,
+        "param_abs": 1e-5,
+        "nfcn_rel_warn": 0.8
+      }
+    },
+    {
+      "id": "quadratic2_contours_01",
+      "description": "Migrad+Hesse followed by MnContours (parameters 0,1).",
+      "tolerances": {
+        "fval_abs": 1e-8,
+        "edm_abs": 1e-6,
+        "param_abs": 1e-5,
+        "cov_abs": 2e-4,
+        "nfcn_rel_warn": 0.8
+      }
+    },
+    {
+      "id": "quadratic2_no_g2_migrad",
+      "description": "Analytical-gradient quadratic with Hessian available but no G2 support.",
+      "tolerances": {
+        "fval_abs": 1e-8,
+        "edm_abs": 1e-6,
+        "param_abs": 1e-5,
+        "nfcn_rel_warn": 0.8
+      }
+    }
+  ]
+}

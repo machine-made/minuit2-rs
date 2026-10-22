@@ -1,0 +1,185 @@
+name: Scientific Demo Benchmark (Scheduled)
+
+on:
+  workflow_dispatch:
+    inputs:
+      repeats:
+        description: "Measured repeats per batch"
+        required: true
+        default: "41"
+        type: string
+      warmups:
+        description: "Warmup repeats per batch"
+        required: true
+        default: "9"
+        type: string
+      bootstrap_iters:
+        description: "Bootstrap iterations"
+        required: true
+        default: "5000"
+        type: string
+      permutation_iters:
+        description: "Permutation-test iterations"
+        required: true
+        default: "10000"
+        type: string
+      batches:
+        description: "Interleaved batches"
+        required: true
+        default: "9"
+        type: string
+      trim_fraction:
+        description: "Trim fraction on each tail for robust stats"
+        required: true
+        default: "0.10"
+        type: string
+
+concurrency:
+  group: scientific-demo-scheduled-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  benchmark:
+    name: Run benchmark + produce artifacts
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4.3.1
+        with:
+          fetch-depth: 0
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8  # stable
+
+      - name: Cache cargo artifacts
+        uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32  # v2
+
+      - name: Set up Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065  # v5.6.0
+        with:
+          python-version: "3.12"
+
+      - name: Install Python deps
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install matplotlib
+
+      - name: Fetch scientific demo data
+        run: scripts/fetch_scientific_demo_data.sh
+
+      - name: Run tests
+        run: cargo test --all-features
+        env:
+          PYO3_USE_ABI3_FORWARD_COMPATIBILITY: "1"
+
+      - name: Run benchmark + regenerate figures
+        shell: bash
+        env:
+          REPEATS:    ${{ github.event.inputs.repeats           || '41'    }}
+          WARMUPS:    ${{ github.event.inputs.warmups           || '9'     }}
+          BOOT_ITERS: ${{ github.event.inputs.bootstrap_iters   || '5000'  }}
+          PERM_ITERS: ${{ github.event.inputs.permutation_iters || '10000' }}
+          BATCHES:    ${{ github.event.inputs.batches           || '9'     }}
+          TRIM:       ${{ github.event.inputs.trim_fraction     || '0.10'  }}
+        run: |
+          # Validate user-supplied inputs before they reach the benchmark script.
+          for var in REPEATS WARMUPS BOOT_ITERS PERM_ITERS BATCHES; do
+            v="${!var}"
+            [[ "$v" =~ ^[0-9]+$ ]] \
+              || { echo "::error::$var must be a non-negative integer (got: $v)"; exit 1; }
+          done
+          [[ "$TRIM" =~ ^[0-9]+(\.[0-9]+)?$ ]] \
+            || { echo "::error::TRIM must be a decimal (got: $TRIM)"; exit 1; }
+
+          # Hosted runners are noisy/shared; keep strict checks off for scheduled refresh.
+          bash examples/run_comparison.sh \
+            "$REPEATS" \
+            "$WARMUPS" \
+            "$BOOT_ITERS" \
+            "$PERM_ITERS" \
+            "$BATCHES" \
+            "" \
+            "$TRIM" \
+            "0"
+
+      - name: Upload benchmark artifacts
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
+        with:
+          name: scientific-demo-scheduled-${{ github.run_id }}
+          path: |
+            examples/comparison.png
+            examples/output/comparison_timings.csv
+            examples/output/comparison_samples.csv
+            examples/output/comparison_environment.json
+          retention-days: 30
+          if-no-files-found: error
+
+  commit-refresh:
+    name: Commit refreshed artifacts (main only)
+    needs: benchmark
+    if: ${{ github.ref == 'refs/heads/main' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4.3.1
+        with:
+          fetch-depth: 0
+
+      - name: Download benchmark artifacts
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093  # v4.3.0
+        with:
+          name: scientific-demo-scheduled-${{ github.run_id }}
+          path: /tmp/scientific-demo-artifacts
+
+      - name: Stage artifacts into worktree
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p examples/output
+          # Copy by filename to be robust against upload/download path-preservation quirks.
+          for f in comparison.png comparison_timings.csv comparison_samples.csv comparison_environment.json; do
+            src="$(find /tmp/scientific-demo-artifacts -type f -name "$f" -print -quit)"
+            if [[ -z "$src" ]]; then
+              echo "::error::artifact $f not found in downloaded bundle" >&2
+              exit 1
+            fi
+            case "$f" in
+              comparison.png)
+                dst="examples/comparison.png" ;;
+              *)
+                dst="examples/output/$f" ;;
+            esac
+            cp "$src" "$dst"
+          done
+
+      - name: Commit refreshed artifacts
+        shell: bash
+        run: |
+          if git diff --quiet -- \
+            examples/comparison.png \
+            examples/output/comparison_timings.csv \
+            examples/output/comparison_samples.csv \
+            examples/output/comparison_environment.json; then
+            echo "No benchmark artifact changes to commit"
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add examples/comparison.png
+          git add examples/output/comparison_timings.csv
+          git add examples/output/comparison_samples.csv
+          git add examples/output/comparison_environment.json
+
+          git commit -m "ci: scheduled refresh of scientific benchmark artifacts [skip ci]"
+          git push

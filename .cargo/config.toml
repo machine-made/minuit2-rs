@@ -1,0 +1,16 @@
+# Allow `cargo test/build --all-features` to LINK on macOS when pyo3's
+# `extension-module` feature is enabled.
+#
+# `extension-module` intentionally does not link libpython — the host
+# interpreter provides those symbols at load time. With `abi3-py39`, pyo3 builds
+# without a Python interpreter and no longer auto-emits the macOS
+# `-undefined dynamic_lookup` linker arg, so linking a test/bin on macOS fails
+# with "Undefined symbols for architecture arm64: _PyBaseObject_Type, ...".
+#
+# Deferring resolution to dynamic_lookup mirrors how Python actually loads the
+# extension and is the PyO3-recommended workaround. The Rust tests never call
+# into Python, so the symbols are never dereferenced. No effect on Linux/Windows,
+# and this file is not part of the published crate (excluded by Cargo.toml's
+# `include` allowlist).
+[target.'cfg(target_os = "macos")']
+rustflags = ["-C", "link-arg=-undefined", "-C", "link-arg=dynamic_lookup"]

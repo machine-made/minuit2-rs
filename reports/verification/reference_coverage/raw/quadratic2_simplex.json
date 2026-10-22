@@ -1,0 +1,1 @@
+{"runner":"root-minuit2","workload":"quadratic2_simplex","algorithm":"simplex","valid":true,"fval":-0.67474999999999985,"edm":0.033488735198974329,"nfcn":19,"params":[1.1499999999999997,-2.0500000000000016],"errors":[0.44719268330370093,0.40156622217904198],"has_covariance":false,"covariance":null,"has_minos":false,"minos":null}

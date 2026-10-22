@@ -1,0 +1,29 @@
+[build-system]
+requires = ["maturin>=1.7,<2"]
+build-backend = "maturin"
+
+[project]
+name = "minuit2"
+description = "Pure Rust implementation of Minuit-style optimization with a measured iminuit-compatible subset"
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "LGPL-2.1-or-later" }
+dependencies = ["numpy"]
+keywords = ["optimization", "minimization", "fitting", "physics", "minuit", "iminuit"]
+classifiers = [
+    "Programming Language :: Rust",
+    "Programming Language :: Python :: 3",
+    "Topic :: Scientific/Engineering :: Physics",
+    "Topic :: Scientific/Engineering :: Mathematics",
+]
+dynamic = ["version"]
+
+[project.urls]
+Repository = "https://github.com/ricardofrantz/minuit2-rs"
+
+[tool.maturin]
+# Mixed Rust/Python project: the compiled extension is minuit2._minuit2,
+# wrapped by the pure-Python package under python/minuit2/.
+module-name = "minuit2._minuit2"
+python-source = "python"
+features = ["python"]

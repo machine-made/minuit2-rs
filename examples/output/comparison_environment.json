@@ -1,0 +1,36 @@
+{
+  "timestamp_utc": "2026-06-11T11:48:52.221495+00:00",
+  "platform": "Linux-7.0.0-22-generic-x86_64-with-glibc2.43",
+  "system": "Linux",
+  "release": "7.0.0-22-generic",
+  "machine": "x86_64",
+  "python": "3.14.4",
+  "cpu_affinity": {
+    "requested_core": 2,
+    "method": "taskset",
+    "taskset_available": true
+  },
+  "linux": {
+    "cpu_model": "AMD Ryzen 9 9900X 12-Core Processor",
+    "governors": [],
+    "intel_pstate_no_turbo": null
+  },
+  "loadavg": {
+    "1min": 5.0185546875,
+    "5min": 2.96240234375,
+    "15min": 2.07666015625
+  },
+  "benchmark_config": {
+    "repeats_per_batch": 41,
+    "warmups_per_batch": 9,
+    "batches": 9,
+    "trim_fraction": 0.1,
+    "bootstrap_iters": 5000,
+    "permutation_iters": 10000,
+    "seed": 20260211
+  },
+  "warnings": [
+    "Linux governor not readable; cannot verify fixed-frequency policy."
+  ],
+  "critical_issues": []
+}

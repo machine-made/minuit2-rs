@@ -1,0 +1,4 @@
+{"runner":"root-minuit2","iter":0,"nfcn":7,"fval":1005,"edm":1069.9000004016643,"lambda":null,"grad_norm":623.50300721000826,"dcovar":1}
+{"runner":"root-minuit2","iter":1,"nfcn":9,"fval":11.124637503995633,"edm":9.3699095931285044,"lambda":null,"grad_norm":26.798040098522463,"dcovar":0.5466974587228598}
+{"runner":"root-minuit2","iter":2,"nfcn":11,"fval":0.87398373983739841,"edm":3.2798471610004008e-26,"lambda":null,"grad_norm":3.4827556416051773e-12,"dcovar":0.31666506282188794}
+{"runner":"root-minuit2","iter":3,"nfcn":29,"fval":0.87398373983739841,"edm":1.0728106302933562e-25,"lambda":null,"grad_norm":5.7043059789581631e-12,"dcovar":0}

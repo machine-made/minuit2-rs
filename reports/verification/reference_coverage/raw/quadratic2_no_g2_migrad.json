@@ -1,0 +1,1 @@
+{"runner":"root-minuit2","workload":"quadratic2_no_g2_migrad","algorithm":"migrad_no_g2","valid":true,"fval":0,"edm":0,"nfcn":2,"params":[1,-2],"errors":[1,1],"has_covariance":true,"covariance":[[1,0],[0,1]],"has_minos":false,"minos":null}

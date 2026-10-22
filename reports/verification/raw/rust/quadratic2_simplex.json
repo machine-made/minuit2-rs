@@ -1,0 +1,30 @@
+{
+  "algorithm": "simplex",
+  "covariance": [
+    [
+      2.0,
+      0.0
+    ],
+    [
+      0.0,
+      2.0
+    ]
+  ],
+  "edm": 0.03348873519897433,
+  "errors": [
+    1.4142135623730951,
+    1.4142135623730951
+  ],
+  "fval": -0.6747499999999998,
+  "has_covariance": true,
+  "has_minos": false,
+  "minos": null,
+  "nfcn": 19,
+  "params": [
+    1.1499999999999997,
+    -2.0500000000000016
+  ],
+  "runner": "minuit2-rs",
+  "valid": true,
+  "workload": "quadratic2_simplex"
+}
