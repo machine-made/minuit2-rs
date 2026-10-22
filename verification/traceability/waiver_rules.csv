@@ -1,8 +1,0 @@
-raw_status,rationale_contains,upstream_file_regex,upstream_symbol_regex,waiver_type,reason
-needs-review,architectural refactor,,,architectural,Intentional architectural refactor; no strict 1:1 symbol expected.
-needs-review,source unavailable,,,tooling,Upstream source extraction unavailable at pinned tag; tracked as tooling limitation.
-needs-review,unable to extract symbols with heuristic parser,,,tooling,Heuristic parser limitation for this upstream file; tracked as tooling waiver.
-,,^inc/Minuit2/MnMatrix\.h$,,architectural,MnMatrix header templates are represented through nalgebra-based Rust data structures and helpers.
-,,^src/MnMatrix\.cxx$,,architectural,MnMatrix numeric kernels are replaced by nalgebra-backed implementations in Rust.
-,,^inc/ROOT/span\.hxx$,,architectural,ROOT span helper methods map to native Rust slices and iterators rather than explicit wrapper symbols.
-,,^src/MPIProcess\.(h|cxx)$,,out-of-scope,MPI process partition helpers are not part of the single-process Rust API surface.
