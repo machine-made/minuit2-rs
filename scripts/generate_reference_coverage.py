@@ -86,11 +86,17 @@ def load_workloads(path: Path) -> list[str]:
 
 
 def repo_relative(path: Path) -> str:
-    """Return `path` relative to the repo root, so committed reports hold no local paths."""
+    """Return `path` relative to the repo root, so committed reports hold no local paths.
+
+    Exit with an error when `path` is outside the repo. Call it before any write.
+    """
     try:
-        return str(path.resolve().relative_to(REPO_ROOT.resolve()))
+        return path.resolve().relative_to(REPO_ROOT.resolve()).as_posix()
     except ValueError:
-        return str(path)
+        raise SystemExit(
+            f"error: {path} is outside the repository ({REPO_ROOT}). "
+            "Pass an output path inside the repository, so reports hold no local paths."
+        ) from None
 
 
 def normalize_file(path: str) -> str:
@@ -109,10 +115,13 @@ def main() -> int:
     args = parse_args()
     workloads_path = Path(args.workloads)
     report_dir = Path(args.report_dir)
+    # Reject a report directory outside the repo before anything is written.
+    repo_relative(report_dir)
     raw_dir = report_dir / "raw"
     raw_dir.mkdir(parents=True, exist_ok=True)
 
     runner = build_instrumented_runner(args.root_tag)
+    repo_relative(runner)
     workload_ids = load_workloads(workloads_path)
 
     profraw_dir = raw_dir / "profraw"

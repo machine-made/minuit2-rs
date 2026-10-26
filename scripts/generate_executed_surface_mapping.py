@@ -53,11 +53,17 @@ class SymbolInfo:
 
 
 def repo_relative(path: Path) -> str:
-    """Return `path` relative to the repo root, so committed reports hold no local paths."""
+    """Return `path` relative to the repo root, so committed reports hold no local paths.
+
+    Exit with an error when `path` is outside the repo. Call it before any write.
+    """
     try:
-        return str(path.resolve().relative_to(REPO_ROOT.resolve()))
+        return path.resolve().relative_to(REPO_ROOT.resolve()).as_posix()
     except ValueError:
-        return str(path)
+        raise SystemExit(
+            f"error: {path} is outside the repository ({REPO_ROOT}). "
+            "Pass an output path inside the repository, so reports hold no local paths."
+        ) from None
 
 
 def parse_args() -> argparse.Namespace:
@@ -351,6 +357,9 @@ def load_workloads_from_reference_manifest(path: Path) -> list[str]:
 
 def main() -> int:
     args = parse_args()
+    # Reject output paths outside the repo before anything is written.
+    for out_path in (args.out_md, args.out_gaps_csv, args.out_manifest):
+        repo_relative(Path(out_path))
 
     executed_rows = read_csv(Path(args.executed_csv))
     traceability_rows = read_csv(Path(args.traceability_csv))
