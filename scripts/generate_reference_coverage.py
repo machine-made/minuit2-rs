@@ -59,15 +59,36 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
+BUILD_ROOT_DIR = "third_party/root_ref_build/minuit2_cov"
+BUILD_RUNNER_DIR = "third_party/root_ref_build/ref_runner_cov"
+
+
+def validate_build_paths() -> None:
+    """Check every path that the build script deletes or writes, before any write.
+
+    The build script runs in the repo root, so a relative path means a path under it.
+    """
+    root_ref_dir = os.environ.get("ROOT_REF_DIR", "third_party/root_ref")
+    for rel in (
+        "third_party",
+        root_ref_dir,
+        BUILD_ROOT_DIR,
+        BUILD_RUNNER_DIR,
+        f"{BUILD_RUNNER_DIR}/ref_runner",
+    ):
+        safe_output(REPO_ROOT / rel)
+
+
 def build_instrumented_runner(root_tag: str) -> Path:
+    validate_build_paths()
     env = os.environ.copy()
     cov_flags = "-fprofile-instr-generate -fcoverage-mapping -O0 -g"
     # Let CMake pick these up from the environment.
     env["CFLAGS"] = cov_flags
     env["CXXFLAGS"] = cov_flags
     env["LDFLAGS"] = "-fprofile-instr-generate"
-    env["ROOT_BUILD_DIR"] = "third_party/root_ref_build/minuit2_cov"
-    env["RUNNER_BUILD_DIR"] = "third_party/root_ref_build/ref_runner_cov"
+    env["ROOT_BUILD_DIR"] = BUILD_ROOT_DIR
+    env["RUNNER_BUILD_DIR"] = BUILD_RUNNER_DIR
     env["ROOT_CMAKE_EXTRA_ARGS"] = "-DCMAKE_BUILD_TYPE=Debug"
     env["RUNNER_CMAKE_EXTRA_ARGS"] = "-DCMAKE_BUILD_TYPE=Debug"
 
@@ -75,7 +96,7 @@ def build_instrumented_runner(root_tag: str) -> Path:
     lines = [line.strip() for line in out.splitlines() if line.strip()]
     if not lines:
         raise RuntimeError("build script produced no output")
-    runner = Path(lines[-1])
+    runner = safe_output(REPO_ROOT / lines[-1])
     if not runner.exists():
         raise FileNotFoundError(f"instrumented runner missing: {runner}")
     return runner
@@ -135,7 +156,8 @@ def main() -> int:
     workloads_path = Path(args.workloads)
     workload_ids = load_workloads(workloads_path)
 
-    # Validate every output path before the first write. Keep the resolved paths.
+    # Validate every output and build path before the first write. Keep the resolved paths.
+    validate_build_paths()
     report_dir = safe_output(Path(args.report_dir))
     raw_dir = safe_output(report_dir / "raw")
     profraw_dir = safe_output(raw_dir / "profraw")
