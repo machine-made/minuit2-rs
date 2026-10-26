@@ -52,6 +52,23 @@ class SymbolInfo:
     is_operator: bool
 
 
+def safe_output(path: Path) -> Path:
+    """Resolve `path` (symlinks followed) and require it to be inside the repo.
+
+    Return the resolved path. Use it for every write, so a symlink or a ".." part
+    cannot send a report outside the repo. Exit with an error otherwise.
+    """
+    resolved = Path(path).resolve(strict=False)
+    try:
+        resolved.relative_to(REPO_ROOT)
+    except ValueError:
+        raise SystemExit(
+            f"error: {path} resolves to {resolved}, which is outside the repository ({REPO_ROOT}). "
+            "Pass a path inside the repository and remove symlinks that point outside it."
+        ) from None
+    return resolved
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Generate executed-surface mapping and gap report")
     parser.add_argument("--executed-csv", default=str(DEFAULT_EXECUTED_CSV))
@@ -343,6 +360,10 @@ def load_workloads_from_reference_manifest(path: Path) -> list[str]:
 
 def main() -> int:
     args = parse_args()
+    # Validate every output path before the first write. Keep the resolved paths.
+    out_md = safe_output(Path(args.out_md))
+    out_gaps = safe_output(Path(args.out_gaps_csv))
+    out_manifest = safe_output(Path(args.out_manifest))
 
     executed_rows = read_csv(Path(args.executed_csv))
     traceability_rows = read_csv(Path(args.traceability_csv))
@@ -454,7 +475,6 @@ def main() -> int:
 
     gaps.sort(key=lambda r: (r["gap_priority"], r["upstream_file"], r["upstream_symbol"], r["function_mangled"]))
 
-    out_gaps = Path(args.out_gaps_csv)
     out_gaps.parent.mkdir(parents=True, exist_ok=True)
     with out_gaps.open("w", newline="") as f:
         fieldnames = [
@@ -494,12 +514,11 @@ def main() -> int:
         },
         "workloads": workload_ids,
         "artifacts": {
-            "mapping_md": str(Path(args.out_md)),
-            "gaps_csv": str(out_gaps),
+            "mapping_md": out_md.relative_to(REPO_ROOT).as_posix(),
+            "gaps_csv": out_gaps.relative_to(REPO_ROOT).as_posix(),
         },
     }
 
-    out_manifest = Path(args.out_manifest)
     out_manifest.write_text(json.dumps(manifest, indent=2) + "\n")
 
     lines: list[str] = []
@@ -553,7 +572,6 @@ def main() -> int:
         lines.append("| - | - | - | - | - |")
     lines.append("")
 
-    out_md = Path(args.out_md)
     out_md.write_text("\n".join(lines) + "\n")
 
     print(f"Wrote {out_md.relative_to(REPO_ROOT)}")

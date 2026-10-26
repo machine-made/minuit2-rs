@@ -19,7 +19,7 @@ classifiers = [
 dynamic = ["version"]
 
 [project.urls]
-Repository = "https://github.com/ricardofrantz/minuit2-rs"
+Repository = "https://github.com/machine-made/minuit2-rs"
 
 [tool.maturin]
 # Mixed Rust/Python project: the compiled extension is minuit2._minuit2,
