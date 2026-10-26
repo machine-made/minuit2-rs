@@ -52,18 +52,21 @@ class SymbolInfo:
     is_operator: bool
 
 
-def repo_relative(path: Path) -> str:
-    """Return `path` relative to the repo root, so committed reports hold no local paths.
+def safe_output(path: Path) -> Path:
+    """Resolve `path` (symlinks followed) and require it to be inside the repo.
 
-    Exit with an error when `path` is outside the repo. Call it before any write.
+    Return the resolved path. Use it for every write, so a symlink or a ".." part
+    cannot send a report outside the repo. Exit with an error otherwise.
     """
+    resolved = Path(path).resolve(strict=False)
     try:
-        return path.resolve().relative_to(REPO_ROOT.resolve()).as_posix()
+        resolved.relative_to(REPO_ROOT)
     except ValueError:
         raise SystemExit(
-            f"error: {path} is outside the repository ({REPO_ROOT}). "
-            "Pass an output path inside the repository, so reports hold no local paths."
+            f"error: {path} resolves to {resolved}, which is outside the repository ({REPO_ROOT}). "
+            "Pass a path inside the repository and remove symlinks that point outside it."
         ) from None
+    return resolved
 
 
 def parse_args() -> argparse.Namespace:
@@ -357,9 +360,10 @@ def load_workloads_from_reference_manifest(path: Path) -> list[str]:
 
 def main() -> int:
     args = parse_args()
-    # Reject output paths outside the repo before anything is written.
-    for out_path in (args.out_md, args.out_gaps_csv, args.out_manifest):
-        repo_relative(Path(out_path))
+    # Validate every output path before the first write. Keep the resolved paths.
+    out_md = safe_output(Path(args.out_md))
+    out_gaps = safe_output(Path(args.out_gaps_csv))
+    out_manifest = safe_output(Path(args.out_manifest))
 
     executed_rows = read_csv(Path(args.executed_csv))
     traceability_rows = read_csv(Path(args.traceability_csv))
@@ -471,7 +475,6 @@ def main() -> int:
 
     gaps.sort(key=lambda r: (r["gap_priority"], r["upstream_file"], r["upstream_symbol"], r["function_mangled"]))
 
-    out_gaps = Path(args.out_gaps_csv)
     out_gaps.parent.mkdir(parents=True, exist_ok=True)
     with out_gaps.open("w", newline="") as f:
         fieldnames = [
@@ -511,12 +514,11 @@ def main() -> int:
         },
         "workloads": workload_ids,
         "artifacts": {
-            "mapping_md": repo_relative(Path(args.out_md)),
-            "gaps_csv": repo_relative(out_gaps),
+            "mapping_md": out_md.relative_to(REPO_ROOT).as_posix(),
+            "gaps_csv": out_gaps.relative_to(REPO_ROOT).as_posix(),
         },
     }
 
-    out_manifest = Path(args.out_manifest)
     out_manifest.write_text(json.dumps(manifest, indent=2) + "\n")
 
     lines: list[str] = []
@@ -570,7 +572,6 @@ def main() -> int:
         lines.append("| - | - | - | - | - |")
     lines.append("")
 
-    out_md = Path(args.out_md)
     out_md.write_text("\n".join(lines) + "\n")
 
     print(f"Wrote {out_md.relative_to(REPO_ROOT)}")
