@@ -22,9 +22,9 @@
     "line_coverage_pct": 48.9611
   },
   "artifacts": {
-    "executed_functions_csv": "/Users/rfrantz/Documents/projects/minuit2-rs/reports/verification/reference_coverage/executed_functions.csv",
-    "unexecuted_functions_csv": "/Users/rfrantz/Documents/projects/minuit2-rs/reports/verification/reference_coverage/unexecuted_functions.csv",
-    "llvm_cov_export_json": "/Users/rfrantz/Documents/projects/minuit2-rs/reports/verification/reference_coverage/raw/llvm_cov_export.json",
-    "summary_md": "/Users/rfrantz/Documents/projects/minuit2-rs/reports/verification/reference_coverage/summary.md"
+    "executed_functions_csv": "reports/verification/reference_coverage/executed_functions.csv",
+    "unexecuted_functions_csv": "reports/verification/reference_coverage/unexecuted_functions.csv",
+    "llvm_cov_export_json": "reports/verification/reference_coverage/raw/llvm_cov_export.json",
+    "summary_md": "reports/verification/reference_coverage/summary.md"
   }
 }

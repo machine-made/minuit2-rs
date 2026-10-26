@@ -25,6 +25,6 @@ Constraints: no Rust logo, no ROOT or CERN logos, no mascots, no fake badges, no
 ```
 
 Post-processing:
-- Generated source image: `/home/rfrantz/.codex/generated_images/019eb5a2-1499-7ba2-8f25-25684ba2dafd/ig_03393864d525f90a016a2a682babbc8191ae96028aa734f8fe.png`
+- Generated source image: `~/.codex/generated_images/019eb5a2-1499-7ba2-8f25-25684ba2dafd/ig_03393864d525f90a016a2a682babbc8191ae96028aa734f8fe.png`
 - Cropped to `1774x554+0+100` and resized to `1600x500` with ImageMagick:
   `magick <source> -crop 1774x554+0+100 +repage -resize 1600x500 assets/readme-banner-v2.png`

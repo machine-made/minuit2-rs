@@ -85,6 +85,14 @@ def load_workloads(path: Path) -> list[str]:
     return [w["id"] for w in data["workloads"]]
 
 
+def repo_relative(path: Path) -> str:
+    """Return `path` relative to the repo root, so committed reports hold no local paths."""
+    try:
+        return str(path.resolve().relative_to(REPO_ROOT.resolve()))
+    except ValueError:
+        return str(path)
+
+
 def normalize_file(path: str) -> str:
     p = Path(path)
     try:
@@ -133,8 +141,9 @@ def main() -> int:
     export_json = subprocess.check_output(
         [*llvm_cov, "export", str(runner), f"-instr-profile={merged}"], cwd=REPO_ROOT, text=True
     )
-    export_json_path.write_text(export_json)
     payload: dict[str, Any] = json.loads(export_json)
+    # Store repo-relative file names in the committed export.
+    export_json_path.write_text(export_json.replace(f"{REPO_ROOT.resolve()}/", ""))
 
     functions: list[tuple[str, str, int]] = []
     total_in_scope = 0
@@ -216,7 +225,7 @@ def main() -> int:
 
     manifest = {
         "reference_tag": args.root_tag,
-        "runner_binary": str(runner),
+        "runner_binary": repo_relative(runner),
         "workloads": workload_ids,
         "counts": {
             "functions_in_scope": total_in_scope,
@@ -225,10 +234,10 @@ def main() -> int:
             "line_coverage_pct": round(line_coverage, 4),
         },
         "artifacts": {
-            "executed_functions_csv": str(executed_path),
-            "unexecuted_functions_csv": str(unexecuted_path),
-            "llvm_cov_export_json": str(export_json_path),
-            "summary_md": str(summary_md),
+            "executed_functions_csv": repo_relative(executed_path),
+            "unexecuted_functions_csv": repo_relative(unexecuted_path),
+            "llvm_cov_export_json": repo_relative(export_json_path),
+            "summary_md": repo_relative(summary_md),
         },
     }
     (report_dir / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n")

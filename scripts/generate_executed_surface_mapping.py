@@ -52,6 +52,14 @@ class SymbolInfo:
     is_operator: bool
 
 
+def repo_relative(path: Path) -> str:
+    """Return `path` relative to the repo root, so committed reports hold no local paths."""
+    try:
+        return str(path.resolve().relative_to(REPO_ROOT.resolve()))
+    except ValueError:
+        return str(path)
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Generate executed-surface mapping and gap report")
     parser.add_argument("--executed-csv", default=str(DEFAULT_EXECUTED_CSV))
@@ -494,8 +502,8 @@ def main() -> int:
         },
         "workloads": workload_ids,
         "artifacts": {
-            "mapping_md": str(Path(args.out_md)),
-            "gaps_csv": str(out_gaps),
+            "mapping_md": repo_relative(Path(args.out_md)),
+            "gaps_csv": repo_relative(out_gaps),
         },
     }
 

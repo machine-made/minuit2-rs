@@ -26,7 +26,7 @@
     "quadratic2_no_g2_migrad"
   ],
   "artifacts": {
-    "mapping_md": "/Users/rfrantz/Documents/projects/minuit2-rs/reports/verification/executed_surface_mapping.md",
-    "gaps_csv": "/Users/rfrantz/Documents/projects/minuit2-rs/reports/verification/executed_surface_gaps.csv"
+    "mapping_md": "reports/verification/executed_surface_mapping.md",
+    "gaps_csv": "reports/verification/executed_surface_gaps.csv"
   }
 }

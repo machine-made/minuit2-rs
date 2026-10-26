@@ -64,7 +64,7 @@ test negative_g2_seed_line_search_repairs_one_coordinate_before_recomputing_grad
 test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
 == clippy ==
-    Checking minuit2 v0.5.1 (/home/rfrantz/Projects/minuit2-rs)
+    Checking minuit2 v0.5.1 (~/Projects/minuit2-rs)
     Finished `dev` profile [unoptimized + debuginfo] target(s) in 1.51s
 == diff_results.csv status ==
 ```
