@@ -1,6 +1,6 @@
 [package]
 name = "minuit2"
-version = "0.5.4"
+version = "0.5.5"
 edition = "2024"
 rust-version = "1.85"
 description = "Pure Rust implementation of Minuit-style parameter optimization"
