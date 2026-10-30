@@ -5,12 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
-## [0.5.5] - 2026-10-28
+## [0.5.5] - 2026-10-31
 
 ### Changed
 
 - The repository, homepage and docs links now point to
   github.com/machine-made/minuit2-rs. The code does not change.
+- The crate is now published to crates.io with trusted publishing instead of a
+  stored token.
+- The benchmark and test tooling (criterion 0.7) and the build workflows use
+  newer versions. The library code and its dependencies do not change.
 
 ## [0.5.4] - 2026-10-10
 
