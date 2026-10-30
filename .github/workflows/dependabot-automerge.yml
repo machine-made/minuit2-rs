@@ -45,12 +45,14 @@ jobs:
             const { data: checkRuns } = await github.rest.checks.listForRef({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              ref: headSha
+              ref: headSha,
+              per_page: 100
             });
             const { data: commitStatuses } = await github.rest.repos.getCombinedStatusForRef({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              ref: headSha
+              ref: headSha,
+              per_page: 100
             });
             let allSuccess = true;
             let hasPending = false;
@@ -86,9 +88,11 @@ jobs:
       - name: Merge the PR
         if: steps.check-status.outputs.status == 'success'
         uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea  # v7.0.1
+        env:
+          PR_NUMBER: ${{ steps.find-pr.outputs.pr_number }}
         with:
           script: |
-            const prNumber = parseInt(context.payload.workflow_run.head_branch.split('/').pop());
+            const prNumber = Number(process.env.PR_NUMBER);
             await github.rest.pulls.merge({
               owner: context.repo.owner,
               repo: context.repo.repo,
