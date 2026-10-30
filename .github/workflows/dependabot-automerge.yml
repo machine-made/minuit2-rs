@@ -67,6 +67,12 @@ jobs:
             let allSuccess = true;
             let hasPending = false;
             for (const run of checkRuns) {
+              // Count only CI jobs. Review bots (CodeRabbit, cubic) add check
+              // runs that can stay in_progress for a long time; nothing
+              // re-triggers this workflow, so the PR would never merge.
+              if (run.app?.slug !== 'github-actions') {
+                continue;
+              }
               if (run.conclusion === 'success' || run.conclusion === 'skipped' || run.conclusion === 'neutral') {
                 continue;
               }
