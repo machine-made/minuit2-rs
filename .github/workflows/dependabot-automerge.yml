@@ -42,21 +42,31 @@ jobs:
         with:
           script: |
             const headSha = context.payload.workflow_run.head_sha;
-            const { data: checkRuns } = await github.rest.checks.listForRef({
+            if (headSha !== '${{ steps.find-pr.outputs.head_sha }}') {
+              core.setOutput('status', 'stale');
+              return;
+            }
+            const checkRuns = await github.paginate(github.rest.checks.listForRef, {
               owner: context.repo.owner,
               repo: context.repo.repo,
               ref: headSha,
               per_page: 100
             });
-            const { data: commitStatuses } = await github.rest.repos.getCombinedStatusForRef({
+            const allStatuses = await github.paginate(github.rest.repos.listCommitStatusesForRef, {
               owner: context.repo.owner,
               repo: context.repo.repo,
               ref: headSha,
               per_page: 100
             });
+            // The list is newest first: keep the first status seen per context.
+            const latest = new Map();
+            for (const status of allStatuses) {
+              if (!latest.has(status.context)) latest.set(status.context, status);
+            }
+            const commitStatuses = [...latest.values()];
             let allSuccess = true;
             let hasPending = false;
-            for (const run of checkRuns.check_runs) {
+            for (const run of checkRuns) {
               if (run.conclusion === 'success' || run.conclusion === 'skipped' || run.conclusion === 'neutral') {
                 continue;
               }
@@ -66,8 +76,8 @@ jobs:
               }
               allSuccess = false;
             }
-            for (const status of commitStatuses.statuses) {
-              if (status.state === 'success' || status.state === 'skipped' || status.state === 'neutral') {
+            for (const status of commitStatuses) {
+              if (status.state === 'success') {
                 continue;
               }
               if (status.state === 'pending') {
@@ -90,6 +100,7 @@ jobs:
         uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea  # v7.0.1
         env:
           PR_NUMBER: ${{ steps.find-pr.outputs.pr_number }}
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
         with:
           script: |
             const prNumber = Number(process.env.PR_NUMBER);
@@ -97,6 +108,7 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               pull_number: prNumber,
+              sha: process.env.HEAD_SHA,
               merge_method: 'squash'
             });
             await github.rest.git.deleteRef({
