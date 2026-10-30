@@ -1,4 +1,4 @@
-use criterion::{Criterion, black_box, criterion_group, criterion_main};
+use criterion::{Criterion, criterion_group, criterion_main};
 use minuit2::linesearch::mn_linesearch;
 use minuit2::minimum::parameters::MinimumParameters;
 use minuit2::mn_fcn::MnFcn;
@@ -8,6 +8,7 @@ use minuit2::{
     MnScan, MnSimplex, MnUserTransformation,
 };
 use nalgebra::{DMatrix, DVector};
+use std::hint::black_box;
 
 struct GaussianChi2 {
     x: Vec<f64>,
