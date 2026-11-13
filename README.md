@@ -1070,8 +1070,6 @@ provenance certificate. Downstream users with strict license-provenance
 requirements should review the implementation and audit trail for their own
 use case.
 
-See also: [DOC.md](DOC.md) for additional API documentation.
-
 ## License
 
 Licensed under the **GNU Lesser General Public License, version 2.1 or later**
