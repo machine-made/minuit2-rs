@@ -1,4 +1,4 @@
-![minuit2-rs banner](https://raw.githubusercontent.com/machine-made/minuit2-rs/main/assets/readme-banner-v2.png)
+![minuit2-rs banner](https://raw.githubusercontent.com/machine-made/minuit2-rs/main/assets/readme-banner-v3.jpg)
 
 [![CI](https://github.com/machine-made/minuit2-rs/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/machine-made/minuit2-rs/actions/workflows/ci.yml)
 [![Crates.io](https://img.shields.io/crates/v/minuit2.svg)](https://crates.io/crates/minuit2)
