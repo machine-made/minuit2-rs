@@ -25,6 +25,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- Strategy 2 replaced the diagonal seed with the inverse Hessian before the first step.
+- The covariance update summed one triangle. Each off-diagonal was counted once.
+- The line search kept a finite vertex inside the window around the best step.
+- A trial worse than the three stored points was halved toward the best step.
+- The line search shortened the next trial while the first steps did not lower the function.
+- `rosenbrock2_migrad` and `rosenbrock2_minimize` fval moved from 3.294567072291e-05 to 3.459740876221e-05. ROOT fval was 3.459747567500577e-05.
+- edm moved from 3.423047369382e-05 to 3.451709943513e-05. ROOT edm was 3.451850739606217e-05.
+- nfcn moved from 142 to 143. ROOT nfcn was 140.
+- Parameters moved from 0.994468418655 and 0.989120644009 to 0.994149191534 and 0.988272162645. ROOT parameters were 0.994149185750 and 0.988272151209.
+- `rosenbrock2_migrad_strategy2` fval moved from 3.294658278025e-05 to 2.975823963030e-06. ROOT fval was 2.975822646186e-06.
+- edm moved from 3.423143307160e-05 to 2.980256746000e-06. ROOT edm was 2.980639536818e-06.
+- nfcn moved from 150 to 168. ROOT nfcn was 162.
+- Parameters moved from 0.994468340792 and 0.989120490797 to 0.998323497264 and 0.996609164995. ROOT parameters were 0.998323497642 and 0.996609165756.
 - The analytical seed stored dxdi squared times the Hessian diagonal when the function had a Hessian.
 - The seed stored dxdi squared times the g2 when the function had a g2 and no Hessian.
 - After a step, the escape stored the g2 of the function when that g2 was finite.

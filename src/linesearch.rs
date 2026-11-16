@@ -32,7 +32,34 @@ pub fn mn_linesearch(
     let start = params.vec();
     let mut scratch = start.clone();
 
+    // Smallest step that still changes a parameter. MnLineSearch.cxx:74-85.
+    let mut slamin = 0.0;
+    let mut have_slamin = false;
+    for (x_i, step_i) in start.iter().zip(step.iter()) {
+        if *step_i == 0.0 {
+            continue;
+        }
+        let ratio = (x_i / step_i).abs();
+        if !have_slamin || ratio < slamin {
+            slamin = ratio;
+            have_slamin = true;
+        }
+    }
+    if slamin.abs() < prec.eps() {
+        slamin = prec.eps();
+    }
+    slamin *= prec.eps2();
+
+    let toler = NEAR_EXISTING_POINT_TOLERANCE;
+    let mut toler8 = toler;
+    let mut slamax = INITIAL_STEP_LIMIT;
+    let mut overall = OVERALL_STEP_LIMIT;
+    let mut undral = LOWER_STEP_LIMIT;
+
+    // Count from 1. Stop the shortening after 12 trials.
+    let mut niter = 1usize;
     let unit_value = evaluate_step(fcn, start, step, 1.0, &mut scratch);
+    niter += 1;
 
     let mut best_lambda = 0.0;
     let mut best_value = start_value;
@@ -41,51 +68,73 @@ pub fn mn_linesearch(
         best_value = unit_value;
     }
 
-    let mut trial_lambda = 1.0;
-    let curvature =
-        2.0 * (unit_value - start_value - gdel * trial_lambda) / (trial_lambda * trial_lambda);
-    if curvature.abs() > prec.eps2() {
-        trial_lambda = -gdel / curvature;
-    } else {
-        trial_lambda = INITIAL_STEP_LIMIT;
-    }
+    // Shorten the trial while it does not lower the function
+    // (MnLineSearch.cxx:107-210). A full Newton step can raise the value.
+    // The next trials must get shorter until one step improves it.
+    let mut flast = unit_value;
+    let mut slam = 1.0;
+    let mut previous_lambda = 1.0;
+    let mut previous_value = unit_value;
+    let second_value = loop {
+        let denom = 2.0 * (flast - start_value - gdel * slam) / (slam * slam);
+        if denom != 0.0 {
+            slam = -gdel / denom;
+        } else {
+            slam = 1.0;
+        }
+        if slam < 0.0 {
+            slam = slamax;
+        }
+        if slam > slamax {
+            slam = slamax;
+        }
+        if slam < toler8 {
+            slam = toler8;
+        }
+        if slam < slamin {
+            return MnParabolaPoint::new(best_lambda, best_value);
+        }
+        if (slam - 1.0).abs() < toler8 && previous_value < start_value {
+            return MnParabolaPoint::new(best_lambda, best_value);
+        }
+        if (slam - 1.0).abs() < toler8 {
+            slam = 1.0 + toler8;
+        }
 
-    // A negative vertex is a maximum along the step. MnLineSearch.cxx:137 sends
-    // the search to the step limit. Clamping it up to 0.05 tests a point next
-    // to the start and could end the search on a limit.
-    if trial_lambda < 0.0 {
-        trial_lambda = INITIAL_STEP_LIMIT;
-    } else {
-        trial_lambda = trial_lambda.clamp(NEAR_EXISTING_POINT_TOLERANCE, INITIAL_STEP_LIMIT);
-    }
-
-    if (trial_lambda - 1.0).abs() < NEAR_EXISTING_POINT_TOLERANCE && unit_value < start_value {
-        return MnParabolaPoint::new(best_lambda, best_value);
-    }
-
-    let trial_value = evaluate_step(fcn, start, step, trial_lambda, &mut scratch);
-
-    if trial_value < best_value {
-        best_lambda = trial_lambda;
-        best_value = trial_value;
-    }
+        let value = evaluate_step(fcn, start, step, slam, &mut scratch);
+        niter += 1;
+        if value < best_value {
+            best_value = value;
+            best_lambda = slam;
+        }
+        let no_improvement = (start_value - best_value).abs() < best_value.abs() * prec.eps();
+        if no_improvement && niter < MAX_PARABOLA_REFINEMENTS {
+            flast = value;
+            toler8 = toler * slam;
+            overall = slam - toler8;
+            slamax = overall;
+            previous_lambda = slam;
+            previous_value = flast;
+            continue;
+        }
+        if niter >= MAX_PARABOLA_REFINEMENTS {
+            return MnParabolaPoint::new(best_lambda, best_value);
+        }
+        break value;
+    };
 
     let mut points = sorted_points([
         MnParabolaPoint::new(0.0, start_value),
-        MnParabolaPoint::new(1.0, unit_value),
-        MnParabolaPoint::new(trial_lambda, trial_value),
+        MnParabolaPoint::new(previous_lambda, previous_value),
+        MnParabolaPoint::new(slam, second_value),
     ]);
 
-    // Forward cap of a vertex. It grows with the best step on every pass
-    // (MnLineSearch.cxx:219).
-    let mut upper_step_limit = (BEST_STEP_EXPANSION * best_lambda.abs()).max(INITIAL_STEP_LIMIT);
+    // Forward cap of a vertex. The two-point search may already have lowered
+    // it. It grows with the best step on every pass (MnLineSearch.cxx:219).
+    let mut upper_step_limit = slamax;
     // Length of the step taken from the best point when the parabola has no
-    // minimum. It starts at the initial limit and grows with the best step
-    // (MnLineSearch.cxx:219).
-    let mut open_step_limit = INITIAL_STEP_LIMIT;
-    // Set when an open step has moved `best_lambda`. Until then the vertex
-    // bounds below are the ones fixed before the loop.
-    let mut best_moved_by_open_step = false;
+    // minimum. It starts from the same cap and grows with the best step.
+    let mut open_step_limit = slamax;
 
     for _ in 0..MAX_PARABOLA_REFINEMENTS {
         let parabola = from_3_points(points[0], points[1], points[2]);
@@ -94,6 +143,7 @@ pub fn mn_linesearch(
             .max(BEST_STEP_EXPANSION * best_lambda.abs())
             .min(OVERALL_STEP_LIMIT);
         let is_open_step = parabola.a() < prec.eps2();
+        let mut trial_lambda;
 
         if is_open_step {
             // A parabola without a minimum gives no vertex to test. Instead of
@@ -106,49 +156,67 @@ pub fn mn_linesearch(
             } else {
                 best_lambda - open_step_limit
             };
-            // The step range of MnLineSearch.cxx:239-245: -100 to 1000.
-            trial_lambda = trial_lambda.clamp(LOWER_STEP_LIMIT, OVERALL_STEP_LIMIT);
+            if trial_lambda > 0.0 {
+                if trial_lambda > overall {
+                    trial_lambda = overall;
+                }
+            } else if trial_lambda < undral {
+                trial_lambda = undral;
+            }
         } else {
             trial_lambda = parabola.min();
 
-            // After an open step moved the best point, the bound fixed before
-            // the loop is stale and would cut the vertex short of the minimum.
-            // The window then follows the best point: MnLineSearch.cxx:219 and
-            // :234-237 set it, :239-245 add the overall range -100 to 1000.
-            let (lower_bound, upper_bound) = if best_moved_by_open_step {
-                let window = INITIAL_STEP_LIMIT.max(BEST_STEP_EXPANSION * best_lambda.abs());
-                (
-                    (best_lambda - window).max(LOWER_STEP_LIMIT),
-                    (best_lambda + window).min(OVERALL_STEP_LIMIT),
-                )
-            } else {
-                (LOWER_STEP_LIMIT, upper_step_limit)
-            };
-            if trial_lambda > upper_bound {
-                trial_lambda = upper_bound;
+            // Keep the vertex inside the window around the best step.
+            if trial_lambda > best_lambda + upper_step_limit {
+                trial_lambda = best_lambda + upper_step_limit;
             }
-            if trial_lambda < lower_bound {
-                trial_lambda = lower_bound;
+            if trial_lambda < best_lambda - upper_step_limit {
+                trial_lambda = best_lambda - upper_step_limit;
+            }
+            if trial_lambda > 0.0 {
+                if trial_lambda > overall {
+                    trial_lambda = overall;
+                }
+            } else if trial_lambda < undral {
+                trial_lambda = undral;
             }
             if trial_lambda < 0.0 && parabola.y(0.0) < parabola.y(trial_lambda) {
                 break;
             }
         }
 
-        let min_spacing = NEAR_EXISTING_POINT_TOLERANCE * trial_lambda.abs().max(1.0);
-        if points
-            .iter()
-            .any(|point| (trial_lambda - point.x).abs() < min_spacing)
-        {
-            break;
-        }
+        // Halve a trial that is worse than the three stored points.
+        let mut halves = 0;
+        let trial_value = loop {
+            if halves >= MAX_PARABOLA_REFINEMENTS {
+                return MnParabolaPoint::new(best_lambda, best_value);
+            }
+            let min_spacing = NEAR_EXISTING_POINT_TOLERANCE * trial_lambda.abs().max(1.0);
+            if points
+                .iter()
+                .any(|point| (trial_lambda - point.x).abs() < min_spacing)
+            {
+                return MnParabolaPoint::new(best_lambda, best_value);
+            }
+            halves += 1;
 
-        let trial_value = evaluate_step(fcn, start, step, trial_lambda, &mut scratch);
+            let value = evaluate_step(fcn, start, step, trial_lambda, &mut scratch);
+            let worse_than_all = value > points[0].y && value > points[1].y && value > points[2].y;
+            if !worse_than_all {
+                break value;
+            }
+            if trial_lambda > best_lambda {
+                overall = overall.min(trial_lambda - NEAR_EXISTING_POINT_TOLERANCE);
+            }
+            if trial_lambda < best_lambda {
+                undral = undral.max(trial_lambda + NEAR_EXISTING_POINT_TOLERANCE);
+            }
+            trial_lambda = 0.5 * (trial_lambda + best_lambda);
+        };
 
         if trial_value < best_value {
             best_lambda = trial_lambda;
             best_value = trial_value;
-            best_moved_by_open_step |= is_open_step;
         }
 
         replace_worst_point(&mut points, MnParabolaPoint::new(trial_lambda, trial_value));

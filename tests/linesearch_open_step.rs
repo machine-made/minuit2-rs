@@ -3,9 +3,8 @@
 //!
 //! f(x) = x^4/4 - 10 x^3/3 - 23 x^2/2 - 12 x. From x = 0 with step 1 and
 //! gdel -12 the search visits 5 and then 15. The parabola through 1, 5 and 15
-//! has its vertex near 17.5. A bound fixed before the open step (10) ends the
-//! search at x = 10 with f = -2103.33. ROOT Minuit2 v6-36-08 (MnLineSearch
-//! called on the same inputs) ends at x = 10.390954 with f = -2191.655428.
+//! has its vertex near 17.5. The reference search ends at x = 10.390954
+//! with f = -2191.655428.
 
 use minuit2::fcn::FCN;
 use minuit2::linesearch::mn_linesearch;
@@ -37,12 +36,10 @@ fn open_step_moves_the_parabola_bounds_with_the_best_point() {
 
     let result = mn_linesearch(&fcn, &start, &step, gdel, &prec);
 
-    // 0.1: the Rust search has no step that halves a trial worse than all three
-    // points (MnLineSearch.cxx:271-281), so it ends at x = 10.345059, f =
-    // -2181.976, which differs from ROOT's point by 0.046. 0.1 is twice that.
+    // The reference search ends at x = 10.390954. 1e-4 is the required gap.
     assert!(
-        (result.x - 10.390954).abs() < 0.1,
-        "line search ended at x {}, f {}; ROOT ends at x 10.390954, f -2191.655",
+        (result.x - 10.390954).abs() < 1e-4,
+        "line search ended at x {}, f {}; the reference ends at x 10.390954, f -2191.655",
         result.x,
         result.y
     );

@@ -49,7 +49,7 @@ fn trace_iteration(
     let _ = writeln!(
         file,
         "{{\"runner\":\"minuit2-rs\",\"iter\":{},\"nfcn\":{},\"fval\":{:.17},\"edm\":{:.17},\"lambda\":{:.17},\"grad_norm\":{:.17},\"dcovar\":{:.17}}}",
-        iter, nfcn, fval, edm, lambda, grad_norm, dcovar
+        iter, nfcn, fval, edm, lambda, grad_norm, dcovar,
     );
 }
 
@@ -214,7 +214,16 @@ impl VariableMetricBuilder {
         let mut edm = seed.edm();
 
         let mut states = Vec::new();
-        let mut iter = 0usize;
+        trace_iteration(
+            0,
+            seed.nfcn(),
+            seed.fval(),
+            seed.edm(),
+            0.0,
+            seed.gradient().grad().norm(),
+            seed.error().dcovar(),
+        );
+        let mut iter = 1usize;
 
         loop {
             // 1. Newton step: step = -V * grad
@@ -439,8 +448,9 @@ impl VariableMetricBuilder {
 
         let v_new = v + &v_upd;
 
-        let sum_upd: f64 = v_upd.iter().map(|x| x.abs()).sum();
-        let sum_new: f64 = v_new.iter().map(|x| x.abs()).sum();
+        // Sum one triangle. A full-matrix sum counts each off-diagonal twice.
+        let sum_upd = sum_abs_upper(&v_upd);
+        let sum_new = sum_abs_upper(&v_new);
         let dcovar = if sum_new > 0.0 {
             0.5 * (error.dcovar() + sum_upd / sum_new)
         } else {
@@ -449,4 +459,16 @@ impl VariableMetricBuilder {
 
         (v_new, dcovar)
     }
+}
+
+/// Sum absolute values of the upper triangle, diagonal included.
+fn sum_abs_upper(m: &DMatrix<f64>) -> f64 {
+    let n = m.nrows();
+    let mut sum = 0.0;
+    for col in 0..n {
+        for row in 0..=col {
+            sum += m[(row, col)].abs();
+        }
+    }
+    sum
 }
