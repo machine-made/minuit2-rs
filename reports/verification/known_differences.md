@@ -21,7 +21,7 @@ This ledger records currently observed differences from differential verificatio
 - Details:
   - The extra C++ evaluations are seed-phase numerical-gradient probes counted by ROOT's `MnFcn`; they are not Hesse sweeps or covariance-squeeze work.
   - The fixed parameter is not differentiated as a variable slot in either implementation; the divergence appears before Migrad iteration 0 because ROOT counts the seed central-difference probes while minuit2-rs reaches the same fixed-parameter minimum without reproducing that extra seed work.
-  - Correctness metrics pass tolerances, including `quadratic3_fixx_migrad` parameter max abs diff `3.886512e-04` and `quadratic3_fixx_hesse` covariance max abs diff `9.940541e-10` in the current differential report.
+  - Correctness metrics pass tolerances, including `quadratic3_fixx_migrad` parameter max abs diff `3.886512e-04` and `quadratic3_fixx_hesse` covariance max abs diff `1.009614e-09` in the current differential report.
 - Disposition: explicit per-workload waiver; no global NFCN threshold change.
 - Next step:
   - If future fixed-parameter workloads show correctness degradation, revisit route (a) and reproduce the ROOT seed probe accounting in code.
@@ -36,7 +36,7 @@ This ledger records currently observed differences from differential verificatio
 - Expected: `yes`
 - Details:
   - Covariance presence now matches and is enforced in the differential gate.
-  - Covariance element max abs difference is currently ~0.39 (tolerance: 0.5), consistent with stopping at slightly different nearby points.
+  - Covariance element max abs difference is currently `1.787038e-01` (tolerance: 0.5), consistent with stopping at slightly different nearby points.
 - Disposition: `document`
 - Next step:
   - Add stricter Rosenbrock convergence workloads (lower tolerance and/or larger call budget) if tighter covariance parity is required.

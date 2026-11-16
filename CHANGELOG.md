@@ -27,13 +27,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 - The machine precision followed ROOT Minuit2. `eps` became four times
   `f64::EPSILON`. `eps2` became two times the square root of `eps`.
+- `MnMachinePrecision::compute_precision` set `f64::EPSILON`. It became the
+  value of `new()`, four times `f64::EPSILON`, as in ROOT's
+  `ComputePrecision`.
 - The forward cap of a line-search vertex grew with the best step on every
-  pass.
-- A symmetric vertex window on every pass put Hahn1 at fval 1.576822252813256,
-  outside the certified basin, so that window stayed out.
-- Halving a trial worse than the three stored points put strategy-2
-  Rosenbrock past the parameter limit 0.008, so that step stayed out.
+  pass, up to the overall step limit of 1000.
 - The seed stored a user Hessian diagonal as g2 when the function had no g2.
+  The negative-curvature escape of the seed kept it.
 - `rosenbrock2_migrad` and `rosenbrock2_minimize` fval moved from
   1.500342419704e-05 to 3.294567072291e-05. ROOT fval was 3.459747567500577e-05.
 - edm moved from 1.527164793786e-05 to 3.423047369382e-05. ROOT edm was
@@ -41,6 +41,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - nfcn moved from 152 to 142. ROOT nfcn was 140.
 - Parameters moved from 0.996166325646 and 0.992402698612 to 0.994468418655
   and 0.989120644009. ROOT parameters were 0.994149185750 and 0.988272151209.
+- The covariance of `rosenbrock2_migrad` and `rosenbrock2_minimize` moved away
+  from ROOT. Elements [0][0], [0][1] and [1][1] moved from 1.018333, 2.028876
+  and 4.052231 to 1.042177, 2.072850 and 4.132819. ROOT elements were 0.997644,
+  1.983639 and 3.954115.
+- The largest covariance difference to ROOT grew from 0.0981 to 0.1787. The
+  limit is 0.5.
+- The errors moved away from ROOT too. They moved from 1.009125 and 2.013015
+  to 1.020871 and 2.032933. ROOT errors were 0.998821 and 1.988496.
 - `rosenbrock2_migrad_strategy2` fval moved from 1.499992182613e-05 to
   3.294658278025e-05. ROOT fval was 2.975822646186212e-06.
 - edm moved from 1.526804509045e-05 to 3.423143307160e-05. ROOT edm was
@@ -60,6 +68,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   1.492603334513e-05. fval and the parameters did not move.
 - `quadratic3_fixx_hesse` edm moved from 1.49260333418e-05 to
   1.492603334305e-05. fval and the parameters did not move.
+- `quadratic3_fixx_hesse` covariance elements [0][0], [0][1] and [1][1] moved
+  from 0.10162601624357, -0.00406504064900 and 0.01016260162453 to
+  0.10162601624459, -0.00406504065053 and 0.01016260162465.
+- The errors of the two free parameters moved from 0.31878835650565 and
+  0.10080972981083 to 0.31878835650724 and 0.10080972981143. The error of the
+  fixed parameter did not move.
+- ROOT covariance elements were 0.10162601725420, -0.00406504077661 and
+  0.01016260163979. ROOT errors were 0.31878835809076 and 0.10080972988648.
+  The moves are 1.2e-13 to 1.6e-12.
 - Minos on parameter 0 moved its lower end from -1.0082332377850711 to
   -1.0082332377915708 and its upper end from 0.9974487592881941 to
   0.997448759281765.
@@ -79,6 +96,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Existing fits moved within the stated limits.
 - `rosenbrock2_migrad_strategy2` moved away from ROOT. The largest parameter
   difference grew from 4.2e-3 to 7.49e-3. The limit is 8e-3.
+- The covariance difference to ROOT of `rosenbrock2_migrad_strategy2` grew from
+  0.0491 to 0.1297. The limit is 0.5. The fval difference grew from 1.2e-5 to
+  3.0e-5.
 - `quadratic2_no_g2_migrad` has a relative nfcn difference to ROOT of 0.800,
   at its warn limit of 0.8.
 
