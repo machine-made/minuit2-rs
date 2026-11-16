@@ -24,6 +24,8 @@ pub fn mn_linesearch(
     const NEAR_EXISTING_POINT_TOLERANCE: f64 = 0.05;
     const INITIAL_STEP_LIMIT: f64 = 5.0;
     const BEST_STEP_EXPANSION: f64 = 2.0;
+    // Longest forward step of the open search, as in MnLineSearch.cxx:62.
+    const OVERALL_STEP_LIMIT: f64 = 1000.0;
     const MAX_PARABOLA_REFINEMENTS: usize = 12;
 
     let start_value = params.fval();
@@ -48,7 +50,14 @@ pub fn mn_linesearch(
         trial_lambda = INITIAL_STEP_LIMIT;
     }
 
-    trial_lambda = trial_lambda.clamp(NEAR_EXISTING_POINT_TOLERANCE, INITIAL_STEP_LIMIT);
+    // A negative vertex is a maximum along the step. MnLineSearch.cxx:137 sends
+    // the search to the step limit. Clamping it up to 0.05 tests a point next
+    // to the start and could end the search on a limit.
+    if trial_lambda < 0.0 {
+        trial_lambda = INITIAL_STEP_LIMIT;
+    } else {
+        trial_lambda = trial_lambda.clamp(NEAR_EXISTING_POINT_TOLERANCE, INITIAL_STEP_LIMIT);
+    }
 
     if (trial_lambda - 1.0).abs() < NEAR_EXISTING_POINT_TOLERANCE && unit_value < start_value {
         return MnParabolaPoint::new(best_lambda, best_value);
@@ -68,24 +77,39 @@ pub fn mn_linesearch(
     ]);
 
     let upper_step_limit = (BEST_STEP_EXPANSION * best_lambda.abs()).max(INITIAL_STEP_LIMIT);
+    // Length of the step taken from the best point when the parabola has no
+    // minimum. It starts at the initial limit and grows with the best step
+    // (MnLineSearch.cxx:219).
+    let mut open_step_limit = INITIAL_STEP_LIMIT;
 
     for _ in 0..MAX_PARABOLA_REFINEMENTS {
         let parabola = from_3_points(points[0], points[1], points[2]);
 
         if parabola.a() < prec.eps2() {
-            break;
-        }
+            // A parabola without a minimum gives no vertex to test. Instead of
+            // stopping, MnLineSearch.cxx:224-229 steps from the best point
+            // along the slope, so a search that starts on a limit leaves it.
+            open_step_limit = open_step_limit.max(BEST_STEP_EXPANSION * best_lambda.abs());
+            let slope = 2.0 * parabola.a() * best_lambda + parabola.b();
+            trial_lambda = if slope < 0.0 {
+                best_lambda + open_step_limit
+            } else {
+                best_lambda - open_step_limit
+            };
+            // The step range of MnLineSearch.cxx:239-245: -100 to 1000.
+            trial_lambda = trial_lambda.clamp(LOWER_STEP_LIMIT, OVERALL_STEP_LIMIT);
+        } else {
+            trial_lambda = parabola.min();
 
-        trial_lambda = parabola.min();
-
-        if trial_lambda > upper_step_limit {
-            trial_lambda = upper_step_limit;
-        }
-        if trial_lambda < LOWER_STEP_LIMIT {
-            trial_lambda = LOWER_STEP_LIMIT;
-        }
-        if trial_lambda < 0.0 && parabola.y(0.0) < parabola.y(trial_lambda) {
-            break;
+            if trial_lambda > upper_step_limit {
+                trial_lambda = upper_step_limit;
+            }
+            if trial_lambda < LOWER_STEP_LIMIT {
+                trial_lambda = LOWER_STEP_LIMIT;
+            }
+            if trial_lambda < 0.0 && parabola.y(0.0) < parabola.y(trial_lambda) {
+                break;
+            }
         }
 
         let min_spacing = NEAR_EXISTING_POINT_TOLERANCE * trial_lambda.abs().max(1.0);

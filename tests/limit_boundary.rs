@@ -44,3 +44,15 @@ fn doubly_limited_started_at_lower_bound_escapes() {
         r.params()[0]
     );
 }
+
+#[test]
+fn doubly_limited_started_at_upper_bound_escapes() {
+    let r = MnMigrad::new()
+        .add_limited("a", 5.0, 0.1, -5.0, 5.0) // start == upper bound of [-5,5]
+        .minimize(&quad);
+    assert!(
+        (r.params()[0] - 1.0).abs() < 1e-2,
+        "started at upper bound of [-5,5], should reach 1.0, got {}",
+        r.params()[0]
+    );
+}

@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Fixed
+
+- Migrad no longer ends on a limit with `valid=True` in a fit of two or more
+  parameters when a doubly limited parameter starts on that limit and the line
+  search meets a parabola without a minimum. On `quadratic2` the fit gave fval
+  3.6775 with `y` stuck on its limit; the minimum is -0.69956. The line search
+  now sends a negative parabola vertex to the step limit
+  (`MnLineSearch.cxx:137` in ROOT Minuit2 v6.36.08) and opens the step from the
+  best point when the parabola has no minimum (`MnLineSearch.cxx:224-229`).
+  Results of the twelve reference workloads do not change.
+
 ## [0.5.5] - 2026-10-31
 
 ### Changed
