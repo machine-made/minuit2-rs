@@ -76,7 +76,9 @@ pub fn mn_linesearch(
         MnParabolaPoint::new(trial_lambda, trial_value),
     ]);
 
-    let upper_step_limit = (BEST_STEP_EXPANSION * best_lambda.abs()).max(INITIAL_STEP_LIMIT);
+    // Forward cap of a vertex. It grows with the best step on every pass
+    // (MnLineSearch.cxx:219).
+    let mut upper_step_limit = (BEST_STEP_EXPANSION * best_lambda.abs()).max(INITIAL_STEP_LIMIT);
     // Length of the step taken from the best point when the parabola has no
     // minimum. It starts at the initial limit and grows with the best step
     // (MnLineSearch.cxx:219).
@@ -87,6 +89,10 @@ pub fn mn_linesearch(
 
     for _ in 0..MAX_PARABOLA_REFINEMENTS {
         let parabola = from_3_points(points[0], points[1], points[2]);
+        // The cap never passes the overall step limit (MnLineSearch.cxx:239-245).
+        upper_step_limit = upper_step_limit
+            .max(BEST_STEP_EXPANSION * best_lambda.abs())
+            .min(OVERALL_STEP_LIMIT);
         let is_open_step = parabola.a() < prec.eps2();
 
         if is_open_step {
@@ -320,5 +326,36 @@ mod tests {
         assert!(result.x.is_finite());
         assert!(result.y.is_finite());
         assert_eq!(result.y, 7.0);
+    }
+
+    /// f(t) = (t - 10000)^2 along the step. The minimum lies at 10000, far
+    /// beyond the step limit of 1000 (MnLineSearch.cxx:239-245).
+    struct FarQuadratic;
+    impl FCN for FarQuadratic {
+        fn value(&self, p: &[f64]) -> f64 {
+            (p[0] - 10000.0).powi(2)
+        }
+    }
+
+    #[test]
+    fn linesearch_vertex_cap_stays_within_overall_step_limit() {
+        let params = vec![MinuitParameter::new(0, "x", 0.0, 0.1)];
+        let trafo = MnUserTransformation::new(params);
+        let fcn = MnFcn::new(&FarQuadratic, &trafo);
+
+        let start = MinimumParameters::new(DVector::from_vec(vec![0.0]), 1.0e8);
+        let step = DVector::from_vec(vec![1.0]);
+        // gdel = step . grad = 1 * 2 * (0 - 10000)
+        let gdel = -20000.0;
+        let prec = MnMachinePrecision::new();
+
+        let result = mn_linesearch(&fcn, &start, &step, gdel, &prec);
+
+        assert!(
+            result.x <= 1000.0,
+            "accepted step {} is above the overall limit 1000",
+            result.x
+        );
+        assert!(result.y < 1.0e8, "line search should improve: {}", result.y);
     }
 }

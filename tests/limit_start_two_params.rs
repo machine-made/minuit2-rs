@@ -115,3 +115,13 @@ fn both_on_double_limits() {
         .minimize(&quadratic2);
     assert_closed_form(&r);
 }
+
+#[test]
+fn both_limits_y_starts_on_lower() {
+    let r = MnMigrad::new()
+        .add_limited("x", 0.4, 0.1, 0.0, 2.0)
+        .add_limited("y", -3.0, 0.1, -3.0, -1.0)
+        .tolerance(0.1)
+        .minimize(&quadratic2);
+    assert_closed_form(&r);
+}

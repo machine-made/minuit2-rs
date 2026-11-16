@@ -232,7 +232,18 @@ fn root_migrad_rosenbrock2_nfcn_stays_at_root_parity() {
         .minimize(&f);
 
     assert!(min.is_valid());
-    assert_eq!(min.nfcn(), 152);
+    // ROOT v6-36-08 reports 140 calls. The port reports 142: the halving step
+    // of MnLineSearch.cxx:271-281 is not in the port, so the count differs by 2.
+    // The exact pin shows any change of the port. The second assertion keeps
+    // the count within that known difference of ROOT.
+    const ROOT_NFCN: usize = 140;
+    assert_eq!(min.nfcn(), 142);
+    assert!(
+        min.nfcn().abs_diff(ROOT_NFCN) <= 2,
+        "nfcn {} differs from ROOT's {} by more than the known 2",
+        min.nfcn(),
+        ROOT_NFCN
+    );
 }
 
 #[test]

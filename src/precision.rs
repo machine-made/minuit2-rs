@@ -1,6 +1,6 @@
-/// Machine precision constants for numerical differentiation.
+/// Machine precision of the numerical steps.
 ///
-/// Uses `f64::EPSILON` (2^-52 ≈ 2.22e-16) as the machine epsilon basis.
+/// `eps` is four times `f64::EPSILON`. `eps2` is `2 * sqrt(eps)`.
 #[derive(Debug, Clone, Copy)]
 pub struct MnMachinePrecision {
     eps: f64,
@@ -8,21 +8,22 @@ pub struct MnMachinePrecision {
 }
 
 impl MnMachinePrecision {
-    /// Create a new precision object with default f64 epsilon.
+    /// Return the precision ROOT stores for double arithmetic.
     pub fn new() -> Self {
-        let eps = f64::EPSILON;
+        // MnMachinePrecision.cxx:26-27. Four times machine epsilon.
+        let eps = 4.0 * f64::EPSILON;
         Self {
             eps,
             eps2: 2.0 * eps.sqrt(),
         }
     }
 
-    /// Machine epsilon (~2.22e-16 for f64).
+    /// Return the stored machine epsilon.
     pub fn eps(&self) -> f64 {
         self.eps
     }
 
-    /// 2 * sqrt(eps), used as default step size for gradient calculations.
+    /// Return `2 * sqrt(eps)`.
     pub fn eps2(&self) -> f64 {
         self.eps2
     }
@@ -33,8 +34,12 @@ impl MnMachinePrecision {
         self.eps2 = 2.0 * eps.sqrt();
     }
 
+    /// Reset to the value ROOT's `ComputePrecision` finds for double arithmetic.
+    ///
+    /// The loop of MnMachinePrecision.cxx:29-56 ends at `8 * epstry` with
+    /// `epstry = 2^-53`. That is `4 * f64::EPSILON`, the value of `new()`.
     pub fn compute_precision(&mut self) {
-        self.set_precision(f64::EPSILON);
+        *self = Self::new();
     }
 }
 
@@ -51,8 +56,14 @@ mod tests {
     #[test]
     fn default_precision() {
         let p = MnMachinePrecision::new();
-        assert!((p.eps() - f64::EPSILON).abs() < 1e-30);
-        assert!((p.eps2() - 2.0 * f64::EPSILON.sqrt()).abs() < 1e-20);
+        let eps = 4.0 * f64::EPSILON;
+        // Both sides are the same expression. 4 * EPSILON = 2^-50 is a power of
+        // two, so its square root 2^-25 and the factor 2 are exact and both
+        // differences are 0. The bound 1e-30 is about 5 ulp of eps (ulp 2.0e-31).
+        assert!((p.eps() - eps).abs() < 1e-30);
+        // The bound 1e-20 is about 750 ulp of eps2 (ulp 1.3e-23). It leaves
+        // room for a few ulp if `sqrt` or the product rounded differently.
+        assert!((p.eps2() - 2.0 * eps.sqrt()).abs() < 1e-20);
     }
 
     #[test]
@@ -61,5 +72,19 @@ mod tests {
         p.set_precision(1e-10);
         assert!((p.eps() - 1e-10).abs() < 1e-25);
         assert!((p.eps2() - 2.0e-5).abs() < 1e-15);
+    }
+
+    /// ROOT's `ComputePrecision` ends at `8 * epstry` with `epstry = 2^-53`,
+    /// which is `4 * f64::EPSILON` (MnMachinePrecision.cxx:29-56). The result
+    /// is the value of the constructor, not `f64::EPSILON`.
+    #[test]
+    fn compute_precision_gives_root_value() {
+        let mut p = MnMachinePrecision::new();
+        p.set_precision(1e-10);
+        p.compute_precision();
+        let eps = 4.0 * f64::EPSILON;
+        // Same expression as the constructor, so the values are bit-equal.
+        assert_eq!(p.eps(), eps);
+        assert_eq!(p.eps2(), 2.0 * eps.sqrt());
     }
 }
