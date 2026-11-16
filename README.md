@@ -1,12 +1,12 @@
-![minuit2-rs banner](https://raw.githubusercontent.com/machine-made/minuit2-rs/main/assets/readme-banner-v2.png)
+![minuit2-rs banner](https://raw.githubusercontent.com/machine-made/minuit2-rs/main/assets/readme-banner-v3.jpg)
 
+[![CI](https://github.com/machine-made/minuit2-rs/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/machine-made/minuit2-rs/actions/workflows/ci.yml)
 [![Crates.io](https://img.shields.io/crates/v/minuit2.svg)](https://crates.io/crates/minuit2)
-[![Documentation](https://docs.rs/minuit2/badge.svg)](https://docs.rs/minuit2)
-[![CI](https://github.com/machine-made/minuit2-rs/actions/workflows/ci.yml/badge.svg)](https://github.com/machine-made/minuit2-rs/actions)
 [![MSRV](https://img.shields.io/badge/MSRV-1.85-blue.svg)](Cargo.toml)
 [![License](https://img.shields.io/badge/license-LGPL--2.1--or--later-blue.svg)](LICENSE)
+[![Documentation](https://docs.rs/minuit2/badge.svg)](https://docs.rs/minuit2)
 
-Pure Rust implementation of Minuit-style parameter optimization algorithms, tested against [ROOT Minuit2](https://github.com/root-project/root/tree/master/math/minuit2) as a numerical reference.
+`minuit2-rs` is a pure Rust implementation of Minuit-style parameter optimization algorithms, tested against [ROOT Minuit2](https://github.com/root-project/root/tree/master/math/minuit2) as a numerical reference.
 
 No hand-written `unsafe`. No ROOT, GSL, C, or C++ dependency.
 
@@ -1069,8 +1069,6 @@ compare numerical behavior against a reference baseline. They are not a legal
 provenance certificate. Downstream users with strict license-provenance
 requirements should review the implementation and audit trail for their own
 use case.
-
-See also: [DOC.md](DOC.md) for additional API documentation.
 
 ## License
 
