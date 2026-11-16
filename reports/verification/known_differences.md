@@ -31,6 +31,7 @@ This ledger records currently observed differences from differential verificatio
 - Workloads:
   - `rosenbrock2_migrad`
   - `rosenbrock2_minimize`
+  - `rosenbrock2_migrad_strategy2` (covariance element max abs difference `1.297395e-01`)
 - Classification: `algorithmic/path-efficiency`
 - Severity: `low` (correctness gate passes with explicit covariance tolerance)
 - Expected: `yes`

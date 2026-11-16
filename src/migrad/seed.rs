@@ -128,10 +128,14 @@ impl MigradSeedGenerator {
 
 /// Replace the heuristic g2 of `gradient` by the user Hessian diagonal.
 ///
-/// The function keeps the heuristic g2 when it has a g2 of its own, has no
-/// Hessian, or returns a Hessian that does not cover every external index. It
-/// gives no error and no log in the last case. ROOT indexes the Hessian by
-/// `iext * next + jext` with no check (`AnalyticalGradientCalculator.cxx:89`).
+/// The function keeps the heuristic g2 when it has no Hessian or returns a
+/// Hessian that does not cover every external index. It gives no error and no
+/// log in the last case. ROOT indexes the Hessian by `iext * next + jext` with
+/// no check (`AnalyticalGradientCalculator.cxx:89`).
+///
+/// It also keeps the heuristic g2 when the function has a g2 of its own. That
+/// is an open gap: ROOT reads the g2 of the function, and
+/// `AnalyticalGradientCalculator::compute` does not.
 fn hessian_diagonal_g2(
     fcn: &dyn FCNGradient,
     trafo: &MnUserTransformation,
