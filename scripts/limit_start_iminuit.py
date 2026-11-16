@@ -17,8 +17,7 @@ Output: one line per case with fval, values, nfcn and valid, then one line with
 the number of cases that failed the check.
 """
 
-from collections.abc import Sequence
-from typing import Final, TypeAlias, cast
+from typing import Final, Optional
 
 # iminuit 2.33.0 has no type stubs, so basedpyright strict reports them.
 import iminuit  # pyright: ignore[reportMissingTypeStubs]
@@ -27,9 +26,9 @@ from iminuit import Minuit  # pyright: ignore[reportMissingTypeStubs]
 NONE: Final[None] = None
 
 # lower and upper limit of one parameter; None leaves that side open
-Limits: TypeAlias = tuple[float | None, float | None]
+Limits = tuple[Optional[float], Optional[float]]
 # name, x start, x limits, y start, y limits, step of x, step of y
-Case: TypeAlias = tuple[str, float, Limits, float, Limits, float, float]
+Case = tuple[str, float, Limits, float, Limits, float, float]
 
 CASES: Final[list[Case]] = [
     ("1 both limited, y on upper end", 0.4, (0.0, 2.0), -1.0, (-3.0, -1.0), 0.1, 0.1),
@@ -79,7 +78,7 @@ def main() -> None:
         fval = m.fval
         if fval is None:
             raise SystemExit(f"case {name}: iminuit returned no fval")
-        values = ", ".join(f"{v:.9g}" for v in cast("Sequence[float]", m.values))
+        values = ", ".join(f"{float(v):.9g}" for v in m.values)
         print(
             f"case {name}: fval {fval:.9g}, values ({values}), "
             f"nfcn {m.nfcn}, valid {m.valid}"
