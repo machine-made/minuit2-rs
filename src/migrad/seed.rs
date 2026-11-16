@@ -84,8 +84,15 @@ impl MigradSeedGenerator {
         let fval = fcn.value(&trafo.transform(&int_values));
         let params = MinimumParameters::new(int_vec, fval);
 
-        // 3. Compute analytical gradient (user-provided, with g2/gstep heuristics)
-        let gradient = AnalyticalGradientCalculator::compute(fcn, trafo, &params);
+        // 3. Compute analytical gradient (user-provided, with g2/gstep heuristics).
+        // A user Hessian replaces that heuristic. MnSeedGenerator.cxx:168-180
+        // stores the Hessian diagonal as g2 and sets V to 1/g2.
+        let gradient = hessian_diagonal_g2(
+            fcn,
+            trafo,
+            &params,
+            AnalyticalGradientCalculator::compute(fcn, trafo, &params),
+        );
 
         // ROOT also routes analytical-gradient seeds through NegativeG2LineSearch
         // when the gradient calculator supplies non-positive G2 values.  In this
@@ -117,6 +124,34 @@ impl MigradSeedGenerator {
     ) -> MinimumSeed {
         Self::generate_with_gradient(fcn, trafo, strategy)
     }
+}
+
+fn hessian_diagonal_g2(
+    fcn: &dyn FCNGradient,
+    trafo: &MnUserTransformation,
+    params: &MinimumParameters,
+    gradient: FunctionGradient,
+) -> FunctionGradient {
+    if fcn.has_g2() || !fcn.has_hessian() {
+        return gradient;
+    }
+    let external = trafo.transform(params.vec().as_slice());
+    let Some(ext_g2) = AnalyticalGradientCalculator::g2(fcn, &external) else {
+        return gradient;
+    };
+    let n = gradient.grad().len();
+    let mut g2 = gradient.g2().clone();
+    for i in 0..n {
+        let ext_idx = trafo.ext_of_int(i);
+        if ext_idx >= ext_g2.len() {
+            return gradient;
+        }
+        let dxdi = trafo.dint2ext(ext_idx, params.vec()[i]);
+        g2[i] = dxdi * dxdi * ext_g2[ext_idx];
+    }
+    let mut out = FunctionGradient::new(gradient.grad().clone(), g2, gradient.gstep().clone());
+    out.set_analytical(true);
+    out
 }
 
 fn has_negative_g2(gradient: &FunctionGradient) -> bool {

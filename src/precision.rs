@@ -1,6 +1,6 @@
-/// Machine precision constants for numerical differentiation.
+/// Machine precision of the numerical steps.
 ///
-/// Uses `f64::EPSILON` (2^-52 ≈ 2.22e-16) as the machine epsilon basis.
+/// `eps` is four times `f64::EPSILON`. `eps2` is `2 * sqrt(eps)`.
 #[derive(Debug, Clone, Copy)]
 pub struct MnMachinePrecision {
     eps: f64,
@@ -8,21 +8,22 @@ pub struct MnMachinePrecision {
 }
 
 impl MnMachinePrecision {
-    /// Create a new precision object with default f64 epsilon.
+    /// Return the precision ROOT stores for double arithmetic.
     pub fn new() -> Self {
-        let eps = f64::EPSILON;
+        // MnMachinePrecision.cxx:26-27. Four times machine epsilon.
+        let eps = 4.0 * f64::EPSILON;
         Self {
             eps,
             eps2: 2.0 * eps.sqrt(),
         }
     }
 
-    /// Machine epsilon (~2.22e-16 for f64).
+    /// Return the stored machine epsilon.
     pub fn eps(&self) -> f64 {
         self.eps
     }
 
-    /// 2 * sqrt(eps), used as default step size for gradient calculations.
+    /// Return `2 * sqrt(eps)`.
     pub fn eps2(&self) -> f64 {
         self.eps2
     }
@@ -51,8 +52,9 @@ mod tests {
     #[test]
     fn default_precision() {
         let p = MnMachinePrecision::new();
-        assert!((p.eps() - f64::EPSILON).abs() < 1e-30);
-        assert!((p.eps2() - 2.0 * f64::EPSILON.sqrt()).abs() < 1e-20);
+        let eps = 4.0 * f64::EPSILON;
+        assert!((p.eps() - eps).abs() < 1e-30);
+        assert!((p.eps2() - 2.0 * eps.sqrt()).abs() < 1e-20);
     }
 
     #[test]

@@ -76,7 +76,9 @@ pub fn mn_linesearch(
         MnParabolaPoint::new(trial_lambda, trial_value),
     ]);
 
-    let upper_step_limit = (BEST_STEP_EXPANSION * best_lambda.abs()).max(INITIAL_STEP_LIMIT);
+    // Forward cap of a vertex. It grows with the best step on every pass
+    // (MnLineSearch.cxx:219).
+    let mut upper_step_limit = (BEST_STEP_EXPANSION * best_lambda.abs()).max(INITIAL_STEP_LIMIT);
     // Length of the step taken from the best point when the parabola has no
     // minimum. It starts at the initial limit and grows with the best step
     // (MnLineSearch.cxx:219).
@@ -87,6 +89,7 @@ pub fn mn_linesearch(
 
     for _ in 0..MAX_PARABOLA_REFINEMENTS {
         let parabola = from_3_points(points[0], points[1], points[2]);
+        upper_step_limit = upper_step_limit.max(BEST_STEP_EXPANSION * best_lambda.abs());
         let is_open_step = parabola.a() < prec.eps2();
 
         if is_open_step {

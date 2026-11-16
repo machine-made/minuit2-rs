@@ -13,16 +13,74 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   parameters. This happened when a doubly limited parameter started on its
   upper limit and the line search met a parabola without a minimum. On
   `quadratic2` the fit gave fval 3.6775 with `y` stuck on its limit. The minimum
-  is -0.69956. A start on the lower limit still needs the machine precision of
-  ROOT and follows in a later change.
+  is -0.69956. The lower-limit start followed in the precision change below.
 - The line search changes in three places. A negative parabola vertex now goes
   to the step limit (`MnLineSearch.cxx:137` in ROOT Minuit2 v6.36.08). A
   parabola without a minimum now opens the step from the best point
   (`MnLineSearch.cxx:224-229`). After an open step, the window for the next
   vertex follows the best point (`MnLineSearch.cxx:219` and `:234-245`).
 - The negative-vertex change also applies to fits that do not start on a limit.
-- The twelve reference workloads are unchanged. `scripts/compare_ref_vs_rust.py`
-  reproduces the reports in `reports/verification/` byte for byte.
+- The twelve reference workloads stayed inside the stated limits. Changed
+  lists the values that moved.
+
+### Changed
+
+- The machine precision followed ROOT Minuit2. `eps` became four times
+  `f64::EPSILON`. `eps2` became two times the square root of `eps`.
+- The forward cap of a line-search vertex grew with the best step on every
+  pass.
+- A symmetric vertex window on every pass put Hahn1 at fval 1.576822252813256,
+  outside the certified basin, so that window stayed out.
+- Halving a trial worse than the three stored points put strategy-2
+  Rosenbrock past the parameter limit 0.008, so that step stayed out.
+- The seed stored a user Hessian diagonal as g2 when the function had no g2.
+- `rosenbrock2_migrad` and `rosenbrock2_minimize` fval moved from
+  1.500342419704e-05 to 3.294567072291e-05. ROOT fval was 3.459747567500577e-05.
+- edm moved from 1.527164793786e-05 to 3.423047369382e-05. ROOT edm was
+  3.451850739606217e-05.
+- nfcn moved from 152 to 142. ROOT nfcn was 140.
+- Parameters moved from 0.996166325646 and 0.992402698612 to 0.994468418655
+  and 0.989120644009. ROOT parameters were 0.994149185750 and 0.988272151209.
+- `rosenbrock2_migrad_strategy2` fval moved from 1.499992182613e-05 to
+  3.294658278025e-05. ROOT fval was 2.975822646186212e-06.
+- edm moved from 1.526804509045e-05 to 3.423143307160e-05. ROOT edm was
+  2.980639536818047e-06.
+- nfcn moved from 160 to 150. ROOT nfcn was 162.
+- Parameters moved from 0.996166763841 and 0.992403558744 to 0.994468340792
+  and 0.989120490797. ROOT parameters were 0.998323497642 and 0.996609165756.
+- `quadratic2_lower_limited_migrad` fval moved from -0.6995599061026854 to
+  -0.6995599061088404. ROOT fval was -0.6995599061088406.
+- nfcn moved from 46 to 48. ROOT nfcn was 45.
+- Parameters moved from 1.307091608844 and -2.048903410818 to 1.307091639211
+  and -2.048903401202. ROOT parameters were 1.307091639211 and -2.048903401202.
+- `quadratic2_no_g2_migrad` nfcn moved from 9 to 10. ROOT nfcn was 2.
+- Parameters moved from 0.9999999999999992 and -2.0000000000000004 to 1 and
+  -2. ROOT parameters were 1 and -2.
+- `quadratic3_fixx_migrad` edm moved from 1.492603334512e-05 to
+  1.492603334513e-05. fval and the parameters did not move.
+- `quadratic3_fixx_hesse` edm moved from 1.49260333418e-05 to
+  1.492603334305e-05. fval and the parameters did not move.
+- Minos on parameter 0 moved its lower end from -1.0082332377850711 to
+  -1.0082332377915708 and its upper end from 0.9974487592881941 to
+  0.997448759281765.
+- Minos on parameter 1 moved its lower end from -0.5022370303122039 to
+  -0.5022370303130429 and its upper end from 0.5006039697188206 to
+  0.5006039697180208.
+- `quadratic2_minos_p0`, `quadratic2_minos_p1`, `quadratic2_scan_p0` and
+  `quadratic2_contours_01` shared one move of fval and of the parameters.
+- fval moved from -0.6995269602635593 to -0.6995269602634814. ROOT fval was
+  -0.6995269602629307.
+- Parameters moved from 1.312746182715 and -2.048209238576 to 1.312746182721
+  and -2.048209238575. ROOT parameters were 1.312746182767 and -2.048209238569.
+- edm moved from 3.306487787324e-05 to 3.306487793495e-05 on Minos and the
+  contours. The scan edm moved from 3.306487786942e-05 to 3.306487794182e-05.
+- `quadratic2_simplex` did not move.
+- Errors and covariance moved on every workload except `quadratic2_simplex`.
+- Existing fits moved within the stated limits.
+- `rosenbrock2_migrad_strategy2` moved away from ROOT. The largest parameter
+  difference grew from 4.2e-3 to 7.49e-3. The limit is 8e-3.
+- `quadratic2_no_g2_migrad` has a relative nfcn difference to ROOT of 0.800,
+  at its warn limit of 0.8.
 
 ## [0.5.5] - 2026-10-31
 
