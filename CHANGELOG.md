@@ -10,13 +10,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ### Fixed
 
 - Migrad no longer ends on a limit with `valid=True` in a fit of two or more
-  parameters when a doubly limited parameter starts on that limit and the line
-  search meets a parabola without a minimum. On `quadratic2` the fit gave fval
-  3.6775 with `y` stuck on its limit; the minimum is -0.69956. The line search
-  now sends a negative parabola vertex to the step limit
-  (`MnLineSearch.cxx:137` in ROOT Minuit2 v6.36.08) and opens the step from the
-  best point when the parabola has no minimum (`MnLineSearch.cxx:224-229`).
-  Results of the twelve reference workloads do not change.
+  parameters. This happened when a doubly limited parameter started on its
+  upper limit and the line search met a parabola without a minimum. On
+  `quadratic2` the fit gave fval 3.6775 with `y` stuck on its limit. The minimum
+  is -0.69956. A start on the lower limit still needs the machine precision of
+  ROOT and follows in a later change.
+- The line search changes in three places. A negative parabola vertex now goes
+  to the step limit (`MnLineSearch.cxx:137` in ROOT Minuit2 v6.36.08). A
+  parabola without a minimum now opens the step from the best point
+  (`MnLineSearch.cxx:224-229`). After an open step, the window for the next
+  vertex follows the best point (`MnLineSearch.cxx:219` and `:234-245`).
+- The negative-vertex change also applies to fits that do not start on a limit.
+- The twelve reference workloads are unchanged. `scripts/compare_ref_vs_rust.py`
+  reproduces the reports in `reports/verification/` byte for byte.
 
 ## [0.5.5] - 2026-10-31
 

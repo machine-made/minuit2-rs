@@ -81,11 +81,15 @@ pub fn mn_linesearch(
     // minimum. It starts at the initial limit and grows with the best step
     // (MnLineSearch.cxx:219).
     let mut open_step_limit = INITIAL_STEP_LIMIT;
+    // Set when an open step has moved `best_lambda`. Until then the vertex
+    // bounds below are the ones fixed before the loop.
+    let mut best_moved_by_open_step = false;
 
     for _ in 0..MAX_PARABOLA_REFINEMENTS {
         let parabola = from_3_points(points[0], points[1], points[2]);
+        let is_open_step = parabola.a() < prec.eps2();
 
-        if parabola.a() < prec.eps2() {
+        if is_open_step {
             // A parabola without a minimum gives no vertex to test. Instead of
             // stopping, MnLineSearch.cxx:224-229 steps from the best point
             // along the slope, so a search that starts on a limit leaves it.
@@ -101,11 +105,24 @@ pub fn mn_linesearch(
         } else {
             trial_lambda = parabola.min();
 
-            if trial_lambda > upper_step_limit {
-                trial_lambda = upper_step_limit;
+            // After an open step moved the best point, the bound fixed before
+            // the loop is stale and would cut the vertex short of the minimum.
+            // The window then follows the best point: MnLineSearch.cxx:219 and
+            // :234-237 set it, :239-245 add the overall range -100 to 1000.
+            let (lower_bound, upper_bound) = if best_moved_by_open_step {
+                let window = INITIAL_STEP_LIMIT.max(BEST_STEP_EXPANSION * best_lambda.abs());
+                (
+                    (best_lambda - window).max(LOWER_STEP_LIMIT),
+                    (best_lambda + window).min(OVERALL_STEP_LIMIT),
+                )
+            } else {
+                (LOWER_STEP_LIMIT, upper_step_limit)
+            };
+            if trial_lambda > upper_bound {
+                trial_lambda = upper_bound;
             }
-            if trial_lambda < LOWER_STEP_LIMIT {
-                trial_lambda = LOWER_STEP_LIMIT;
+            if trial_lambda < lower_bound {
+                trial_lambda = lower_bound;
             }
             if trial_lambda < 0.0 && parabola.y(0.0) < parabola.y(trial_lambda) {
                 break;
@@ -125,6 +142,7 @@ pub fn mn_linesearch(
         if trial_value < best_value {
             best_lambda = trial_lambda;
             best_value = trial_value;
+            best_moved_by_open_step |= is_open_step;
         }
 
         replace_worst_point(&mut points, MnParabolaPoint::new(trial_lambda, trial_value));

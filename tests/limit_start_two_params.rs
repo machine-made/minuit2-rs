@@ -12,13 +12,30 @@ fn assert_closed_form(r: &FunctionMinimum) {
     let f = r.fval();
     let x = r.params()[0];
     let y = r.params()[1];
+    // The failure this file guards against ended with valid=true on a limit, so
+    // the status is part of the check.
+    assert!(
+        r.is_valid(),
+        "result is not valid: fval {f}, x {x}, y {y}, edm {}, nfcn {}",
+        r.edm(),
+        r.nfcn()
+    );
+    // 1e-4 on fval: the cases below end within 1.4e-6 of the closed form and
+    // iminuit 2.33.0 (scripts/limit_start_iminuit.py) within 2.9e-5, so 1e-4 is
+    // 3 times the iminuit worst case. The failure this file guards against ends
+    // at fval 3.6775, 4.4 above the minimum.
     assert!(
         (f - (-0.69956)).abs() < 1e-4,
         "fval {f}, x {x}, y {y}, edm {}, nfcn {}, expected -0.69956 within 1e-4",
         r.edm(),
         r.nfcn()
     );
+    // -1.5: the failing runs ended with y on its limit at -1; the minimum is at
+    // y = -2.04903, so -1.5 separates the two.
     assert!(y < -1.5, "y {y} stayed on the limit, expected y below -1.5");
+    // 1e-2 on x and y: the cases below end within 1.2e-3 in x and 3.8e-4 in y
+    // of the closed form, and iminuit 2.33.0 within 2.4e-3 in x and 2.5e-3 in y,
+    // so 1e-2 is 4 times the iminuit worst case.
     assert!(
         (y - (-2.04903)).abs() < 1e-2,
         "y {y}, expected -2.04903 within 1e-2"
