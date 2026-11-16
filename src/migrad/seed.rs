@@ -84,9 +84,9 @@ impl MigradSeedGenerator {
         let fval = fcn.value(&trafo.transform(&int_values));
         let params = MinimumParameters::new(int_vec, fval);
 
-        // 3. Compute analytical gradient (user-provided, with g2/gstep heuristics).
-        // A user Hessian replaces that heuristic. MnSeedGenerator.cxx:168-180
-        // stores the Hessian diagonal as g2 and sets V to 1/g2.
+        // The calculator stores a user g2 as dxdi squared times g2.
+        // A Hessian diagonal replaces the step-size g2 when g2 is absent.
+        // ROOT sets the seed covariance diagonal to 1/g2.
         let gradient = hessian_diagonal_g2(
             fcn,
             trafo,
@@ -94,11 +94,8 @@ impl MigradSeedGenerator {
             AnalyticalGradientCalculator::compute(fcn, trafo, &params),
         );
 
-        // ROOT also routes analytical-gradient seeds through NegativeG2LineSearch
-        // when the gradient calculator supplies non-positive G2 values. The
-        // heuristic g2 of AnalyticalGradientCalculator is positive. A user
-        // Hessian can give a non-positive diagonal, so the guard is reachable
-        // with a user Hessian.
+        // A user g2 or a Hessian diagonal can be non-positive.
+        // The seed then runs the negative-curvature escape.
         let had_negative_g2 = has_negative_g2(&gradient);
         let (params, gradient, nfcn) = if had_negative_g2 {
             escape_negative_curvature_analytical(fcn, params, gradient, trafo)
@@ -126,16 +123,12 @@ impl MigradSeedGenerator {
     }
 }
 
-/// Replace the heuristic g2 of `gradient` by the user Hessian diagonal.
+/// Replace a step-size g2 by the diagonal of the user Hessian.
 ///
-/// The function keeps the heuristic g2 when it has no Hessian or returns a
-/// Hessian that does not cover every external index. It gives no error and no
-/// log in the last case. ROOT indexes the Hessian by `iext * next + jext` with
-/// no check (`AnalyticalGradientCalculator.cxx:89`).
-///
-/// It also keeps the heuristic g2 when the function has a g2 of its own. That
-/// is an open gap: ROOT reads the g2 of the function, and
-/// `AnalyticalGradientCalculator::compute` does not.
+/// The calculator already stores a user g2 in internal coordinates.
+/// A user g2 stays in the gradient.
+/// A missing Hessian leaves the gradient unchanged.
+/// A short Hessian leaves the gradient unchanged. The caller gets no error.
 fn hessian_diagonal_g2(
     fcn: &dyn FCNGradient,
     trafo: &MnUserTransformation,
@@ -234,7 +227,7 @@ fn escape_negative_curvature_analytical(
     trafo: &MnUserTransformation,
 ) -> (MinimumParameters, FunctionGradient, usize) {
     let mn_fcn = MnFcn::new(fcn, trafo);
-    // The recompute keeps the user Hessian diagonal as g2, as the first gradient does.
+    // The recompute calls the same calculator as the first gradient.
     let mut recompute_gradient = |params: &MinimumParameters, _previous: &FunctionGradient| {
         hessian_diagonal_g2(
             fcn,

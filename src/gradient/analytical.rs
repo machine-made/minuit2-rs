@@ -1,11 +1,8 @@
-//! Analytical gradient calculator from user-provided gradients.
+//! Analytical gradient from the gradient of the function.
 //!
-//! Takes gradients computed by the user (in external parameter space) and
-//! transforms them to internal parameter space using the chain rule:
-//!   `g_int[i] = g_ext[i] * dext/dint[i]`
-//!
-//! Also computes g2 (second derivative heuristic) and gstep (step sizes) using
-//! the same logic as InitialGradientCalculator.
+//! Each internal derivative is the external derivative times dx/dint.
+//! A supplied g2 becomes dxdi squared times that g2.
+//! A function with no g2 keeps the step-size estimate.
 
 use nalgebra::DVector;
 
@@ -17,10 +14,11 @@ use crate::user_transformation::MnUserTransformation;
 pub struct AnalyticalGradientCalculator;
 
 impl AnalyticalGradientCalculator {
-    /// Compute gradient from user-provided analytical gradient.
+    /// Transform the gradient of the function into internal coordinates.
     ///
-    /// Takes the user's gradient (in external parameter space), transforms it
-    /// to internal space using the chain rule, and provides g2 and gstep heuristics.
+    /// The calculator multiplies each external derivative by dx/dint.
+    /// A supplied g2 is stored as dxdi squared times that g2.
+    /// A function with no g2 keeps the step-size estimate.
     pub fn compute(
         fcn: &dyn FCNGradient,
         trafo: &MnUserTransformation,
@@ -35,6 +33,17 @@ impl AnalyticalGradientCalculator {
 
         // Call user's analytical gradient (returns gradient in external space)
         let ext_gradient = fcn.gradient(&external_vals);
+
+        // A supplied g2 is external. ROOT stores dxdi squared times that g2.
+        // A short vector is not a supplied g2, so the step-size estimate stays.
+        // A Hessian does not replace a supplied g2.
+        let supplied_g2 = if fcn.has_g2() {
+            let ext_g2 = fcn.g2(&external_vals);
+            let covers = (0..n).all(|i| trafo.ext_of_int(i) < ext_g2.len());
+            if covers { Some(ext_g2) } else { None }
+        } else {
+            None
+        };
 
         // Transform gradient from external to internal space using chain rule:
         // g_int[i] = g_ext[ext_idx] * dext/dint[i]
@@ -55,9 +64,8 @@ impl AnalyticalGradientCalculator {
             let g_ext = ext_gradient[ext_idx];
             let g_int = g_ext * dext_dint;
 
-            // Compute g2 heuristic (second derivative estimate)
-            // Use the same heuristic as InitialGradientCalculator:
-            // g2 = 2 * error_def / dirin^2
+            // dirin is the internal step from the parameter error.
+            // gstep uses dirin. g2 uses it only when the function has no g2.
             let werr = trafo.parameters()[ext_idx].error();
             let sav = trafo.int2ext(ext_idx, int_val);
 
@@ -84,8 +92,13 @@ impl AnalyticalGradientCalculator {
             // Direction magnitude: average of forward/backward internal steps
             let dirin = (0.5 * (vplu.abs() + vmin.abs())).max(gsmin);
 
-            // Heuristic g2: assumes parabolic shape
-            let g2i = 2.0 * error_def / (dirin * dirin);
+            // A supplied g2 uses the ROOT factor dxdi * dxdi.
+            // The step-size estimate stays when the function has no g2.
+            let g2i = if let Some(ext_g2) = &supplied_g2 {
+                dext_dint * dext_dint * ext_g2[ext_idx]
+            } else {
+                2.0 * error_def / (dirin * dirin)
+            };
             let mut gstepi = gsmin.max(0.1 * dirin);
 
             // For limited parameters, cap step at 0.5

@@ -25,6 +25,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- The analytical seed stored the g2 of the function. The factor was dxdi squared.
+- The escape from negative curvature used that same g2.
+- A function with no g2 kept the step-size estimate.
+- The twelve reference workloads did not supply g2. Their values did not move.
 - The machine precision followed ROOT Minuit2. `eps` became four times
   `f64::EPSILON`. `eps2` became two times the square root of `eps`.
 - `MnMachinePrecision::compute_precision` set `f64::EPSILON`. It became the
