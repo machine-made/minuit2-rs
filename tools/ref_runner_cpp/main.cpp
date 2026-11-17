@@ -1,3 +1,17 @@
+// ROOT Minuit2 tag v6-36-08: strategy-2 Rosenbrock trace evidence.
+// From the repository root, with an existing ROOT reference build:
+//   evidence=$(mktemp -d)
+//   g++ -O2 -std=c++17 -Ithird_party/root_ref/math/minuit2/inc \
+//     tools/ref_runner_cpp/main.cpp \
+//     third_party/root_ref_build/minuit2/lib/libMinuit2.a \
+//     third_party/root_ref_build/minuit2/lib/libMinuit2Math.a \
+//     -lpthread -o "$evidence/ref_runner"
+//   MINUIT2_ROOT_TRACE_JSONL="$evidence/rosenbrock2_migrad_strategy2.root.jsonl" \
+//     "$evidence/ref_runner" --workload rosenbrock2_migrad_strategy2
+// This writes the trace stored at
+// reports/verification/raw/trace/rosenbrock2_migrad_strategy2.root.jsonl.
+// Compare with cmp before copying it there. Other workloads retain their trace format.
+
 #include <Minuit2/FCNBase.h>
 #include <Minuit2/FunctionMinimum.h>
 #include <Minuit2/MinosError.h>
@@ -43,9 +57,26 @@ using ROOT::Minuit2::MnUserParameters;
 
 namespace {
 
+std::string trace_vector(ROOT::Minuit2::MnAlgebraicVector const &v)
+{
+   std::ostringstream out;
+   out << std::setprecision(17) << "[";
+   for (unsigned int i = 0; i < v.size(); ++i) {
+      if (i != 0) {
+         out << ",";
+      }
+      out << v(i);
+   }
+   out << "]";
+   return out.str();
+}
+
 class JsonlTraceObject final : public MnTraceObject {
 public:
-   explicit JsonlTraceObject(char const *path) : fOut(path, std::ios::out | std::ios::trunc) {}
+   explicit JsonlTraceObject(char const *path, bool detailed)
+      : fOut(path, std::ios::out | std::ios::trunc), fDetailed(detailed)
+   {
+   }
 
    void operator()(int iter, ROOT::Minuit2::MinimumState const &state) override
    {
@@ -58,22 +89,46 @@ public:
       grad_norm = std::sqrt(grad_norm);
 
       fOut << "{\"runner\":\"root-minuit2\",\"iter\":" << iter << ",\"nfcn\":" << state.NFcn()
-           << ",\"fval\":" << std::setprecision(17) << state.Fval() << ",\"edm\":" << state.Edm()
-           << ",\"lambda\":null,\"grad_norm\":" << grad_norm << ",\"dcovar\":" << state.Error().Dcovar()
-           << "}\n";
+           << ",\"fval\":" << std::setprecision(17) << state.Fval() << ",\"edm\":" << state.Edm();
+      if (!fDetailed) {
+         fOut << ",\"lambda\":null";
+      }
+      fOut << ",\"grad_norm\":" << grad_norm << ",\"dcovar\":" << state.Error().Dcovar();
+      if (fDetailed) {
+         auto const &x = state.Vec();
+         fOut << ",\"step\":";
+         if (fPrevious.size() == x.size() && x.size() > 0) {
+            ROOT::Minuit2::MnAlgebraicVector step(x.size());
+            for (unsigned int i = 0; i < x.size(); ++i) {
+               step(i) = x(i) - fPrevious[i];
+            }
+            fOut << trace_vector(step);
+         } else {
+            fOut << "null";
+         }
+         fOut << ",\"grad\":" << trace_vector(grad)
+              << ",\"g2\":" << trace_vector(state.Gradient().G2()) << ",\"x\":" << trace_vector(x);
+         fPrevious.clear();
+         if (x.size() > 0) {
+            fPrevious.assign(x.Data(), x.Data() + x.size());
+         }
+      }
+      fOut << "}\n";
    }
 
 private:
    std::ofstream fOut;
+   bool fDetailed;
+   std::vector<double> fPrevious;
 };
 
-JsonlTraceObject *maybe_attach_trace(MnMigrad &migrad)
+JsonlTraceObject *maybe_attach_trace(MnMigrad &migrad, bool detailed = false)
 {
    char const *path = std::getenv("MINUIT2_ROOT_TRACE_JSONL");
    if (path == nullptr || path[0] == '\0') {
       return nullptr;
    }
-   auto *trace = new JsonlTraceObject(path);
+   auto *trace = new JsonlTraceObject(path, detailed);
    migrad.Minimizer().Builder().SetTraceObject(*trace);
    return trace;
 }
@@ -486,7 +541,9 @@ RunResult run_rosenbrock2_migrad_strategy2()
    upar.Add("y", 0.0, 0.1);
 
    MnMigrad migrad(fcn, upar, MnStrategy(2));
+   JsonlTraceObject *trace = maybe_attach_trace(migrad, true);
    FunctionMinimum minimum = migrad();
+   delete trace;
 
    RunResult result;
    result.workload = "rosenbrock2_migrad_strategy2";

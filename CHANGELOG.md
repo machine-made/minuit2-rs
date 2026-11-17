@@ -15,8 +15,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - The covariance update now sums one triangle, counting each off-diagonal element once.
 - The line search follows ROOT Minuit2 v6-36-08 when shortening trials, opening steps, bounding parabola vertices, and halving poor trials.
   Zero-coordinate step bounds, adaptive point spacing, and the shared twelve-trial counter also follow ROOT.
-- The line search counts trials as ROOT does.
-  The Hahn1 fit from start 2 now stops at ROOT's point instead of one that is closer to the certified values.
+- With tolerance 0.1, the Hahn1 fit from start 2 now stops where ROOT Minuit2 stops.
+  Relative errors against certified values are 1.347e-2 for b1 and 1.678e-2 for b4.
+  Releases before this change ended within 1e-2 of the certified values because their line search differed from ROOT's.
 - Analytical seeds use the Hessian diagonal when supplied, otherwise the function's finite g2, otherwise the step-size estimate.
   After a negative-curvature step, a finite user g2 takes precedence over the Hessian diagonal.
   Limited parameters scale second derivatives by the squared transformation derivative.
@@ -125,13 +126,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Migrad now performs ROOT's Hesse-verified convergence check (strategy ≥ 2, or
   strategy 1 with `dcovar > 0.05`) and continues minimization from the Hesse
   state with an enlarged call budget when Hesse raises EDM above tolerance,
-  mirroring `VariableMetricBuilder.cxx`. The NIST Hahn1 fit from the standard
-  starting values with plain strategy-1 Migrad now ends valid — previously it
-  returned `valid=False` (`above_max_edm`). Later correction: with the
-  ROOT-equal line search (see Unreleased) and tolerance 0.1, the fit stops at
-  the same point as ROOT Minuit2. The fval differs by 2.8e-8 and the calls
-  are 469 against 456. That point is 1.347e-2 (b1) and 1.678e-2 (b4) from the
-  certified values. Includes MnHesse parity fixes (cross-term `yy` caching, sag-failure failed state), a
+  mirroring `VariableMetricBuilder.cxx`. The NIST Hahn1 dataset now reaches the
+  certified solution from the standard starting values with plain strategy-1
+  Migrad — previously it returned `valid=False` (`above_max_edm`). Includes
+  MnHesse parity fixes (cross-term `yy` caching, sag-failure failed state), a
   NaN/negative-EDM guard in the inner loop, and correct call-limit reporting
   for fits that converge inside the extended verification budget.
   (minuit2-rs-j2j)

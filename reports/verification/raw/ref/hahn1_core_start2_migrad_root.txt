@@ -1,3 +1,16 @@
+# ROOT Minuit2 tag: v6-36-08
+# Generator: tools/hahn1_probe/hahn1_probe.cpp
+# Build from the repository root (with an existing ROOT reference build):
+# evidence=$(mktemp -d)
+# g++ -O2 -std=c++17 -Ithird_party/root_ref/math/minuit2/inc \
+#   tools/hahn1_probe/hahn1_probe.cpp \
+#   third_party/root_ref_build/minuit2/lib/libMinuit2.a \
+#   third_party/root_ref_build/minuit2/lib/libMinuit2Math.a \
+#   -lpthread -o "$evidence/hahn_root"
+# cp tools/hahn1_probe/hahn1_dataset.txt "$evidence/hahn1.txt"
+# Run: env -C "$evidence" ./hahn_root 0.1
+# Strategy: 1; tolerance: 0.1; initial error: 0.1 per parameter
+# Dataset: NIST Hahn1, start 2
 valid=1 fval=1.532556828 edm=0.000140787 nfcn=456
 b1 1.0921524521e+00 cert 1.0776351733e+00 rel 1.347e-02
 b2 -1.2364426928e-01 cert -1.2269296921e-01 rel 7.754e-03

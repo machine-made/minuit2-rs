@@ -12,14 +12,20 @@
 // The next n lines hold x and y.
 // The next line holds the seven start-2 values and the line after it holds the seven certified values.
 //
-// Build with g++ -O2 -std=c++17 -w.
-// Add the include directories math/minuit2/inc, math/mathcore/inc and core/foundation/inc of a ROOT v6-36-08 source tree.
-// Add the include directory inc and the build directory of a ROOT Minuit2 build of the same tag.
-// Link the static libraries libMinuit2.a and libMinuit2Math.a from that build, then -lpthread.
-// In this repository the source tree is third_party/root_ref and the build is third_party/root_ref_build/minuit2.
+// Build from the repository root with an existing ROOT reference build:
+//   evidence=$(mktemp -d)
+//   g++ -O2 -std=c++17 -Ithird_party/root_ref/math/minuit2/inc \
+//     tools/hahn1_probe/hahn1_probe.cpp \
+//     third_party/root_ref_build/minuit2/lib/libMinuit2.a \
+//     third_party/root_ref_build/minuit2/lib/libMinuit2Math.a \
+//     -lpthread -o "$evidence/hahn_root"
+//   cp tools/hahn1_probe/hahn1_dataset.txt "$evidence/hahn1.txt"
+//   env -C "$evidence" ./hahn_root 0.1 > "$evidence/hahn1_core_start2_migrad_root.txt"
 //
 // The ROOT output at tolerance 0.1 is stored in
 // reports/verification/raw/ref/hahn1_core_start2_migrad_root.txt.
+// To regenerate it, retain its leading # provenance lines and replace the body
+// with the output above, comparing the bodies with diff first.
 // The test tests/hahn1_core_parity.rs pins the port to that output.
 #include <Minuit2/FCNBase.h>
 #include <Minuit2/MnMigrad.h>
@@ -48,12 +54,41 @@ struct F : FCNBase {
   double Up() const override { return 1.0; }
 };
 int main(int argc, char** argv) { double tol = argc > 1 ? atof(argv[1]) : 0.1;
-  FILE* f = fopen("hahn1.txt","r"); int n; fscanf(f,"%d",&n);
+  FILE* f = fopen("hahn1.txt","r");
+  if (!f) {
+    fprintf(stderr, "cannot open hahn1.txt\n");
+    return 1;
+  }
+  int n;
+  if (fscanf(f,"%d",&n) != 1 || n <= 0) {
+    fprintf(stderr, "invalid point count in hahn1.txt\n");
+    fclose(f);
+    return 1;
+  }
   F fcn; fcn.x.resize(n); fcn.y.resize(n);
-  for (int i=0;i<n;i++) fscanf(f,"%lf %lf",&fcn.x[i],&fcn.y[i]);
+  for (int i=0;i<n;i++) {
+    if (fscanf(f,"%lf %lf",&fcn.x[i],&fcn.y[i]) != 2) {
+      fprintf(stderr, "invalid observation %d in hahn1.txt\n", i+1);
+      fclose(f);
+      return 1;
+    }
+  }
   std::vector<double> s(7), c(7);
-  for (int i=0;i<7;i++) fscanf(f,"%lf",&s[i]);
-  for (int i=0;i<7;i++) fscanf(f,"%lf",&c[i]);
+  for (int i=0;i<7;i++) {
+    if (fscanf(f,"%lf",&s[i]) != 1) {
+      fprintf(stderr, "invalid start value b%d in hahn1.txt\n", i+1);
+      fclose(f);
+      return 1;
+    }
+  }
+  for (int i=0;i<7;i++) {
+    if (fscanf(f,"%lf",&c[i]) != 1) {
+      fprintf(stderr, "invalid certified value b%d in hahn1.txt\n", i+1);
+      fclose(f);
+      return 1;
+    }
+  }
+  fclose(f);
   MnUserParameters up;
   for (int i=0;i<7;i++) { char nm[8]; snprintf(nm,8,"b%d",i+1); up.Add(nm, s[i], 0.1); }
   MnMigrad migrad(fcn, up, MnStrategy(1));
