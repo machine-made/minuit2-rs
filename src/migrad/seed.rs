@@ -84,9 +84,9 @@ impl MigradSeedGenerator {
         let fval = fcn.value(&trafo.transform(&int_values));
         let params = MinimumParameters::new(int_vec, fval);
 
-        // 3. Compute analytical gradient (user-provided, with g2/gstep heuristics).
-        // A user Hessian replaces that heuristic. MnSeedGenerator.cxx:168-180
-        // stores the Hessian diagonal as g2 and sets V to 1/g2.
+        // The calculator stores a user g2 only when no Hessian exists.
+        // The seed stores the Hessian diagonal when a Hessian exists.
+        // The covariance diagonal is 1/g2.
         let gradient = hessian_diagonal_g2(
             fcn,
             trafo,
@@ -94,11 +94,8 @@ impl MigradSeedGenerator {
             AnalyticalGradientCalculator::compute(fcn, trafo, &params),
         );
 
-        // ROOT also routes analytical-gradient seeds through NegativeG2LineSearch
-        // when the gradient calculator supplies non-positive G2 values. The
-        // heuristic g2 of AnalyticalGradientCalculator is positive. A user
-        // Hessian can give a non-positive diagonal, so the guard is reachable
-        // with a user Hessian.
+        // A user g2 or a Hessian diagonal can be non-positive.
+        // The seed then runs the negative-curvature escape.
         let had_negative_g2 = has_negative_g2(&gradient);
         let (params, gradient, nfcn) = if had_negative_g2 {
             escape_negative_curvature_analytical(fcn, params, gradient, trafo)
@@ -126,29 +123,38 @@ impl MigradSeedGenerator {
     }
 }
 
-/// Replace the heuristic g2 of `gradient` by the user Hessian diagonal.
+/// Store the Hessian diagonal when the function has a Hessian.
 ///
-/// The function keeps the heuristic g2 when it has no Hessian or returns a
-/// Hessian that does not cover every external index. It gives no error and no
-/// log in the last case. ROOT indexes the Hessian by `iext * next + jext` with
-/// no check (`AnalyticalGradientCalculator.cxx:89`).
-///
-/// It also keeps the heuristic g2 when the function has a g2 of its own. That
-/// is an open gap: ROOT reads the g2 of the function, and
-/// `AnalyticalGradientCalculator::compute` does not.
+/// The calculator leaves g2 unset in that case.
+/// The seed then stores dxdi squared times that diagonal.
+/// A user g2 stays only when the function has no Hessian.
+/// A missing or short Hessian leaves the gradient unchanged.
 fn hessian_diagonal_g2(
     fcn: &dyn FCNGradient,
     trafo: &MnUserTransformation,
     params: &MinimumParameters,
     gradient: FunctionGradient,
 ) -> FunctionGradient {
-    if fcn.has_g2() || !fcn.has_hessian() {
+    if !fcn.has_hessian() {
         return gradient;
     }
     let external = trafo.transform(params.vec().as_slice());
-    let Some(ext_g2) = AnalyticalGradientCalculator::g2(fcn, &external) else {
+    let Some(ext_g2) = AnalyticalGradientCalculator::hessian_diagonal(fcn, &external) else {
         return gradient;
     };
+    store_external_diagonal(trafo, params, gradient, &ext_g2)
+}
+
+/// Store dxdi squared times an external diagonal.
+///
+/// A bounded parameter adds no second derivative of the transform.
+/// A short diagonal leaves the gradient unchanged.
+fn store_external_diagonal(
+    trafo: &MnUserTransformation,
+    params: &MinimumParameters,
+    gradient: FunctionGradient,
+    ext_g2: &[f64],
+) -> FunctionGradient {
     let n = gradient.grad().len();
     let mut g2 = gradient.g2().clone();
     for i in 0..n {
@@ -157,9 +163,6 @@ fn hessian_diagonal_g2(
             return gradient;
         }
         let dxdi = trafo.dint2ext(ext_idx, params.vec()[i]);
-        // ROOT computes dxdi * H_ext * dxdj with no curvature term
-        // d2x/dint2 * grad_ext for a bounded parameter
-        // (AnalyticalGradientCalculator.cxx:83-91). The port does the same.
         g2[i] = dxdi * dxdi * ext_g2[ext_idx];
     }
     let mut out = FunctionGradient::new(gradient.grad().clone(), g2, gradient.gstep().clone());
@@ -234,14 +237,17 @@ fn escape_negative_curvature_analytical(
     trafo: &MnUserTransformation,
 ) -> (MinimumParameters, FunctionGradient, usize) {
     let mn_fcn = MnFcn::new(fcn, trafo);
-    // The recompute keeps the user Hessian diagonal as g2, as the first gradient does.
+    // After a step the escape prefers a finite user g2.
+    // The Hessian diagonal is used when that g2 is absent.
     let mut recompute_gradient = |params: &MinimumParameters, _previous: &FunctionGradient| {
-        hessian_diagonal_g2(
-            fcn,
-            trafo,
-            params,
-            AnalyticalGradientCalculator::compute(fcn, trafo, params),
-        )
+        let grad = AnalyticalGradientCalculator::compute(fcn, trafo, params);
+        let external = trafo.transform(params.vec().as_slice());
+        let Some(ext_g2) =
+            AnalyticalGradientCalculator::external_second_derivative(fcn, trafo, &external)
+        else {
+            return grad;
+        };
+        store_external_diagonal(trafo, params, grad, &ext_g2)
     };
     let (params, gradient) = escape_negative_curvature_with(
         &mn_fcn,
