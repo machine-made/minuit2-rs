@@ -120,8 +120,23 @@ fn load_hahn1(path: &Path) -> Hahn1Dataset {
     }
 }
 
+// ROOT Minuit2 v6-36-08 result for this fit: strategy 1, tolerance 0.1, error 0.1, start 2.
+// Source file: reports/verification/raw/ref/hahn1_core_start2_migrad_root.txt.
+// The program that made it is tools/hahn1_probe/hahn1_probe.cpp.
+const ROOT_FVAL: f64 = 1.532556828;
+const ROOT_NFCN: usize = 456;
+const ROOT_PARAMS: [f64; 7] = [
+    1.0921524521e+00,
+    -1.2364426928e-01,
+    4.1023021838e-03,
+    -1.4502052372e-06,
+    -5.7671451500e-03,
+    2.4123541679e-04,
+    -1.2428333949e-07,
+];
+
 #[test]
-fn hahn1_core_start2_reaches_certified_solution() {
+fn hahn1_core_start2_matches_root_and_stays_near_certified_solution() {
     let ds = load_hahn1(&repo_path("examples/data/nist/Hahn1.dat"));
     let fcn = Hahn1Fcn {
         x: ds.x.clone(),
@@ -153,10 +168,13 @@ fn hahn1_core_start2_reaches_certified_solution() {
     );
 
     let params = min.params();
+
+    // ROOT v6-36-08 itself ends at 1.347e-2 (b1) and 1.678e-2 (b4) from the certified values.
+    // The bound is ROOT's largest value rounded up.
     for (i, (&got, &cert)) in params.iter().zip(ds.certified.iter()).enumerate() {
         let rel = (got - cert).abs() / cert.abs().max(1e-300);
         assert!(
-            rel <= 1e-2,
+            rel <= 2e-2,
             "b{} fitted {:.10e} vs certified {:.10e}, relative error {:.3e}",
             i + 1,
             got,
@@ -164,4 +182,40 @@ fn hahn1_core_start2_reaches_certified_solution() {
             rel
         );
     }
+
+    // Measured port difference is 2.8e-8, and ROOT prints 10 digits.
+    let fval_rel = (min.fval() - ROOT_FVAL).abs() / ROOT_FVAL;
+    assert!(
+        fval_rel <= 1e-6,
+        "Hahn1 fval {} differs from ROOT {} by {:.3e}",
+        min.fval(),
+        ROOT_FVAL,
+        fval_rel
+    );
+
+    // Measured largest difference is 2.7e-6, and the fit stops at an EDM of 1e-4.
+    // The last digits of a parameter are not determined at that EDM.
+    // The bound is 30 times the measured value and far below the 1e-2 distance to the certified values.
+    for (i, (&got, &root)) in params.iter().zip(ROOT_PARAMS.iter()).enumerate() {
+        let rel = (got - root).abs() / root.abs();
+        assert!(
+            rel <= 1e-4,
+            "b{} fitted {:.10e} vs ROOT {:.10e}, relative difference {:.3e}",
+            i + 1,
+            got,
+            root,
+            rel
+        );
+    }
+
+    // Measured call count is 469 against 456, a gap of 2.9 percent.
+    // The cause of the gap is open and tracked by card m2-nfcn-accounting.
+    let nfcn_rel = (min.nfcn() as f64 - ROOT_NFCN as f64).abs() / ROOT_NFCN as f64;
+    assert!(
+        nfcn_rel <= 0.05,
+        "Hahn1 nfcn {} differs from ROOT {} by {:.3e}",
+        min.nfcn(),
+        ROOT_NFCN,
+        nfcn_rel
+    );
 }

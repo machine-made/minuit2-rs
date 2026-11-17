@@ -268,6 +268,7 @@ fn assert_step_size(seed: &MinimumSeed, trafo: &MnUserTransformation) {
             "g2[{i}] = {}, expected {expected}",
             g2[i]
         );
+        // Reciprocation preserves the 1e-12 relative rounding allowance above.
         // The diagonal of the seed covariance is 1/g2, not the identity value 1.
         let diag = seed.error().matrix()[(i, i)];
         assert!(
@@ -528,4 +529,44 @@ fn position_dependent_g2_follows_the_moved_point() {
         (seed.gradient().g2()[0] - at_start).abs() > 1.0,
         "g2 stayed at the initial value {at_start}"
     );
+}
+
+/// f = 3 x^2 + 2 xy + 2 y^2 has H = [[6,2],[2,4]].
+/// H^-1 = [[4,-2],[-2,6]] / 20; the seed stores H^-1, before user scaling.
+struct CoupledQuadratic;
+
+impl FCN for CoupledQuadratic {
+    fn value(&self, p: &[f64]) -> f64 {
+        3.0 * p[0] * p[0] + 2.0 * p[0] * p[1] + 2.0 * p[1] * p[1]
+    }
+}
+
+impl FCNGradient for CoupledQuadratic {
+    fn gradient(&self, p: &[f64]) -> Vec<f64> {
+        vec![6.0 * p[0] + 2.0 * p[1], 2.0 * p[0] + 4.0 * p[1]]
+    }
+}
+
+#[test]
+fn strategy2_analytical_seed_contains_the_full_inverse_hessian() {
+    let trafo = MnUserTransformation::new(vec![
+        MinuitParameter::new(0, "x", 0.0, 0.1),
+        MinuitParameter::new(1, "y", 0.0, 0.1),
+    ]);
+    let seed =
+        MigradSeedGenerator::generate_with_gradient(&CoupledQuadratic, &trafo, &MnStrategy::new(2));
+    assert!(seed.error().is_valid());
+    // Successful Hesse constructs MinimumError with the literal dcovar 0.0.
+    assert_eq!(seed.error().dcovar(), 0.0);
+    let expected = [[0.2, -0.1], [-0.1, 0.3]];
+    for (i, row) in expected.iter().enumerate() {
+        for (j, value) in row.iter().enumerate() {
+            // Quadratic differences have no truncation error; 1e-9 covers cancellation and inversion rounding.
+            assert!(
+                (seed.error().matrix()[(i, j)] - value).abs() < 1e-9,
+                "seed covariance ({i},{j}) = {}, expected {value}",
+                seed.error().matrix()[(i, j)]
+            );
+        }
+    }
 }

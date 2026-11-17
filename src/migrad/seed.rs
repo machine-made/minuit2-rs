@@ -1,7 +1,8 @@
-//! Migrad seed generator.
+//! Migrad seed.
 //!
-//! Creates the initial `MinimumSeed` by evaluating the FCN, computing a
-//! numerical gradient, and building `V0 = diag(1/g2_i)`.
+//! Evaluates the function and the gradient, then sets the covariance
+//! diagonal to 1/g2. Strategy 2 replaces that covariance with the
+//! inverse Hessian.
 
 use nalgebra::{DMatrix, DVector};
 
@@ -9,6 +10,7 @@ use crate::fcn::FCNGradient;
 use crate::gradient::{
     AnalyticalGradientCalculator, InitialGradientCalculator, Numerical2PGradientCalculator,
 };
+use crate::hesse::calculator as hesse_calculator;
 use crate::linesearch::mn_linesearch;
 use crate::minimum::error::MinimumError;
 use crate::minimum::gradient::FunctionGradient;
@@ -63,6 +65,8 @@ impl MigradSeedGenerator {
         let (error, edm) = build_seed_error_and_edm(&gradient, n, eps, had_negative_g2);
 
         let state = MinimumState::new(params, error, gradient, edm, fcn.num_of_calls());
+        // Strategy 2 replaces the diagonal seed with the inverse Hessian.
+        let state = hesse_seed(fcn, state, trafo, strategy);
 
         MinimumSeed::new(state, trafo.clone())
     }
@@ -71,7 +75,7 @@ impl MigradSeedGenerator {
     pub fn generate_with_gradient(
         fcn: &dyn FCNGradient,
         trafo: &MnUserTransformation,
-        _strategy: &MnStrategy,
+        strategy: &MnStrategy,
     ) -> MinimumSeed {
         let n = trafo.variable_parameters();
         let eps = trafo.precision().eps();
@@ -107,9 +111,16 @@ impl MigradSeedGenerator {
         // numerical seed path.
         let (error, edm) = build_seed_error_and_edm(&gradient, n, eps, had_negative_g2);
 
-        // Note: analytical-gradient seeding counts the initial FCN evaluation;
-        // any NegativeG2 line-search evaluations are included in `nfcn`.
+        // The analytical seed counts the initial evaluation. A negative-curvature
+        // escape adds its own evaluations to `nfcn`.
         let state = MinimumState::new(params, error, gradient, edm, nfcn);
+        // Strategy 2 replaces the diagonal seed with the inverse Hessian.
+        let state = if strategy.strategy() == 2 {
+            let mn_fcn = MnFcn::new(fcn, trafo);
+            hesse_seed(&mn_fcn, state, trafo, strategy)
+        } else {
+            state
+        };
 
         MinimumSeed::new(state, trafo.clone())
     }
@@ -172,6 +183,24 @@ fn store_external_diagonal(
 
 fn has_negative_g2(gradient: &FunctionGradient) -> bool {
     gradient.g2().iter().any(|&g2| g2 <= 0.0)
+}
+
+/// Replace a strategy-2 seed with the Hesse covariance.
+///
+/// Other strategies keep the diagonal seed. Hesse uses the call budget
+/// `200 + 100 n + 5 n^2` when the caller passes no limit.
+fn hesse_seed(
+    fcn: &MnFcn,
+    state: MinimumState,
+    trafo: &MnUserTransformation,
+    strategy: &MnStrategy,
+) -> MinimumState {
+    if strategy.strategy() != 2 {
+        return state;
+    }
+    let n = state.parameters().vec().len();
+    let maxcalls = 200 + 100 * n + 5 * n * n;
+    hesse_calculator::calculate(fcn, &state, trafo, strategy, maxcalls).state
 }
 
 fn build_seed_error_and_edm(

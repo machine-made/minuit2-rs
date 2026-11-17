@@ -9,104 +9,47 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
-- Migrad no longer ends on a limit with `valid=True` in a fit of two or more
-  parameters. This happened when a doubly limited parameter started on its
-  upper limit and the line search met a parabola without a minimum. On
-  `quadratic2` the fit gave fval 3.6775 with `y` stuck on its limit. The minimum
-  is -0.69956. The lower-limit start followed in the precision change below.
-- The line search changes in three places. A negative parabola vertex now goes
-  to the step limit (`MnLineSearch.cxx:137` in ROOT Minuit2 v6.36.08). A
-  parabola without a minimum now opens the step from the best point
-  (`MnLineSearch.cxx:224-229`). After an open step, the window for the next
-  vertex follows the best point (`MnLineSearch.cxx:219` and `:234-245`).
-- The negative-vertex change also applies to fits that do not start on a limit.
-- The twelve reference workloads stayed inside the stated limits. Changed
-  lists the values that moved.
+- Migrad can leave a parameter limit when the line-search parabola has no minimum.
+  On `quadratic2`, the former upper-limit result was 3.6775; the minimum is -0.69956.
+- Strategy 2 now computes the full inverse Hessian before its first step, including the analytical-gradient path.
+- The covariance update now sums one triangle, counting each off-diagonal element once.
+- The line search follows ROOT Minuit2 v6-36-08 when shortening trials, opening steps, bounding parabola vertices, and halving poor trials.
+  Zero-coordinate step bounds, adaptive point spacing, and the shared twelve-trial counter also follow ROOT.
+- With tolerance 0.1, the Hahn1 fit from start 2 now stops where ROOT Minuit2 stops.
+  Relative errors against certified values are 1.347e-2 for b1 and 1.678e-2 for b4.
+  Releases before this change ended within 1e-2 of the certified values because their line search differed from ROOT's.
+- Analytical seeds use the Hessian diagonal when supplied, otherwise the function's finite g2, otherwise the step-size estimate.
+  After a negative-curvature step, a finite user g2 takes precedence over the Hessian diagonal.
+  Limited parameters scale second derivatives by the squared transformation derivative.
+- Against released 0.5.5, the Rosenbrock results change as follows.
+  `rosenbrock2_minimize` shares the strategy-1 results.
+
+  | Quantity | 0.5.5 | Current | ROOT v6-36-08 |
+  |---|---|---|---|
+  | Strategy-1 fval | 1.500342419704e-05 | 3.459740876221e-05 | 3.459747567501e-05 |
+  | Strategy-1 EDM | 1.527164793786e-05 | 3.451709943513e-05 | 3.451850739606e-05 |
+  | Strategy-1 calls | 152 | 143 | 140 |
+  | Strategy-1 x | 0.996166325646 | 0.994149191534 | 0.994149185750 |
+  | Strategy-1 y | 0.992402698612 | 0.988272162645 | 0.988272151209 |
+  | Strategy-2 fval | 1.499992182613e-05 | 2.975823963030e-06 | 2.975822646186e-06 |
+  | Strategy-2 EDM | 1.526804509045e-05 | 2.980256746000e-06 | 2.980639536818e-06 |
+  | Strategy-2 calls | 160 | 168 | 162 |
+  | Strategy-2 x | 0.996166763841 | 0.998323497264 | 0.998323497642 |
+  | Strategy-2 y | 0.992403558744 | 0.996609164995 | 0.996609165756 |
+
+- Maximum Rosenbrock covariance differences from ROOT shrink from 0.0981 to 1.4e-8 for strategy 1, and from 0.0491 to 7.8e-9 for strategy 2.
+  Errors also approach ROOT's values.
+- All twelve reference workloads remain within their limits.
+  Full parameters, errors, covariance, and smaller changes on the other workloads are recorded in [reports/verification/](reports/verification/).
 
 ### Changed
 
-- The analytical seed stored dxdi squared times the Hessian diagonal when the function had a Hessian.
-- The seed stored dxdi squared times the g2 when the function had a g2 and no Hessian.
-- After a step, the escape stored the g2 of the function when that g2 was finite.
-- After a step, the escape stored the Hessian diagonal when the function had a Hessian and no finite g2.
-- A function with no g2 and no Hessian kept the step-size estimate.
-- The seed ignored a supplied g2 that held a NaN or an infinity, or that was shorter than the list of external parameters.
-- The seed then used the Hessian diagonal or the step-size estimate.
-- The twelve reference workloads did not supply a g2. Their values did not move.
-- The machine precision followed ROOT Minuit2. `eps` became four times
-  `f64::EPSILON`. `eps2` became two times the square root of `eps`.
-- `MnMachinePrecision::compute_precision` set `f64::EPSILON`. It became the
-  value of `new()`, four times `f64::EPSILON`, as in ROOT's
-  `ComputePrecision`.
-- The forward cap of a line-search vertex grew with the best step on every
-  pass, up to the overall step limit of 1000.
-- `rosenbrock2_migrad` and `rosenbrock2_minimize` fval moved from
-  1.500342419704e-05 to 3.294567072291e-05. ROOT fval was 3.459747567500577e-05.
-- edm moved from 1.527164793786e-05 to 3.423047369382e-05. ROOT edm was
-  3.451850739606217e-05.
-- nfcn moved from 152 to 142. ROOT nfcn was 140.
-- Parameters moved from 0.996166325646 and 0.992402698612 to 0.994468418655
-  and 0.989120644009. ROOT parameters were 0.994149185750 and 0.988272151209.
-- The covariance of `rosenbrock2_migrad` and `rosenbrock2_minimize` moved away
-  from ROOT. Elements [0][0], [0][1] and [1][1] moved from 1.018333, 2.028876
-  and 4.052231 to 1.042177, 2.072850 and 4.132819. ROOT elements were 0.997644,
-  1.983639 and 3.954115.
-- The largest covariance difference to ROOT grew from 0.0981 to 0.1787. The
-  limit is 0.5.
-- The errors moved away from ROOT too. They moved from 1.009125 and 2.013015
-  to 1.020871 and 2.032933. ROOT errors were 0.998821 and 1.988496.
-- `rosenbrock2_migrad_strategy2` fval moved from 1.499992182613e-05 to
-  3.294658278025e-05. ROOT fval was 2.975822646186212e-06.
-- edm moved from 1.526804509045e-05 to 3.423143307160e-05. ROOT edm was
-  2.980639536818047e-06.
-- nfcn moved from 160 to 150. ROOT nfcn was 162.
-- Parameters moved from 0.996166763841 and 0.992403558744 to 0.994468340792
-  and 0.989120490797. ROOT parameters were 0.998323497642 and 0.996609165756.
-- `quadratic2_lower_limited_migrad` fval moved from -0.6995599061026854 to
-  -0.6995599061088404. ROOT fval was -0.6995599061088406.
-- nfcn moved from 46 to 48. ROOT nfcn was 45.
-- Parameters moved from 1.307091608844 and -2.048903410818 to 1.307091639211
-  and -2.048903401202. ROOT parameters were 1.307091639211 and -2.048903401202.
-- `quadratic2_no_g2_migrad` nfcn moved from 9 to 10. ROOT nfcn was 2.
-- Parameters moved from 0.9999999999999992 and -2.0000000000000004 to 1 and
-  -2. ROOT parameters were 1 and -2.
-- `quadratic3_fixx_migrad` edm moved from 1.492603334512e-05 to
-  1.492603334513e-05. fval and the parameters did not move.
-- `quadratic3_fixx_hesse` edm moved from 1.49260333418e-05 to
-  1.492603334305e-05. fval and the parameters did not move.
-- `quadratic3_fixx_hesse` covariance elements [0][0], [0][1] and [1][1] moved
-  from 0.10162601624357, -0.00406504064900 and 0.01016260162453 to
-  0.10162601624459, -0.00406504065053 and 0.01016260162465.
-- The errors of the two free parameters moved from 0.31878835650565 and
-  0.10080972981083 to 0.31878835650724 and 0.10080972981143. The error of the
-  fixed parameter did not move.
-- ROOT covariance elements were 0.10162601725420, -0.00406504077661 and
-  0.01016260163979. ROOT errors were 0.31878835809076 and 0.10080972988648.
-  The moves are 1.2e-13 to 1.6e-12.
-- Minos on parameter 0 moved its lower end from -1.0082332377850711 to
-  -1.0082332377915708 and its upper end from 0.9974487592881941 to
-  0.997448759281765.
-- Minos on parameter 1 moved its lower end from -0.5022370303122039 to
-  -0.5022370303130429 and its upper end from 0.5006039697188206 to
-  0.5006039697180208.
-- `quadratic2_minos_p0`, `quadratic2_minos_p1`, `quadratic2_scan_p0` and
-  `quadratic2_contours_01` shared one move of fval and of the parameters.
-- fval moved from -0.6995269602635593 to -0.6995269602634814. ROOT fval was
-  -0.6995269602629307.
-- Parameters moved from 1.312746182715 and -2.048209238576 to 1.312746182721
-  and -2.048209238575. ROOT parameters were 1.312746182767 and -2.048209238569.
-- edm moved from 3.306487787324e-05 to 3.306487793495e-05 on Minos and the
-  contours. The scan edm moved from 3.306487786942e-05 to 3.306487794182e-05.
-- `quadratic2_simplex` did not move.
-- Errors and covariance moved on every workload except `quadratic2_simplex`.
-- Existing fits moved within the stated limits.
-- `rosenbrock2_migrad_strategy2` moved away from ROOT. The largest parameter
-  difference grew from 4.2e-3 to 7.49e-3. The limit is 8e-3.
-- The covariance difference to ROOT of `rosenbrock2_migrad_strategy2` grew from
-  0.0491 to 0.1297. The limit is 0.5. The fval difference grew from 1.2e-5 to
-  3.0e-5.
-- `quadratic2_no_g2_migrad` has a relative nfcn difference to ROOT of 0.800,
-  at its warn limit of 0.8.
+- Machine precision now matches ROOT: `eps` is four times `f64::EPSILON`, and `eps2` is twice its square root.
+  `MnMachinePrecision::compute_precision` returns the same precision as `new()`.
+- Migrad traces start with one seed record at `iter: 0`.
+  Accepted iterations start at 1 and keep increasing across continuation passes.
+  Analytical trace call counts add subsequent evaluations to the stored seed count, so they cannot jump backward.
+  Full analytical seed call accounting remains open.
 
 ## [0.5.5] - 2026-10-31
 

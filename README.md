@@ -866,17 +866,20 @@ ROOT `v6-36-08` differential harness — the only apples-to-apples measurement):
 
 | Workload | C++ (ROOT) | Rust | Δ |
 |----------|-----------:|-----:|---|
-| Rosenbrock — Migrad | 140 | 152 | +9% |
-| Rosenbrock — Migrad, strategy 2 | 162 | 160 | −1% |
-| Quadratic, lower-limited — Migrad | 45 | 46 | +2% |
+| Rosenbrock — Migrad | 140 | 143 | +2% |
+| Rosenbrock — Migrad, strategy 2 | 162 | 168 | +4% |
+| Quadratic, lower-limited — Migrad | 45 | 48 | +7% |
 | Simplex | 19 | 19 | 0% |
 | Minos (p0) | 38 | 13 | fewer (seed accounting, D-001) |
 | Quadratic (fixed param) — Hesse | 39 | 13 | fewer (seed accounting, D-001) |
 | Quadratic (fixed param) — Migrad | 29 | 20 | fewer (seed accounting, D-001) |
 
 The minimization workloads land within about ±10% of ROOT's call counts. The
-v0.5.2 Hesse-verified convergence check spends extra verification calls on some
-fits (Rosenbrock strategy 1: +9%) and is what fixed the Hahn1 dataset. Where
+Hahn1 fit from start 2 used 469 calls
+against ROOT's 456 (+2.9%) when measured, and stops at ROOT's point. ROOT's result comes from the
+[Hahn1 probe](tools/hahn1_probe/hahn1_probe.cpp);
+[`tests/hahn1_core_parity.rs`](tests/hahn1_core_parity.rs) requires a count within 5% of ROOT's
+and does not pin 469. This count does not come from `compare_ref_vs_rust.py`. Where
 Rust spends notably fewer calls, the difference is a documented seed-phase
 accounting gap (D-001 in `reports/verification/known_differences.md`), not a
 shortcut in the minimization itself.
@@ -959,9 +962,10 @@ files — `cargo test --all-features`):
   See `reports/parity/nist_hard_baseline.md`: BoxBOD passes plain in both libs,
   and iminuit also fails Lanczos3 and MGH09 plain. The Hahn1 core divergence was
   fixed in v0.5.2 (ROOT's Hesse-verified continuation, see CHANGELOG): plain
-  strategy-1 Migrad now reaches the certified Hahn1 solution from the NIST
-  starting values (`tests/hahn1_core_parity.rs`), and the recipe's explicit
-  rescaling is no longer required for it.
+  strategy-1 Migrad now ends valid from the NIST starting values. With
+  tolerance 0.1 it stops at the same point as ROOT Minuit2 (fval difference
+  2.8e-8, 469 calls against 456). That point is 1.347e-2 (b1) and 1.678e-2 (b4)
+  from the certified values (`tests/hahn1_core_parity.rs`).
 - **Property-based metamorphic tests** (`tests/proptest_metamorphic.rs`) —
   randomized translation / scaling / permutation / start-point invariances via
   `proptest`; oracle-free, over many sampled inputs.
