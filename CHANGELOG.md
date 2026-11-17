@@ -25,10 +25,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
-- The analytical seed stored the g2 of the function. The factor was dxdi squared.
-- The escape from negative curvature used that same g2.
-- A function with no g2 kept the step-size estimate.
-- The twelve reference workloads did not supply g2. Their values did not move.
+- The analytical seed stored dxdi squared times the Hessian diagonal when the function had a Hessian.
+- The seed stored dxdi squared times the g2 when the function had a g2 and no Hessian.
+- After a step, the escape stored the g2 of the function when that g2 was finite.
+- After a step, the escape stored the Hessian diagonal when the function had a Hessian and no finite g2.
+- A function with no g2 and no Hessian kept the step-size estimate.
+- The seed ignored a supplied g2 that held a NaN or an infinity.
+- The seed then used the Hessian diagonal or the step-size estimate.
+- The twelve reference workloads did not supply a g2. Their values did not move.
 - The machine precision followed ROOT Minuit2. `eps` became four times
   `f64::EPSILON`. `eps2` became two times the square root of `eps`.
 - `MnMachinePrecision::compute_precision` set `f64::EPSILON`. It became the
@@ -36,8 +40,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   `ComputePrecision`.
 - The forward cap of a line-search vertex grew with the best step on every
   pass, up to the overall step limit of 1000.
-- The seed stored a user Hessian diagonal as g2 when the function had no g2.
-  The negative-curvature escape of the seed kept it.
 - `rosenbrock2_migrad` and `rosenbrock2_minimize` fval moved from
   1.500342419704e-05 to 3.294567072291e-05. ROOT fval was 3.459747567500577e-05.
 - edm moved from 1.527164793786e-05 to 3.423047369382e-05. ROOT edm was

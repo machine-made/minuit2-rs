@@ -1,8 +1,10 @@
 //! Analytical gradient from the gradient of the function.
 //!
 //! Each internal derivative is the external derivative times dx/dint.
-//! A supplied g2 becomes dxdi squared times that g2.
-//! A function with no g2 keeps the step-size estimate.
+//! The seed stores a Hessian diagonal when a Hessian exists.
+//! The seed stores a user g2 when no Hessian exists.
+//! After a step, the escape prefers a finite user g2.
+//! A function with no g2 and no Hessian keeps the step-size estimate.
 
 use nalgebra::DVector;
 
@@ -17,8 +19,9 @@ impl AnalyticalGradientCalculator {
     /// Transform the gradient of the function into internal coordinates.
     ///
     /// The calculator multiplies each external derivative by dx/dint.
-    /// A supplied g2 is stored as dxdi squared times that g2.
-    /// A function with no g2 keeps the step-size estimate.
+    /// A user g2 is stored only when the function has no Hessian.
+    /// A short or non-finite g2 is not stored.
+    /// The step-size estimate stays in that case.
     pub fn compute(
         fcn: &dyn FCNGradient,
         trafo: &MnUserTransformation,
@@ -34,13 +37,16 @@ impl AnalyticalGradientCalculator {
         // Call user's analytical gradient (returns gradient in external space)
         let ext_gradient = fcn.gradient(&external_vals);
 
-        // A supplied g2 is external. ROOT stores dxdi squared times that g2.
-        // A short vector is not a supplied g2, so the step-size estimate stays.
-        // A Hessian does not replace a supplied g2.
-        let supplied_g2 = if fcn.has_g2() {
+        // operator() stores a user g2 only when no Hessian exists.
+        // A short vector or a non-finite entry is not a supplied g2.
+        // The step-size estimate stays in that case.
+        let supplied_g2 = if fcn.has_g2() && !fcn.has_hessian() {
             let ext_g2 = fcn.g2(&external_vals);
-            let covers = (0..n).all(|i| trafo.ext_of_int(i) < ext_g2.len());
-            if covers { Some(ext_g2) } else { None }
+            if g2_is_supplied(&ext_g2, trafo, n) {
+                Some(ext_g2)
+            } else {
+                None
+            }
         } else {
             None
         };
@@ -92,8 +98,8 @@ impl AnalyticalGradientCalculator {
             // Direction magnitude: average of forward/backward internal steps
             let dirin = (0.5 * (vplu.abs() + vmin.abs())).max(gsmin);
 
-            // A supplied g2 uses the ROOT factor dxdi * dxdi.
-            // The step-size estimate stays when the function has no g2.
+            // A stored g2 uses the factor dxdi squared.
+            // The step-size estimate stays when no g2 is stored.
             let g2i = if let Some(ext_g2) = &supplied_g2 {
                 dext_dint * dext_dint * ext_g2[ext_idx]
             } else {
@@ -125,33 +131,49 @@ impl AnalyticalGradientCalculator {
         fcn.has_hessian()
     }
 
+    /// Return the external second derivative.
+    ///
+    /// A finite user g2 wins.
+    /// The calculator skips a NaN or an infinity.
+    /// The calculator reads the Hessian diagonal when no user g2 remains.
     pub fn g2(fcn: &dyn FCN, parameters: &[f64]) -> Option<Vec<f64>> {
         if fcn.has_g2() {
-            Some(fcn.g2(parameters))
-        } else if fcn.has_hessian() {
-            let h = fcn.hessian(parameters);
-            if h.is_empty() {
-                None
-            } else {
-                let mut n = 0usize;
-                while n * (n + 1) / 2 < h.len() {
-                    n += 1;
-                }
-                if n * (n + 1) / 2 != h.len() {
-                    return None;
-                }
-                let mut out = Vec::new();
-                for i in 0..n {
-                    let diag = i * (i + 3) / 2;
-                    out.push(h[diag]);
-                }
-                Some(out)
+            let ext = fcn.g2(parameters);
+            if !ext.is_empty() && ext.iter().all(|v| v.is_finite()) {
+                return Some(ext);
             }
-        } else {
-            None
         }
+        Self::hessian_diagonal(fcn, parameters)
     }
 
+    /// Return the external Hessian diagonal.
+    pub(crate) fn hessian_diagonal(fcn: &dyn FCN, parameters: &[f64]) -> Option<Vec<f64>> {
+        if !fcn.has_hessian() {
+            return None;
+        }
+        packed_diagonal(&fcn.hessian(parameters))
+    }
+
+    /// Return the external g2 that the escape stores after a step.
+    ///
+    /// A finite user g2 that covers every variable parameter wins.
+    /// The calculator reads the Hessian diagonal when that g2 is absent.
+    pub(crate) fn external_second_derivative(
+        fcn: &dyn FCN,
+        trafo: &MnUserTransformation,
+        parameters: &[f64],
+    ) -> Option<Vec<f64>> {
+        let n = trafo.variable_parameters();
+        if fcn.has_g2() {
+            let ext = fcn.g2(parameters);
+            if g2_is_supplied(&ext, trafo, n) {
+                return Some(ext);
+            }
+        }
+        Self::hessian_diagonal(fcn, parameters)
+    }
+
+    /// Return the packed Hessian of the function.
     pub fn hessian(fcn: &dyn FCN, parameters: &[f64]) -> Option<Vec<f64>> {
         if fcn.has_hessian() {
             Some(fcn.hessian(parameters))
@@ -159,6 +181,31 @@ impl AnalyticalGradientCalculator {
             None
         }
     }
+}
+
+/// Return true when every variable parameter has a finite g2 entry.
+fn g2_is_supplied(ext_g2: &[f64], trafo: &MnUserTransformation, n_int: usize) -> bool {
+    ext_g2.iter().all(|v| v.is_finite()) && (0..n_int).all(|i| trafo.ext_of_int(i) < ext_g2.len())
+}
+
+/// Return the diagonal of a packed upper triangle.
+fn packed_diagonal(h: &[f64]) -> Option<Vec<f64>> {
+    if h.is_empty() {
+        return None;
+    }
+    let mut n = 0usize;
+    while n * (n + 1) / 2 < h.len() {
+        n += 1;
+    }
+    if n * (n + 1) / 2 != h.len() {
+        return None;
+    }
+    let mut out = Vec::with_capacity(n);
+    for i in 0..n {
+        let diag = i * (i + 3) / 2;
+        out.push(h[diag]);
+    }
+    Some(out)
 }
 
 #[cfg(test)]
