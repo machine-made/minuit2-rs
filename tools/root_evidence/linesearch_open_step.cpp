@@ -41,11 +41,13 @@ int main()
    MnAlgebraicVector x(1), step(1);
    x(0) = 0;
    step(0) = 1;
-   auto const result = MnLineSearch()(fcn, MinimumParameters(x, 0), step, -12, MnMachinePrecision());
+   double const gdel = -12;
+   auto const result = MnLineSearch()(fcn, MinimumParameters(x, 0), step, gdel, MnMachinePrecision());
    std::cout << std::setprecision(17)
              << "{\n  \"root_version\": \"v6-36-08\",\n"
                 "  \"source\": \"math/minuit2/src/MnLineSearch.cxx\",\n"
-                "  \"start\": [\n    0\n  ],\n  \"step\": [\n    1\n  ],\n  \"gdel\": -12,\n"
+                "  \"start\": [\n    "
+             << x(0) << "\n  ],\n  \"step\": [\n    " << step(0) << "\n  ],\n  \"gdel\": " << gdel << ",\n"
              << "  \"lambda\": " << result.X() << ",\n  \"fval\": " << result.Y()
              << ",\n  \"nfcn\": " << fcn.NumOfCalls() << "\n}\n";
    return std::cout ? 0 : 1;

@@ -875,11 +875,11 @@ ROOT `v6-36-08` differential harness — the only apples-to-apples measurement):
 | Quadratic (fixed param) — Migrad | 29 | 20 | fewer (seed accounting, D-001) |
 
 The minimization workloads land within about ±10% of ROOT's call counts. The
-Hahn1 fit from start 2 uses 469 calls
-against ROOT's 456 (+2.9%) and stops at ROOT's point, as recorded by the
-[Hahn1 probe](tools/hahn1_probe/hahn1_probe.cpp) and
-[`tests/hahn1_core_parity.rs`](tests/hahn1_core_parity.rs);
-this count does not come from `compare_ref_vs_rust.py`. Where
+Hahn1 fit from start 2 used 469 calls
+against ROOT's 456 (+2.9%) when measured, and stops at ROOT's point. ROOT's result comes from the
+[Hahn1 probe](tools/hahn1_probe/hahn1_probe.cpp);
+[`tests/hahn1_core_parity.rs`](tests/hahn1_core_parity.rs) requires a count within 5% of ROOT's
+and does not pin 469. This count does not come from `compare_ref_vs_rust.py`. Where
 Rust spends notably fewer calls, the difference is a documented seed-phase
 accounting gap (D-001 in `reports/verification/known_differences.md`), not a
 shortcut in the minimization itself.

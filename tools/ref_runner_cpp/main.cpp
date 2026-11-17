@@ -34,6 +34,7 @@
 #include <cmath>
 #include <fstream>
 #include <iomanip>
+#include <stdexcept>
 #include <iostream>
 #include <sstream>
 #include <string>
@@ -76,6 +77,9 @@ public:
    explicit JsonlTraceObject(char const *path, bool detailed)
       : fOut(path, std::ios::out | std::ios::trunc), fDetailed(detailed)
    {
+      if (!fOut.is_open()) {
+         throw std::runtime_error(std::string("cannot open trace file: ") + path);
+      }
    }
 
    void operator()(int iter, ROOT::Minuit2::MinimumState const &state) override

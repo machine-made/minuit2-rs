@@ -67,7 +67,7 @@ int main(int argc, char** argv) { double tol = argc > 1 ? atof(argv[1]) : 0.1;
   }
   F fcn; fcn.x.resize(n); fcn.y.resize(n);
   for (int i=0;i<n;i++) {
-    if (fscanf(f,"%lf %lf",&fcn.x[i],&fcn.y[i]) != 2) {
+    if (fscanf(f,"%lf %lf",&fcn.x[i],&fcn.y[i]) != 2 || !std::isfinite(fcn.x[i]) || !std::isfinite(fcn.y[i])) {
       fprintf(stderr, "invalid observation %d in hahn1.txt\n", i+1);
       fclose(f);
       return 1;
@@ -75,14 +75,14 @@ int main(int argc, char** argv) { double tol = argc > 1 ? atof(argv[1]) : 0.1;
   }
   std::vector<double> s(7), c(7);
   for (int i=0;i<7;i++) {
-    if (fscanf(f,"%lf",&s[i]) != 1) {
+    if (fscanf(f,"%lf",&s[i]) != 1 || !std::isfinite(s[i])) {
       fprintf(stderr, "invalid start value b%d in hahn1.txt\n", i+1);
       fclose(f);
       return 1;
     }
   }
   for (int i=0;i<7;i++) {
-    if (fscanf(f,"%lf",&c[i]) != 1) {
+    if (fscanf(f,"%lf",&c[i]) != 1 || !std::isfinite(c[i])) {
       fprintf(stderr, "invalid certified value b%d in hahn1.txt\n", i+1);
       fclose(f);
       return 1;
