@@ -30,7 +30,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - After a step, the escape stored the g2 of the function when that g2 was finite.
 - After a step, the escape stored the Hessian diagonal when the function had a Hessian and no finite g2.
 - A function with no g2 and no Hessian kept the step-size estimate.
-- The seed ignored a supplied g2 that held a NaN or an infinity.
+- The seed ignored a supplied g2 that held a NaN or an infinity, or that was shorter than the list of external parameters.
 - The seed then used the Hessian diagonal or the step-size estimate.
 - The twelve reference workloads did not supply a g2. Their values did not move.
 - The machine precision followed ROOT Minuit2. `eps` became four times

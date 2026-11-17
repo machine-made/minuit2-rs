@@ -219,26 +219,21 @@ fn trafo_pair(limited: bool) -> MnUserTransformation {
     MnUserTransformation::new(vec![x, MinuitParameter::new(1, "y", -0.7, 0.1)])
 }
 
-/// Step-size g2, 2 / dirin^2, from the parameter error.
+/// Step-size g2, 2 / dirin^2, from first principles and not from the
+/// production arithmetic. A free parameter has dirin = error. A parameter
+/// with two limits uses the sine transform, int = asin(2 (x - a) / (b - a) - 1),
+/// and dirin is half the sum of the two internal steps of plus and minus error.
 fn step_size_g2(trafo: &MnUserTransformation, int_i: usize) -> f64 {
-    let ext = trafo.ext_of_int(int_i);
-    let int_val = trafo.initial_internal_values()[int_i];
-    let werr = trafo.parameters()[ext].error();
-    let sav = trafo.int2ext(ext, int_val);
-    let p = &trafo.parameters()[ext];
-    let mut sav_plus = sav + werr;
-    if p.has_upper_limit() && sav_plus > p.upper_limit() {
-        sav_plus = p.upper_limit();
-    }
-    let mut sav_minus = sav - werr;
-    if p.has_lower_limit() && sav_minus < p.lower_limit() {
-        sav_minus = p.lower_limit();
-    }
-    let vplu = trafo.ext2int(ext, sav_plus) - int_val;
-    let vmin = trafo.ext2int(ext, sav_minus) - int_val;
-    let eps2 = trafo.precision().eps2();
-    let gsmin = 8.0 * eps2 * (int_val.abs() + eps2);
-    let dirin = (0.5 * (vplu.abs() + vmin.abs())).max(gsmin);
+    let p = &trafo.parameters()[trafo.ext_of_int(int_i)];
+    let (value, error) = (p.value(), p.error());
+    let dirin = if p.has_lower_limit() && p.has_upper_limit() {
+        let (a, b) = (p.lower_limit(), p.upper_limit());
+        let internal = |x: f64| (2.0 * (x - a) / (b - a) - 1.0).asin();
+        0.5 * ((internal(value + error) - internal(value)).abs()
+            + (internal(value - error) - internal(value)).abs())
+    } else {
+        error
+    };
     2.0 / (dirin * dirin)
 }
 
@@ -265,10 +260,21 @@ fn assert_step_size(seed: &MinimumSeed, trafo: &MnUserTransformation) {
     for i in 0..g2.len() {
         assert_eq!(internal[i], start[i], "parameter {i} moved");
         let expected = step_size_g2(trafo, i);
-        // dirin is half the sum of two internal steps. Equality is that same product.
-        assert_eq!(g2[i], expected, "g2[{i}]");
+        // The oracle orders the arithmetic differently from the seed, so the two
+        // differ by a few units of the last place. 1e-12 relative is far above that
+        // and far below any change of the formula.
+        assert!(
+            (g2[i] - expected).abs() <= 1e-12 * expected,
+            "g2[{i}] = {}, expected {expected}",
+            g2[i]
+        );
         // The diagonal of the seed covariance is 1/g2, not the identity value 1.
-        assert_eq!(seed.error().matrix()[(i, i)], 1.0 / expected);
+        let diag = seed.error().matrix()[(i, i)];
+        assert!(
+            (diag - 1.0 / expected).abs() <= 1e-12 / expected,
+            "covariance diagonal {diag}, expected {}",
+            1.0 / expected
+        );
     }
 }
 
