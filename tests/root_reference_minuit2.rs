@@ -33,16 +33,19 @@ fn root_hessian_external_indexing_numeric() {
     let c01 = -16.0 / 3936.0;
     let c11 = 40.0 / 3936.0;
 
+    // 5e-4 allows finite-difference cancellation in Hesse while resolving this Hessian block.
     assert!(
         (cov.get(0, 0) - c00).abs() < 5e-4,
         "cov(0,0) expected ~{c00}, got {}",
         cov.get(0, 0)
     );
+    // Same Hesse rounding allowance for the off-diagonal element.
     assert!(
         (cov.get(0, 1) - c01).abs() < 5e-4,
         "cov(0,1) expected ~{c01}, got {}",
         cov.get(0, 1)
     );
+    // Same Hesse rounding allowance for the second diagonal element.
     assert!(
         (cov.get(1, 1) - c11).abs() < 5e-4,
         "cov(1,1) expected ~{c11}, got {}",
@@ -89,7 +92,7 @@ fn root_hessian_external_indexing_with_gradient() {
         .expect("Hesse should provide covariance");
     assert_eq!(cov.nrow(), 2);
 
-    // Same expected 2x2 block for (y,z), with ROOT 2*H^-1 convention.
+    // Same 2*H^-1 block; 5e-4 allows finite-difference cancellation in each Hesse element.
     assert!((cov.get(0, 0) - 400.0 / 3936.0).abs() < 5e-4);
     assert!((cov.get(0, 1) - (-16.0 / 3936.0)).abs() < 5e-4);
     assert!((cov.get(1, 1) - 40.0 / 3936.0).abs() < 5e-4);
@@ -169,13 +172,16 @@ fn root_simplex_reference_quadratic2() {
 
     assert!(min.is_valid());
     let params = min.params();
+    // 5e-3 permits small endpoint drift at Simplex EDM target 0.1 around ROOT's (1.15, -2.05).
     assert!((params[0] - 1.15).abs() < 5e-3, "x mismatch: {}", params[0]);
     assert!((params[1] + 2.05).abs() < 5e-3, "y mismatch: {}", params[1]);
+    // 5e-4 resolves the reference value despite endpoint drift at EDM target 0.1.
     assert!(
         (min.fval() - (-0.67475)).abs() < 5e-4,
         "fval mismatch: {}",
         min.fval()
     );
+    // 5e-4 covers endpoint drift and rounding the stored ROOT EDM to seven decimal places.
     assert!(
         (min.edm() - 0.0334887).abs() < 5e-4,
         "edm mismatch: {}",
@@ -200,6 +206,7 @@ fn root_minimize_reference_rosenbrock2() {
         min.user_state().has_covariance(),
         "MnMinimize should end with covariance for this workload"
     );
+    // More than 50 calls distinguishes this Migrad trajectory from a short Simplex fallback.
     assert!(
         min.nfcn() > 50,
         "unexpectedly low call count: {}",
@@ -207,6 +214,7 @@ fn root_minimize_reference_rosenbrock2() {
     );
 
     let params = min.params();
+    // 0.02 covers convergence-path drift at tolerance 0.1; ROOT coordinates are rounded to five decimals.
     assert!(
         (params[0] - 0.99415).abs() < 0.02,
         "x mismatch: {}",
@@ -232,7 +240,9 @@ fn root_migrad_rosenbrock2_nfcn_stays_at_root_parity() {
         .minimize(&f);
 
     assert!(min.is_valid());
-    // The reference fit reports 140 calls. This fit reports 143.
+    // ROOT reports 140 calls; the port reports 143 after the line-search corrections.
+    // The exact pin guards the current count; the three-call gap has
+    // cause open, tracked by card m2-nfcn-accounting.
     const ROOT_NFCN: usize = 140;
     assert_eq!(min.nfcn(), 143);
     assert!(
@@ -254,12 +264,14 @@ fn strategy2_rosenbrock_first_dcovar_matches_reference() {
         .minimize(&f);
 
     assert!(min.is_valid());
-    // The seed covariance comes from the full second derivative. Its dcovar is 0.
+    // Successful Hesse constructs MinimumError with literal dcovar 0.0, so equality is exact.
     assert_eq!(min.seed().error().dcovar(), 0.0);
 
     let first = min.states().first().expect("the first accepted state");
-    // The reference first update reports this dcovar.
-    let reference_dcovar = 0.1609874934830255;
+    // ROOT v6-36-08, iteration 1 in
+    // reports/verification/raw/trace/rosenbrock2_migrad_strategy2.root.jsonl.
+    let reference_dcovar = 0.16098749348302552;
+    // 1e-8 covers finite-difference cancellation in Hesse and the first matrix update.
     assert!(
         (first.error().dcovar() - reference_dcovar).abs() < 1e-8,
         "first dcovar is {}, reference is {}",
@@ -279,6 +291,7 @@ fn root_migrad_continuation_budget_does_not_report_call_limit_when_converged() {
         .tolerance(0.1)
         .minimize(&f);
 
+    // ROOT permits a 30% larger continuation budget (VariableMetricBuilder.cxx:179).
     assert!(
         min.nfcn() > maxfcn && min.nfcn() <= (1.3 * maxfcn as f64) as usize,
         "regression must exercise the continuation window: nfcn={} maxfcn={}",
@@ -318,4 +331,90 @@ fn root_no_g2_calls_when_fcn_has_no_g2() {
         0,
         "G2() must not be called when has_g2() reports false"
     );
+}
+
+#[cfg(feature = "trace")]
+fn check_trace(child_case: &str, test_name: &str) {
+    // Run in a child process so setting the trace destination cannot affect other tests.
+    if std::env::var("MINUIT2_TRACE_TEST_CASE").as_deref() == Ok(child_case) {
+        if child_case == "analytical" {
+            MnMigrad::new()
+                .add("x", 1.0, 0.1)
+                .add("y", 2.0, 0.1)
+                .add("z", 3.0, 0.1)
+                .with_strategy(2)
+                .minimize_grad(&QuadraticGrad);
+        } else {
+            // Zero target forces continuation after the exact minimum, exercising reseeds.
+            let f = |p: &[f64]| (p[0] - 3.0).powi(2);
+            let min = MnMigrad::new()
+                .add("x", 1.0, 0.1)
+                .with_strategy(0)
+                .tolerance(0.0)
+                .minimize(&f);
+            assert!(min.states().len() > 2, "must exercise multiple passes");
+        }
+        return;
+    }
+    let path = std::env::temp_dir().join(format!(
+        "minuit2-trace-{}-{child_case}.jsonl",
+        std::process::id()
+    ));
+    let _ = std::fs::remove_file(&path);
+    let output = std::process::Command::new(std::env::current_exe().unwrap())
+        .args(["--exact", test_name, "--nocapture"])
+        .env("MINUIT2_TRACE_TEST_CASE", child_case)
+        .env("MINUIT2_RS_TRACE_JSONL", &path)
+        .output()
+        .unwrap();
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let trace = std::fs::read_to_string(&path).unwrap();
+    std::fs::remove_file(path).unwrap();
+    let field = |line: &str, key: &str| -> usize {
+        line.split(&format!("\"{key}\":"))
+            .nth(1)
+            .unwrap()
+            .split([',', '}'])
+            .next()
+            .unwrap()
+            .parse()
+            .unwrap()
+    };
+    let records: Vec<_> = trace
+        .lines()
+        .map(|line| (field(line, "iter"), field(line, "nfcn")))
+        .collect();
+    assert!(records.len() >= 2);
+    assert_eq!(records[0].0, 0);
+    assert_eq!(
+        records.iter().filter(|r| r.0 == 0).count(),
+        1,
+        "{records:?}"
+    );
+    for pair in records.windows(2) {
+        assert!(
+            pair[1].0 > pair[0].0,
+            "iteration went backward: {records:?}"
+        );
+        assert!(pair[1].1 >= pair[0].1, "nfcn went backward: {records:?}");
+    }
+}
+
+#[cfg(feature = "trace")]
+#[test]
+fn analytical_trace_counts_forward_from_the_seed() {
+    check_trace(
+        "analytical",
+        "analytical_trace_counts_forward_from_the_seed",
+    );
+}
+
+#[cfg(feature = "trace")]
+#[test]
+fn reseeded_trace_has_one_seed_record() {
+    check_trace("reseed", "reseeded_trace_has_one_seed_record");
 }

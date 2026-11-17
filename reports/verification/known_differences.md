@@ -21,29 +21,34 @@ This ledger records currently observed differences from differential verificatio
 - Details:
   - The extra C++ evaluations are seed-phase numerical-gradient probes counted by ROOT's `MnFcn`; they are not Hesse sweeps or covariance-squeeze work.
   - The fixed parameter is not differentiated as a variable slot in either implementation; the divergence appears before Migrad iteration 0 because ROOT counts the seed central-difference probes while minuit2-rs reaches the same fixed-parameter minimum without reproducing that extra seed work.
-  - Correctness metrics pass tolerances, including `quadratic3_fixx_migrad` parameter max abs diff `3.886512e-04` and `quadratic3_fixx_hesse` covariance max abs diff `1.009614e-09` in the current differential report.
+  - Correctness metrics pass tolerances, including `quadratic3_fixx_migrad` parameter max abs diff `3.886512e-04` and `quadratic3_fixx_hesse` covariance max abs diff `1.006964e-09` in the current differential report.
 - Disposition: explicit per-workload waiver; no global NFCN threshold change.
 - Next step:
   - If future fixed-parameter workloads show correctness degradation, revisit route (a) and reproduce the ROOT seed probe accounting in code.
 
-## D-003: Rosenbrock covariance differs but remains within configured tolerance
+## D-003: Residual Rosenbrock covariance differences
 
-- Workloads:
-  - `rosenbrock2_migrad`
-  - `rosenbrock2_minimize`
-  - `rosenbrock2_migrad_strategy2` (covariance element max abs difference `1.297395e-01`)
-- Classification: `algorithmic/path-efficiency`
-- Severity: `low` (correctness gate passes with explicit covariance tolerance)
-- Expected: `yes`
-- Details:
-  - Covariance presence now matches and is enforced in the differential gate.
-  - Covariance element max abs difference is currently `1.787038e-01` (tolerance: 0.5), consistent with stopping at slightly different nearby points.
-- Disposition: `document`
-- Next step:
-  - Add stricter Rosenbrock convergence workloads (lower tolerance and/or larger call budget) if tighter covariance parity is required.
+- Workloads and measured maximum absolute covariance differences:
+  - `rosenbrock2_migrad`: `1.432156e-08`
+  - `rosenbrock2_minimize`: `1.432156e-08`
+  - `rosenbrock2_migrad_strategy2`: `7.781219e-09`
+- Classification: `numerical/residual`
+- Severity: `low`; all covariance differences remain below the configured limit of 0.5.
+- Evidence: `reports/verification/diff_results.csv` and `reports/verification/raw/{ref,rust}/`.
+- Details: the strategy-2 seed Hesse, triangular covariance-update sum, and line-search corrections closed the former 0.13–0.18 gap.
+- Disposition: retain this entry for the measured residuals; their precise rounding source remains unisolated.
 
 ## Resolved since previous snapshot
 
 - Previous `NoG2CallsWhenFCHasNoG2` P0 gap resolved by adding optional FCN `has_g2()/g2()` and `has_hessian()/hessian()` contract and porting the regression as `tests/root_reference_minuit2.rs::root_no_g2_calls_when_fcn_has_no_g2`.
 - Previous `quadratic2_simplex` correctness fail resolved after aligning Simplex EDM tolerance semantics with ROOT (`minedm = tolerance * Up`).
 - Previous `rosenbrock2_minimize` correctness fail resolved after aligning `MnMinimize` flow with ROOT combined minimizer logic and propagating covariance from final minimum state.
+
+## Reference trace evidence
+
+- `raw/trace/rosenbrock2_migrad_strategy2.root.jsonl` records ROOT v6-36-08 using `MnTraceObject`, attached through `Builder().SetTraceObject`.
+  The objective, start, steps, and strategy match `tools/ref_runner_cpp/main.cpp::run_rosenbrock2_migrad_strategy2`.
+  Iteration 1 gives `dcovar = 0.16098749348302552`; successful seed Hesse gives exactly zero.
+- `raw/trace/linesearch_open_step.root.json` records a direct ROOT v6-36-08 `MnLineSearch` call on the quartic in `tests/linesearch_open_step.rs`.
+  The stored start, direction, and directional derivative reproduce lambda `10.39095385821868` and fval `-2191.6554284992781`.
+  Both records use the existing reference Minuit2 library.

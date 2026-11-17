@@ -34,15 +34,14 @@ pub fn mn_linesearch(
 
     // Smallest step that still changes a parameter. MnLineSearch.cxx:74-85.
     let mut slamin = 0.0;
-    let mut have_slamin = false;
     for (x_i, step_i) in start.iter().zip(step.iter()) {
+        // exact zero only: no finite ratio
         if *step_i == 0.0 {
             continue;
         }
         let ratio = (x_i / step_i).abs();
-        if !have_slamin || ratio < slamin {
+        if slamin == 0.0 || ratio < slamin {
             slamin = ratio;
-            have_slamin = true;
         }
     }
     if slamin.abs() < prec.eps() {
@@ -56,7 +55,7 @@ pub fn mn_linesearch(
     let mut overall = OVERALL_STEP_LIMIT;
     let mut undral = LOWER_STEP_LIMIT;
 
-    // Count from 1. Stop the shortening after 12 trials.
+    // ROOT starts at 1; shortening, failed halvings and refinements share 12.
     let mut niter = 1usize;
     let unit_value = evaluate_step(fcn, start, step, 1.0, &mut scratch);
     niter += 1;
@@ -77,6 +76,7 @@ pub fn mn_linesearch(
     let mut previous_value = unit_value;
     let second_value = loop {
         let denom = 2.0 * (flast - start_value - gdel * slam) / (slam * slam);
+        // exact zero only: no finite ratio
         if denom != 0.0 {
             slam = -gdel / denom;
         } else {
@@ -136,7 +136,7 @@ pub fn mn_linesearch(
     // minimum. It starts from the same cap and grows with the best step.
     let mut open_step_limit = slamax;
 
-    for _ in 0..MAX_PARABOLA_REFINEMENTS {
+    while niter < MAX_PARABOLA_REFINEMENTS {
         let parabola = from_3_points(points[0], points[1], points[2]);
         // The cap never passes the overall step limit (MnLineSearch.cxx:239-245).
         upper_step_limit = upper_step_limit
@@ -186,32 +186,30 @@ pub fn mn_linesearch(
         }
 
         // Halve a trial that is worse than the three stored points.
-        let mut halves = 0;
         let trial_value = loop {
-            if halves >= MAX_PARABOLA_REFINEMENTS {
-                return MnParabolaPoint::new(best_lambda, best_value);
-            }
-            let min_spacing = NEAR_EXISTING_POINT_TOLERANCE * trial_lambda.abs().max(1.0);
+            let min_spacing = toler8.max((toler8 * trial_lambda).abs());
             if points
                 .iter()
                 .any(|point| (trial_lambda - point.x).abs() < min_spacing)
             {
                 return MnParabolaPoint::new(best_lambda, best_value);
             }
-            halves += 1;
-
             let value = evaluate_step(fcn, start, step, trial_lambda, &mut scratch);
             let worse_than_all = value > points[0].y && value > points[1].y && value > points[2].y;
             if !worse_than_all {
                 break value;
             }
             if trial_lambda > best_lambda {
-                overall = overall.min(trial_lambda - NEAR_EXISTING_POINT_TOLERANCE);
+                overall = overall.min(trial_lambda - toler8);
             }
             if trial_lambda < best_lambda {
-                undral = undral.max(trial_lambda + NEAR_EXISTING_POINT_TOLERANCE);
+                undral = undral.max(trial_lambda + toler8);
             }
             trial_lambda = 0.5 * (trial_lambda + best_lambda);
+            niter += 1;
+            if niter >= MAX_PARABOLA_REFINEMENTS {
+                return MnParabolaPoint::new(best_lambda, best_value);
+            }
         };
 
         if trial_value < best_value {
@@ -225,6 +223,7 @@ pub fn mn_linesearch(
         if (best_value - start_value).abs() < start_value.abs() * prec.eps() {
             break;
         }
+        niter += 1;
     }
 
     MnParabolaPoint::new(best_lambda, best_value)

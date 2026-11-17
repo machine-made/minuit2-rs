@@ -1,0 +1,14 @@
+{
+  "root_version": "v6-36-08",
+  "source": "math/minuit2/src/MnLineSearch.cxx",
+  "start": [
+    0
+  ],
+  "step": [
+    1
+  ],
+  "gdel": -12,
+  "lambda": 10.39095385821868,
+  "fval": -2191.655428499278,
+  "nfcn": 6
+}

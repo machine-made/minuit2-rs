@@ -113,7 +113,29 @@ impl VariableMetricBuilder {
         edmval: f64,
         mut next_grad: impl FnMut(&MinimumParameters, &FunctionGradient) -> FunctionGradient,
     ) -> Vec<MinimumState> {
-        let mut states = Self::iterate(fcn, seed, maxfcn, edmval, &mut next_grad);
+        // Emit the seed once, before any continuation passes. Analytical
+        // iteration uses a fresh MnFcn; keep its trace relative to the seed.
+        // Full seed call accounting remains separate from this trace offset.
+        trace_iteration(
+            0,
+            seed.nfcn(),
+            seed.fval(),
+            seed.edm(),
+            0.0,
+            seed.gradient().grad().norm(),
+            seed.error().dcovar(),
+        );
+        let trace_nfcn_offset = seed.nfcn().saturating_sub(fcn.num_of_calls());
+        let mut trace_iter = 1;
+        let mut states = Self::iterate(
+            fcn,
+            seed,
+            maxfcn,
+            edmval,
+            &mut next_grad,
+            &mut trace_iter,
+            trace_nfcn_offset,
+        );
 
         // ROOT Minuit2 verifies a nominally converged variable-metric result
         // with MnHesse for strategy >= 2, and for strategy 1 when the updated
@@ -187,7 +209,15 @@ impl VariableMetricBuilder {
                 seed.trafo().clone(),
             );
 
-            let states2 = Self::iterate(fcn, &seed2, maxfcn2, edmval, &mut next_grad);
+            let states2 = Self::iterate(
+                fcn,
+                &seed2,
+                maxfcn2,
+                edmval,
+                &mut next_grad,
+                &mut trace_iter,
+                trace_nfcn_offset,
+            );
             if states2.is_empty() {
                 return states;
             }
@@ -204,6 +234,8 @@ impl VariableMetricBuilder {
         maxfcn: usize,
         edmval: f64,
         next_grad: &mut impl FnMut(&MinimumParameters, &FunctionGradient) -> FunctionGradient,
+        trace_iter: &mut usize,
+        trace_nfcn_offset: usize,
     ) -> Vec<MinimumState> {
         let n = seed.n_variable_params();
         let prec = seed.precision();
@@ -214,16 +246,6 @@ impl VariableMetricBuilder {
         let mut edm = seed.edm();
 
         let mut states = Vec::new();
-        trace_iteration(
-            0,
-            seed.nfcn(),
-            seed.fval(),
-            seed.edm(),
-            0.0,
-            seed.gradient().grad().norm(),
-            seed.error().dcovar(),
-        );
-        let mut iter = 1usize;
 
         loop {
             // 1. Newton step: step = -V * grad
@@ -268,14 +290,15 @@ impl VariableMetricBuilder {
                     f_new,
                 );
                 trace_iteration(
-                    iter,
-                    fcn.num_of_calls(),
+                    *trace_iter,
+                    trace_nfcn_offset + fcn.num_of_calls(),
                     f_new,
                     edm,
                     lambda,
                     gradient.grad().norm(),
                     current_error.dcovar(),
                 );
+                *trace_iter += 1;
                 states.push(MinimumState::new(
                     new_params,
                     current_error.clone(),
@@ -346,14 +369,15 @@ impl VariableMetricBuilder {
             }
 
             trace_iteration(
-                iter,
-                fcn.num_of_calls(),
+                *trace_iter,
+                trace_nfcn_offset + fcn.num_of_calls(),
                 new_params.fval(),
                 edm,
                 lambda,
                 new_gradient.grad().norm(),
                 new_dcovar,
             );
+            *trace_iter += 1;
             states.push(MinimumState::new(
                 new_params.clone(),
                 new_error.clone(),
@@ -371,7 +395,6 @@ impl VariableMetricBuilder {
                 break;
             }
 
-            iter += 1;
             params = new_params;
             error = new_error;
             gradient = new_gradient;
