@@ -1,4 +1,5 @@
 /target
+/proofs/lean/.lake/
 /.cache
 /third_party/root_ref
 /third_party/root_ref_build
