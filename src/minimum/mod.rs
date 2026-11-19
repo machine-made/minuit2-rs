@@ -9,6 +9,7 @@ pub mod parameters;
 pub mod seed;
 pub mod state;
 
+use error::ErrorMatrixStatus;
 use seed::MinimumSeed;
 use state::MinimumState;
 
@@ -102,6 +103,12 @@ impl FunctionMinimum {
 
             let err = if cov_is_valid {
                 Self::transformed_error(trafo, i, internal, last, up)
+            } else if let (ErrorMatrixStatus::NotAvailable, Some(int_i)) =
+                (last.error().status(), trafo.int_of_ext(i))
+            {
+                // MnUserParameterState(MinimumState, ...): without an error matrix the
+                // error is Parameters().Dirin(), mapped by Int2extError.
+                Self::step_error(trafo, i, int_i, internal, last)
             } else {
                 p.error()
             };
@@ -158,6 +165,16 @@ impl FunctionMinimum {
             .expect("variable parameter must map to internal index");
         let sigma_int = (2.0 * up * last.error().matrix()[(int_i, int_i)]).sqrt();
         trafo.int2ext_error(i, internal[int_i], sigma_int)
+    }
+
+    fn step_error(
+        trafo: &crate::user_transformation::MnUserTransformation,
+        i: usize,
+        int_i: usize,
+        internal: &[f64],
+        last: &MinimumState,
+    ) -> f64 {
+        trafo.int2ext_error(i, internal[int_i], last.parameters().step()[int_i])
     }
 
     // --- Accessors ---

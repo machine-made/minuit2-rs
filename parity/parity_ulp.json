@@ -72,7 +72,7 @@
       },
       {
         "path": ".tmp/parity_run/raw/rust/quadratic2_simplex.json",
-        "sha256": "0d441239c12cd2c047a18f9998e78ec54fff2492631ce64d77ff2e8e99881349"
+        "sha256": "c33315c638075818276e4e4aa533e36209159ac991a2e034574303a3e3cfbabd"
       },
       {
         "path": ".tmp/parity_run/raw/rust/rosenbrock2_minimize.json",
@@ -109,10 +109,10 @@
     }
   },
   "summary": {
-    "fields": 183,
-    "fields_failed": 12,
+    "fields": 176,
+    "fields_failed": 4,
     "values": 176,
-    "failures": 12,
+    "failures": 4,
     "max_rel_err": 1.0,
     "max_ulp": 301375601036874150
   },
@@ -239,23 +239,16 @@
     },
     {
       "id": "quadratic2_simplex",
-      "pass": false,
+      "pass": true,
       "summary": {
-        "fields": 17,
-        "fields_failed": 8,
+        "fields": 10,
+        "fields_failed": 0,
         "values": 10,
-        "failures": 8,
-        "max_rel_err": 1.0,
-        "max_ulp": 8142276972986320
+        "failures": 0,
+        "max_rel_err": 0.0,
+        "max_ulp": 0
       },
       "fields": [
-        "quadratic2_simplex.covariance",
-        "quadratic2_simplex.covariance[0]",
-        "quadratic2_simplex.covariance[0][0]",
-        "quadratic2_simplex.covariance[0][1]",
-        "quadratic2_simplex.covariance[1]",
-        "quadratic2_simplex.covariance[1][0]",
-        "quadratic2_simplex.covariance[1][1]",
         "quadratic2_simplex.edm",
         "quadratic2_simplex.errors[0]",
         "quadratic2_simplex.errors[1]",
@@ -1959,223 +1952,6 @@
       "first_failures": []
     },
     {
-      "name": "quadratic2_simplex.covariance",
-      "workload": "quadratic2_simplex",
-      "path": "covariance",
-      "pass": false,
-      "count": 0,
-      "failures": 1,
-      "tolerance": null,
-      "reason": "no tolerance in the manifest; distance reported only",
-      "max_abs_err": 0.0,
-      "max_rel_err": 0.0,
-      "max_ulp": 0,
-      "worst_abs_index": null,
-      "nonfinite_mismatch": 0,
-      "sign_mismatch": 0,
-      "subnormal_in_ref": 0,
-      "int_mismatch": 0,
-      "structure": [
-        {
-          "path": "covariance",
-          "reference": "null",
-          "candidate": "array[2]"
-        }
-      ],
-      "first_failures": [
-        {
-          "index": "covariance",
-          "reason": "structure mismatch"
-        }
-      ]
-    },
-    {
-      "name": "quadratic2_simplex.covariance[0]",
-      "workload": "quadratic2_simplex",
-      "path": "covariance[0]",
-      "pass": false,
-      "count": 0,
-      "failures": 1,
-      "tolerance": null,
-      "reason": "no tolerance in the manifest; distance reported only",
-      "max_abs_err": 0.0,
-      "max_rel_err": 0.0,
-      "max_ulp": 0,
-      "worst_abs_index": null,
-      "nonfinite_mismatch": 0,
-      "sign_mismatch": 0,
-      "subnormal_in_ref": 0,
-      "int_mismatch": 0,
-      "structure": [
-        {
-          "path": "covariance[0]",
-          "reference": "missing",
-          "candidate": "array[2]"
-        }
-      ],
-      "first_failures": [
-        {
-          "index": "covariance[0]",
-          "reason": "structure mismatch"
-        }
-      ]
-    },
-    {
-      "name": "quadratic2_simplex.covariance[0][0]",
-      "workload": "quadratic2_simplex",
-      "path": "covariance[0][0]",
-      "pass": false,
-      "count": 0,
-      "failures": 1,
-      "tolerance": null,
-      "reason": "no tolerance in the manifest; distance reported only",
-      "max_abs_err": 0.0,
-      "max_rel_err": 0.0,
-      "max_ulp": 0,
-      "worst_abs_index": null,
-      "nonfinite_mismatch": 0,
-      "sign_mismatch": 0,
-      "subnormal_in_ref": 0,
-      "int_mismatch": 0,
-      "structure": [
-        {
-          "path": "covariance[0][0]",
-          "reference": "missing",
-          "candidate": "number"
-        }
-      ],
-      "first_failures": [
-        {
-          "index": "covariance[0][0]",
-          "reason": "structure mismatch"
-        }
-      ]
-    },
-    {
-      "name": "quadratic2_simplex.covariance[0][1]",
-      "workload": "quadratic2_simplex",
-      "path": "covariance[0][1]",
-      "pass": false,
-      "count": 0,
-      "failures": 1,
-      "tolerance": null,
-      "reason": "no tolerance in the manifest; distance reported only",
-      "max_abs_err": 0.0,
-      "max_rel_err": 0.0,
-      "max_ulp": 0,
-      "worst_abs_index": null,
-      "nonfinite_mismatch": 0,
-      "sign_mismatch": 0,
-      "subnormal_in_ref": 0,
-      "int_mismatch": 0,
-      "structure": [
-        {
-          "path": "covariance[0][1]",
-          "reference": "missing",
-          "candidate": "number"
-        }
-      ],
-      "first_failures": [
-        {
-          "index": "covariance[0][1]",
-          "reason": "structure mismatch"
-        }
-      ]
-    },
-    {
-      "name": "quadratic2_simplex.covariance[1]",
-      "workload": "quadratic2_simplex",
-      "path": "covariance[1]",
-      "pass": false,
-      "count": 0,
-      "failures": 1,
-      "tolerance": null,
-      "reason": "no tolerance in the manifest; distance reported only",
-      "max_abs_err": 0.0,
-      "max_rel_err": 0.0,
-      "max_ulp": 0,
-      "worst_abs_index": null,
-      "nonfinite_mismatch": 0,
-      "sign_mismatch": 0,
-      "subnormal_in_ref": 0,
-      "int_mismatch": 0,
-      "structure": [
-        {
-          "path": "covariance[1]",
-          "reference": "missing",
-          "candidate": "array[2]"
-        }
-      ],
-      "first_failures": [
-        {
-          "index": "covariance[1]",
-          "reason": "structure mismatch"
-        }
-      ]
-    },
-    {
-      "name": "quadratic2_simplex.covariance[1][0]",
-      "workload": "quadratic2_simplex",
-      "path": "covariance[1][0]",
-      "pass": false,
-      "count": 0,
-      "failures": 1,
-      "tolerance": null,
-      "reason": "no tolerance in the manifest; distance reported only",
-      "max_abs_err": 0.0,
-      "max_rel_err": 0.0,
-      "max_ulp": 0,
-      "worst_abs_index": null,
-      "nonfinite_mismatch": 0,
-      "sign_mismatch": 0,
-      "subnormal_in_ref": 0,
-      "int_mismatch": 0,
-      "structure": [
-        {
-          "path": "covariance[1][0]",
-          "reference": "missing",
-          "candidate": "number"
-        }
-      ],
-      "first_failures": [
-        {
-          "index": "covariance[1][0]",
-          "reason": "structure mismatch"
-        }
-      ]
-    },
-    {
-      "name": "quadratic2_simplex.covariance[1][1]",
-      "workload": "quadratic2_simplex",
-      "path": "covariance[1][1]",
-      "pass": false,
-      "count": 0,
-      "failures": 1,
-      "tolerance": null,
-      "reason": "no tolerance in the manifest; distance reported only",
-      "max_abs_err": 0.0,
-      "max_rel_err": 0.0,
-      "max_ulp": 0,
-      "worst_abs_index": null,
-      "nonfinite_mismatch": 0,
-      "sign_mismatch": 0,
-      "subnormal_in_ref": 0,
-      "int_mismatch": 0,
-      "structure": [
-        {
-          "path": "covariance[1][1]",
-          "reference": "missing",
-          "candidate": "number"
-        }
-      ],
-      "first_failures": [
-        {
-          "index": "covariance[1][1]",
-          "reason": "structure mismatch"
-        }
-      ]
-    },
-    {
       "name": "quadratic2_simplex.edm",
       "workload": "quadratic2_simplex",
       "path": "edm",
@@ -2210,10 +1986,10 @@
       "failures": 0,
       "tolerance": null,
       "reason": "no tolerance in the manifest; distance reported only",
-      "max_abs_err": 0.9670208790693942,
-      "max_rel_err": 0.6837870211389449,
-      "max_ulp": 7320343719709326,
-      "worst_abs_index": "errors[0]",
+      "max_abs_err": 0.0,
+      "max_rel_err": 0.0,
+      "max_ulp": 0,
+      "worst_abs_index": null,
       "nonfinite_mismatch": 0,
       "sign_mismatch": 0,
       "subnormal_in_ref": 0,
@@ -2230,10 +2006,10 @@
       "failures": 0,
       "tolerance": null,
       "reason": "no tolerance in the manifest; distance reported only",
-      "max_abs_err": 1.0126473401940532,
-      "max_rel_err": 0.7160498012017357,
-      "max_ulp": 8142276972986320,
-      "worst_abs_index": "errors[1]",
+      "max_abs_err": 0.0,
+      "max_rel_err": 0.0,
+      "max_ulp": 0,
+      "worst_abs_index": null,
       "nonfinite_mismatch": 0,
       "sign_mismatch": 0,
       "subnormal_in_ref": 0,
@@ -2271,28 +2047,21 @@
       "name": "quadratic2_simplex.has_covariance",
       "workload": "quadratic2_simplex",
       "path": "has_covariance",
-      "pass": false,
+      "pass": true,
       "count": 1,
-      "failures": 1,
+      "failures": 0,
       "tolerance": null,
       "reason": "no tolerance in the manifest; distance reported only",
-      "max_abs_err": 1,
-      "max_rel_err": 1.0,
+      "max_abs_err": 0,
+      "max_rel_err": 0.0,
       "max_ulp": 0,
-      "worst_abs_index": "has_covariance",
+      "worst_abs_index": null,
       "nonfinite_mismatch": 0,
       "sign_mismatch": 0,
       "subnormal_in_ref": 0,
-      "int_mismatch": 1,
+      "int_mismatch": 0,
       "structure": [],
-      "first_failures": [
-        {
-          "index": "has_covariance",
-          "reference": false,
-          "candidate": true,
-          "reason": "integer or boolean mismatch"
-        }
-      ]
+      "first_failures": []
     },
     {
       "name": "quadratic2_simplex.has_minos",

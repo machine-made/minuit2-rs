@@ -58,6 +58,22 @@ impl MinimumError {
         }
     }
 
+    /// An error matrix that was never computed, as ROOT's default `MinimumError`:
+    /// status `NotAvailable`, not valid, and no failure flag set.
+    #[must_use]
+    pub(crate) fn not_available(n: usize) -> Self {
+        Self {
+            matrix: DMatrix::identity(n, n),
+            dcovar: 1.0,
+            status: ErrorMatrixStatus::NotAvailable,
+            hesse_failed: false,
+            made_pos_def: false,
+            invert_failed: false,
+            reached_call_limit: false,
+            valid: false,
+        }
+    }
+
     /// Create from a full inverse Hessian matrix.
     #[must_use]
     pub fn new(matrix: DMatrix<f64>, dcovar: f64) -> Self {
@@ -197,5 +213,25 @@ impl MinimumError {
     #[must_use]
     pub fn tmp(&self) -> Option<DMatrix<f64>> {
         self.hessian()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn not_available_has_no_matrix_and_no_failure_flag() {
+        let error = MinimumError::not_available(3);
+        assert_eq!(error.status(), ErrorMatrixStatus::NotAvailable);
+        assert!(!error.is_valid());
+        assert!(!error.is_available());
+        assert!(!error.is_accurate());
+        assert!(!error.invert_failed());
+        assert!(!error.is_not_pos_def());
+        assert!(!error.hesse_failed());
+        assert!(!error.is_made_pos_def());
+        assert!(!error.has_reached_call_limit());
+        assert_eq!(error.matrix().nrows(), 3);
     }
 }
