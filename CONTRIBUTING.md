@@ -31,3 +31,6 @@ python3 -I scripts/compare_ref_vs_rust.py --report-dir "$PWD/target/verification
 Build the reference runner with `scripts/build_root_reference_runner.sh` before running that comparison.
 Review every changed field, including function call counts.
 Keep the committed workload results unchanged when checking lint or documentation edits.
+
+The criterion benchmarks no longer run on GitHub Actions. To compare your branch with main, run this on a quiet machine:
+`bash scripts/bench_x3.sh origin/main HEAD`

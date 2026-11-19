@@ -225,19 +225,3 @@ jobs:
         with:
           files: lcov.info
           fail_ci_if_error: false
-
-  bench:
-    name: Benchmark
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
-
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8  # stable
-
-      - uses: Swatinem/rust-cache@eedcf2fb1c22f010a0eb66b92f378c110977f266  # v2
-
-      - name: Run benchmarks
-        run: cargo bench --all-features
-        env:
-          PYO3_USE_ABI3_FORWARD_COMPATIBILITY: "1"

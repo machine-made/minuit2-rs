@@ -8,6 +8,8 @@ __pycache__/
 *.pyc
 *.profraw
 *.profdata
+bench-work/
+bench-logs/
 
 # bv (beads viewer) local config and caches
 .bv/
