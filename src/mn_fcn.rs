@@ -18,10 +18,19 @@ pub struct MnFcn<'a> {
 impl<'a> MnFcn<'a> {
     /// Create a new MnFcn wrapper.
     pub fn new(fcn: &'a dyn FCN, trafo: &'a MnUserTransformation) -> Self {
+        Self::with_num_calls(fcn, trafo, 0)
+    }
+
+    /// Continue counting from an earlier seed or minimum.
+    pub(crate) fn with_num_calls(
+        fcn: &'a dyn FCN,
+        trafo: &'a MnUserTransformation,
+        num_calls: usize,
+    ) -> Self {
         Self {
             fcn,
             trafo,
-            num_calls: Cell::new(0),
+            num_calls: Cell::new(num_calls),
         }
     }
 

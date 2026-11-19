@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- Hesse marks the diagonal covariance returned at the call limit as invalid and not accurate.
+- `nfcn()` after Hesse and strategy-2 Migrad now reports the running total, including seed evaluations.
+  Analytical Migrad also keeps the seed count for other strategies.
+  Call-limit checks include that total and stop before iteration when the seed exhausts the budget, as ROOT does.
+  Seed generation can still exceed the requested limit, as in ROOT.
+  Numerical Hesse now evaluates the centre once, as ROOT does.
 - Migrad can leave a parameter limit when the line-search parabola has no minimum.
   On `quadratic2`, the former upper-limit result was 3.6775; the minimum is -0.69956.
 - Strategy 2 now computes the full inverse Hessian before its first step, including the analytical-gradient path.
@@ -28,18 +34,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   |---|---|---|---|
   | Strategy-1 fval | 1.500342419704e-05 | 3.459740876221e-05 | 3.459747567501e-05 |
   | Strategy-1 EDM | 1.527164793786e-05 | 3.451709943513e-05 | 3.451850739606e-05 |
-  | Strategy-1 calls | 152 | 143 | 140 |
+  | Strategy-1 calls | 152 | 144 | 140 |
   | Strategy-1 x | 0.996166325646 | 0.994149191534 | 0.994149185750 |
   | Strategy-1 y | 0.992402698612 | 0.988272162645 | 0.988272151209 |
   | Strategy-2 fval | 1.499992182613e-05 | 2.975823963030e-06 | 2.975822646186e-06 |
   | Strategy-2 EDM | 1.526804509045e-05 | 2.980256746000e-06 | 2.980639536818e-06 |
-  | Strategy-2 calls | 160 | 168 | 162 |
+  | Strategy-2 calls | 160 | 170 | 162 |
   | Strategy-2 x | 0.996166763841 | 0.998323497264 | 0.998323497642 |
   | Strategy-2 y | 0.992403558744 | 0.996609164995 | 0.996609165756 |
 
 - Maximum Rosenbrock covariance differences from ROOT shrink from 0.0981 to 1.4e-8 for strategy 1, and from 0.0491 to 7.8e-9 for strategy 2.
   Errors also approach ROOT's values.
-- All twelve reference workloads remain within their limits.
+- Numerical results remain within their tolerances for all twelve reference workloads.
+  The corrected analytical count without g2 exceeds its existing call-count warning threshold: 12 evaluations against ROOT's 2.
   Full parameters, errors, covariance, and smaller changes on the other workloads are recorded in [reports/verification/](reports/verification/).
 
 ### Changed
@@ -49,7 +56,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Migrad traces start with one seed record at `iter: 0`.
   Accepted iterations start at 1 and keep increasing across continuation passes.
   Analytical trace call counts add subsequent evaluations to the stored seed count, so they cannot jump backward.
-  Full analytical seed call accounting remains open.
+  Analytical seed calls now also appear in the reported minimum count.
 
 ## [0.5.5] - 2026-10-31
 

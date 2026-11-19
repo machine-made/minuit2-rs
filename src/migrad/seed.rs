@@ -116,7 +116,7 @@ impl MigradSeedGenerator {
         let state = MinimumState::new(params, error, gradient, edm, nfcn);
         // Strategy 2 replaces the diagonal seed with the inverse Hessian.
         let state = if strategy.strategy() == 2 {
-            let mn_fcn = MnFcn::new(fcn, trafo);
+            let mn_fcn = MnFcn::with_num_calls(fcn, trafo, state.nfcn());
             hesse_seed(&mn_fcn, state, trafo, strategy)
         } else {
             state

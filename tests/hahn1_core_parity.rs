@@ -148,11 +148,17 @@ fn hahn1_core_start2_matches_root_and_stays_near_certified_solution() {
         migrad = migrad.add(format!("b{}", i + 1), start, 0.1);
     }
 
+    let calls = std::cell::Cell::new(0_usize);
     let min = migrad
         .with_strategy(1)
         .tolerance(0.1)
         .max_fcn(1_000_000)
-        .minimize(&fcn);
+        .minimize(&|p: &[f64]| {
+            calls.set(calls.get() + 1);
+            fcn.value(p)
+        });
+
+    assert_eq!(min.nfcn(), calls.get());
 
     assert!(
         min.is_valid(),
@@ -208,14 +214,19 @@ fn hahn1_core_start2_matches_root_and_stays_near_certified_solution() {
         );
     }
 
-    // Measured call count is 469 against 456, a gap of 2.9 percent.
-    // The cause of the gap is open and tracked by card m2-nfcn-accounting.
-    let nfcn_rel = (min.nfcn() as f64 - ROOT_NFCN as f64).abs() / ROOT_NFCN as f64;
+    // Measured: Rust 470 calls against ROOT 456. Temporary user-side stack
+    // counters found one Hesse pass per run, both starting after 294 calls.
+    // Hesse gradient refinement uses 28 calls in Rust and 14 in ROOT;
+    // both make 1 centre, 14 diagonal and 21 mixed-derivative calls.
+    // Both continuations take 112 calls: refinement explains all 14 extra calls,
+    // leaving zero unexplained. The seed gradient step differs from call 4
+    // in the Rosenbrock call trace.
+    // D-005 in reports/verification/known_differences.md records the follow-up
+    // that aligns these steps and tightens this bound to zero.
     assert!(
-        nfcn_rel <= 0.05,
-        "Hahn1 nfcn {} differs from ROOT {} by {:.3e}",
+        min.nfcn().abs_diff(ROOT_NFCN) <= 14,
+        "Hahn1 nfcn {} differs from ROOT {} by more than 14",
         min.nfcn(),
         ROOT_NFCN,
-        nfcn_rel
     );
 }

@@ -866,23 +866,30 @@ ROOT `v6-36-08` differential harness — the only apples-to-apples measurement):
 
 | Workload | C++ (ROOT) | Rust | Δ |
 |----------|-----------:|-----:|---|
-| Rosenbrock — Migrad | 140 | 143 | +2% |
-| Rosenbrock — Migrad, strategy 2 | 162 | 168 | +4% |
-| Quadratic, lower-limited — Migrad | 45 | 48 | +7% |
+| Rosenbrock — Migrad | 140 | 144 | +3% |
+| Rosenbrock — Migrad, strategy 2 | 162 | 170 | +5% |
+| Quadratic, lower-limited — Migrad | 45 | 49 | +9% |
 | Simplex | 19 | 19 | 0% |
-| Minos (p0) | 38 | 13 | fewer (seed accounting, D-001) |
-| Quadratic (fixed param) — Hesse | 39 | 13 | fewer (seed accounting, D-001) |
-| Quadratic (fixed param) — Migrad | 29 | 20 | fewer (seed accounting, D-001) |
+| Minos (p0) | 38 | 46 | +21% ([Hesse refinement](reports/verification/known_differences.md#d-006-minos-row-counts-before-minos)) |
+| Quadratic (fixed param) — Hesse | 39 | 36 | -8% |
+| Quadratic (fixed param) — Migrad | 29 | 22 | -24% ([different stopping EDM](reports/verification/known_differences.md#d-001-waived-nfcn-divergence-on-quadratic-fixed-parameter-workloads): Rust 1.5e-5, ROOT 1e-25) |
 
-The minimization workloads land within about ±10% of ROOT's call counts. The
-Hahn1 fit from start 2 used 469 calls
-against ROOT's 456 (+2.9%) when measured, and stops at ROOT's point. ROOT's result comes from the
-[Hahn1 probe](tools/hahn1_probe/hahn1_probe.cpp);
-[`tests/hahn1_core_parity.rs`](tests/hahn1_core_parity.rs) requires a count within 5% of ROOT's
-and does not pin 469. This count does not come from `compare_ref_vs_rust.py`. Where
-Rust spends notably fewer calls, the difference is a documented seed-phase
-accounting gap (D-001 in `reports/verification/known_differences.md`), not a
-shortcut in the minimization itself.
+The Rosenbrock and lower-limited minimization workloads use call counts within about ±10% of ROOT's.
+The Hahn1 fit from start 2 used 470 calls against ROOT's 456 (+3.1%) and stops at ROOT's point.
+ROOT's result comes from the [Hahn1 probe](tools/hahn1_probe/hahn1_probe.cpp).
+[`tests/hahn1_core_parity.rs`](tests/hahn1_core_parity.rs) requires a count within 14 calls of ROOT's and does not pin 470.
+Hesse gradient refinement explains all 14 extra calls.
+The Hesse gradient refinement follow-up in
+[`reports/verification/known_differences.md`](reports/verification/known_differences.md) would tighten the bound to zero.
+This count does not come from `compare_ref_vs_rust.py`.
+
+Counts after Hesse include Migrad and Hesse evaluations, including the centre evaluation used by ROOT's numerical Hesse.
+The Minos row reports that total before Minos runs.
+Its eight extra calls come from four extra refinement evaluations in each of two Hesse passes.
+The fixed-parameter Migrad rows and their different stopping EDM are explained in
+[`reports/verification/known_differences.md`](reports/verification/known_differences.md).
+The analytical workload without g2 reports 12 calls against ROOT's 2, exceeding its existing warning threshold.
+Its numerical results still match.
 
 **Wall-clock vs C++** is measured on the four scientific demo cases with a
 same-harness, in-process timing protocol (interleaved batches, trimmed medians,
