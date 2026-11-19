@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- Hesse now uses a supplied analytical Hessian, changing covariance values and removing extra function calls from `nfcn()`.
+
 - Hesse marks the diagonal covariance returned at the call limit as invalid and not accurate.
 - `nfcn()` after Hesse and strategy-2 Migrad now reports the running total, including seed evaluations.
   Analytical Migrad also keeps the seed count for other strategies.

@@ -5,6 +5,7 @@
 //! especially important when Migrad's DFP-updated inverse Hessian is only
 //! approximate.
 
+mod analytical;
 pub mod calculator;
 pub mod gradient;
 

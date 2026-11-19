@@ -52,6 +52,11 @@ impl<'a> MnFcn<'a> {
         self.call_external(external)
     }
 
+    /// Access the objective without evaluating it.
+    pub(crate) fn fcn(&self) -> &dyn FCN {
+        self.fcn
+    }
+
     /// Get the total number of function calls made.
     pub fn num_of_calls(&self) -> usize {
         self.num_calls.get()

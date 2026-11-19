@@ -7,8 +7,8 @@ Reference commit: `a8ca1b23e38d7dbe0ff24027894ca0f2ad65f1bd`
 
 ## Status Counts
 
-- pass: **11**
-- warn: **1**
+- pass: **12**
+- warn: **0**
 - fail: **0**
 
 ## Per-Workload Results
@@ -26,7 +26,7 @@ Reference commit: `a8ca1b23e38d7dbe0ff24027894ca0f2ad65f1bd`
 | `rosenbrock2_migrad_strategy2` | `pass` | - | - |
 | `quadratic2_scan_p0` | `pass` | - | - |
 | `quadratic2_contours_01` | `pass` | - | - |
-| `quadratic2_no_g2_migrad` | `warn` | - | nfcn relative diff 0.833 > 0.8 |
+| `quadratic2_no_g2_migrad` | `pass` | - | - |
 
 ## Artifacts
 

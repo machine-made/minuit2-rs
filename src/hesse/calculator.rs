@@ -1,4 +1,4 @@
-//! Core Hesse algorithm: computes the full Hessian matrix by finite differences.
+//! Core Hesse algorithm: use a supplied Hessian or compute finite differences.
 //!
 //! Steps:
 //! 1. Diagonal elements via 5-point refinement
@@ -62,9 +62,8 @@ fn call_limit_result(
 
 /// Run the full Hesse algorithm.
 ///
-/// Computes the second derivative matrix (Hessian) at the minimum using
-/// finite differences, inverts to get the covariance, and returns an updated
-/// MinimumState.
+/// Use the supplied Hessian when the saved gradient is analytical and the function supports both derivatives.
+/// Otherwise, compute finite differences. Invert the Hessian and return an updated state.
 pub fn calculate(
     fcn: &MnFcn,
     state: &MinimumState,
@@ -72,6 +71,11 @@ pub fn calculate(
     strategy: &MnStrategy,
     maxcalls: usize,
 ) -> HesseResult {
+    // ROOT MnHesse.cxx:87-95 selects the analytical path before any function call.
+    if state.gradient().is_analytical() && fcn.fcn().has_gradient() && fcn.fcn().has_hessian() {
+        return super::analytical::calculate(fcn.fcn(), state, trafo);
+    }
+
     let n = trafo.variable_parameters();
     let eps2 = trafo.precision().eps2();
     let up = fcn.up();
