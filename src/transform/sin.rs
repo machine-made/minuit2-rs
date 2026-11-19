@@ -43,13 +43,21 @@ impl ParameterTransform for SinTransform {
     }
 
     fn dint2ext(&self, angle: f64, upper: f64, lower: f64) -> f64 {
-        0.5 * (upper - lower).abs() * angle.cos().abs()
+        // ROOT SinParameterTransformation.cxx:53-56 keeps the cosine's sign.
+        0.5 * ((upper - lower) * angle.cos())
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn derivative_on_falling_branch_is_negative() {
+        let angle = 2.0 * std::f64::consts::PI / 3.0;
+        let derivative = SinTransform.dint2ext(angle, 2.0, 0.0);
+        assert!((derivative + 0.5).abs() < 1e-15);
+    }
 
     #[test]
     fn roundtrip() {

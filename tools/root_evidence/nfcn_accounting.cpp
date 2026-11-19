@@ -14,6 +14,8 @@
 //     > reports/verification/raw/trace/nfcn_accounting_rosenbrock2_maxfcn140.root.json
 //   target/nfcn-accounting-4/nfcn_accounting_root --trace quadratic2_minos_before_minos \
 //     > reports/verification/raw/trace/nfcn_accounting_quadratic2_minos_before_minos.root.json
+//   target/nfcn-accounting-4/nfcn_accounting_root --trace quadratic2_upper_limited_migrad \
+//     > reports/verification/raw/trace/nfcn_accounting_quadratic2_upper_limited_migrad.root.json
 // Built in the C++23 mode of the house standard; this file uses no C++23 feature.
 // The stack parsing targets glibc on Linux (see phase_counts.h).
 // Reuse the runner's objectives without changing its stored reference results.
@@ -64,7 +66,7 @@ private:
 int main(int argc, char **argv)
 {
    char const *usage = "usage: nfcn_accounting_root [--trace] "
-                       "quadratic2_no_g2_migrad|rosenbrock2_maxfcn140|quadratic2_minos_before_minos";
+                       "quadratic2_no_g2_migrad|rosenbrock2_maxfcn140|quadratic2_minos_before_minos|quadratic2_upper_limited_migrad";
    bool trace = false;
    bool consistent = true;
    std::string workload;
@@ -81,7 +83,23 @@ int main(int argc, char **argv)
          workload = arg;
       }
    }
-   if (workload == "quadratic2_no_g2_migrad") {
+   if (workload == "quadratic2_upper_limited_migrad") {
+      Counted<Quadratic2> quadratic;
+      quadratic.counts.trace = trace;
+      MnUserParameters parameters;
+      parameters.Add("x", 0.4, 0.1);
+      parameters.Add("y", -1.0, 0.1);
+      parameters.SetUpperLimit(0, 1.8);
+      parameters.SetUpperLimit(1, -1.5);
+      auto const minimum = MnMigrad(quadratic, parameters)(0, 0.1);
+      beginRecord(provenanceJson(program, buildCommand, command), workload);
+      field("reported_nfcn", minimum.NFcn());
+      field("valid", minimum.IsValid());
+      field("edm", minimum.Edm());
+      quadratic.counts.print();
+      endRecord();
+      consistent = quadratic.counts.reportedMatches(minimum.NFcn());
+   } else if (workload == "quadratic2_no_g2_migrad") {
       Counted<QuadraticNoG2> quadratic;
       quadratic.counts.trace = trace;
       MnUserParameters parameters;

@@ -134,6 +134,106 @@
         "param_abs": 1e-5,
         "nfcn_rel_warn": 0.8
       }
+    },
+    {
+      "id": "quadratic2_limited_migrad",
+      "description": "Migrad on a quadratic with two limits per parameter.",
+      "function": "(x - 1)^2 + 4 * (y + 2)^2 + 0.3 * x * y",
+      "start": [
+        {
+          "name": "x",
+          "value": 0.4,
+          "error": 0.1,
+          "lower": 0.0,
+          "upper": 2.0
+        },
+        {
+          "name": "y",
+          "value": -1.0,
+          "error": 0.1,
+          "lower": -3.0,
+          "upper": -1.0
+        }
+      ],
+      "tolerance": 0.1,
+      "tolerances": {
+        "fval_abs": 1e-06,
+        "edm_abs": 1e-06,
+        "param_abs": 1e-06,
+        "error_abs": 1e-06,
+        "cov_abs": 1e-06,
+        "nfcn_rel_warn": 0.8
+      },
+      "tolerance_reasons": {
+        "numerical": "All measured absolute differences are below 1e-9 against the stored ROOT output; 1e-6 leaves room for floating-point rounding.",
+        "nfcn_rel_warn": "Both runners use 74 calls; the warning threshold follows the existing limited workload."
+      }
+    },
+    {
+      "id": "quadratic2_upper_limited_migrad",
+      "description": "Migrad on a quadratic with upper limits and a start above the second limit.",
+      "function": "(x - 1)^2 + 4 * (y + 2)^2 + 0.3 * x * y",
+      "start": [
+        {
+          "name": "x",
+          "value": 0.4,
+          "error": 0.1,
+          "upper": 1.8
+        },
+        {
+          "name": "y",
+          "value": -1.0,
+          "error": 0.1,
+          "upper": -1.5
+        }
+      ],
+      "tolerance": 0.1,
+      "tolerances": {
+        "fval_abs": 1e-06,
+        "edm_abs": 1e-06,
+        "param_abs": 1e-06,
+        "error_abs": 1e-06,
+        "cov_abs": 1e-06,
+        "nfcn_rel_warn": 0.8
+      },
+      "tolerance_reasons": {
+        "numerical": "All measured absolute differences are below 1e-9 against the stored ROOT output; 1e-6 leaves room for floating-point rounding.",
+        "nfcn_rel_warn": "Both runners use 61 calls; the warning threshold follows the existing limited workload."
+      }
+    },
+    {
+      "id": "quadratic2_scan_p1_limited",
+      "description": "Migrad with two limits per parameter, followed by a scan of parameter 1.",
+      "function": "(x - 1)^2 + 4 * (y + 2)^2 + 0.3 * x * y",
+      "start": [
+        {
+          "name": "x",
+          "value": 0.4,
+          "error": 0.1,
+          "lower": 0.0,
+          "upper": 2.0
+        },
+        {
+          "name": "y",
+          "value": -1.0,
+          "error": 0.1,
+          "lower": -3.0,
+          "upper": -1.0
+        }
+      ],
+      "tolerance": 0.1,
+      "tolerances": {
+        "fval_abs": 1e-06,
+        "edm_abs": 1e-06,
+        "param_abs": 1e-06,
+        "error_abs": 1e-06,
+        "cov_abs": 1e-06,
+        "nfcn_rel_warn": 0.8
+      },
+      "tolerance_reasons": {
+        "numerical": "All measured absolute differences are below 1e-9 against the stored ROOT output; 1e-6 leaves room for floating-point rounding.",
+        "nfcn_rel_warn": "Both runners use 74 calls; the warning threshold follows the existing limited workload."
+      }
     }
   ]
 }

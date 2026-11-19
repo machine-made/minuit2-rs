@@ -18,7 +18,20 @@ impl SqrtUpTransform {
 
 impl ParameterTransform for SqrtUpTransform {
     fn int2ext(&self, value: f64, upper: f64, _lower: f64) -> f64 {
-        upper + 1.0 - (value * value + 1.0).sqrt()
+        // ROOT SqrtUpParameterTransformation.cxx:22-26 evaluates this expression
+        // in long double before returning an external double.
+        // Keep rounding residuals through the same operations to avoid premature rounding.
+        let square = value * value;
+        let (radicand, addition_error) = sum_with_error(square, 1.0);
+        let root = radicand.sqrt();
+        let (offset, offset_error) = sum_with_error(upper, 1.0);
+        let (external, external_error) = sum_with_error(offset, -root);
+        if !external.is_finite() {
+            return external;
+        }
+        let radicand_error = value.mul_add(value, -square) + addition_error;
+        let root_error = ((-root).mul_add(root, radicand) + radicand_error) / (2.0 * root);
+        external + (external_error + offset_error - root_error)
     }
 
     fn ext2int(&self, value: f64, upper: f64, _lower: f64, prec: &MnMachinePrecision) -> f64 {
@@ -30,6 +43,14 @@ impl ParameterTransform for SqrtUpTransform {
     fn dint2ext(&self, value: f64, _upper: f64, _lower: f64) -> f64 {
         -value / (value * value + 1.0).sqrt()
     }
+}
+
+/// Return a sum and its rounding residual for finite inputs.
+fn sum_with_error(left: f64, right: f64) -> (f64, f64) {
+    let sum = left + right;
+    let recovered_right = sum - left;
+    let error = (left - (sum - recovered_right)) + (right - recovered_right);
+    (sum, error)
 }
 
 #[cfg(test)]

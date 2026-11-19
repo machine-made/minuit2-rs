@@ -319,7 +319,9 @@ fn escape_negative_curvature_with(
                 }
 
                 let at_limit = is_at_zero_jacobian_limit(trafo, &params, i);
-                step[i] = if zero_grad && at_limit {
+                // ROOT NegativeG2LineSearch.cxx:80-83 uses the signed gradient
+                // step for negative curvature, including a zero gradient at a limit.
+                step[i] = if zero_grad && zero_g2 && at_limit {
                     // Waived branch: ROOT skips the exact zero-gradient,
                     // zero-Jacobian limit singularity and therefore defines no
                     // direction there. Keep Rust's documented start-at-limit
