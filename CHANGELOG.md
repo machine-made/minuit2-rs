@@ -63,6 +63,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   Accepted iterations start at 1 and keep increasing across continuation passes.
   Analytical trace call counts add subsequent evaluations to the stored seed count, so they cannot jump backward.
   Analytical seed calls now also appear in the reported minimum count.
+- The comparison report in `reports/compare/` is regenerated. Its Rosenbrock covariance error with a user gradient is now 0.0399, against 0.0382 for iminuit and 0.662 before the Hesse changes.
 
 ## [0.5.5] - 2026-10-31
 
