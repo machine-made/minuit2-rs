@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/machine-made/minuit2-rs/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/machine-made/minuit2-rs/actions/workflows/ci.yml)
 [![Crates.io](https://img.shields.io/crates/v/minuit2.svg)](https://crates.io/crates/minuit2)
-[![MSRV](https://img.shields.io/badge/MSRV-1.85-blue.svg)](Cargo.toml)
+[![MSRV](https://img.shields.io/badge/MSRV-1.86-blue.svg)](Cargo.toml)
 [![License](https://img.shields.io/badge/license-LGPL--2.1--or--later-blue.svg)](LICENSE)
 [![Documentation](https://docs.rs/minuit2/badge.svg)](https://docs.rs/minuit2)
 

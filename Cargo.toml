@@ -2,7 +2,7 @@
 name = "minuit2"
 version = "0.5.5"
 edition = "2024"
-rust-version = "1.85"
+rust-version = "1.86"
 description = "Pure Rust implementation of Minuit-style parameter optimization"
 license = "LGPL-2.1-or-later"
 repository = "https://github.com/machine-made/minuit2-rs"
