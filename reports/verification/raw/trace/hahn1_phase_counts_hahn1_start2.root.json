@@ -3,7 +3,7 @@
     "program": "tools/root_evidence/hahn1_phase_counts.cpp",
     "root_tag": "v6-36-08",
     "library_build_command": "scripts/build_root_reference_runner.sh v6-36-08",
-    "build_command": "g++ -O2 -g -rdynamic -std=c++23 -Ithird_party/root_ref/math/minuit2/inc tools/root_evidence/hahn1_phase_counts.cpp third_party/root_ref_build/minuit2/lib/libMinuit2.a third_party/root_ref_build/minuit2/lib/libMinuit2Math.a -lpthread -o target/nfcn-accounting-4/hahn1_phase_counts_root",
+    "build_command": "mkdir -p target/nfcn-accounting-4 && g++ -O2 -g -rdynamic -std=c++23 -Ithird_party/root_ref/math/minuit2/inc tools/root_evidence/hahn1_phase_counts.cpp third_party/root_ref_build/minuit2/lib/libMinuit2.a third_party/root_ref_build/minuit2/lib/libMinuit2Math.a -lpthread -o target/nfcn-accounting-4/hahn1_phase_counts_root",
     "command": "target/nfcn-accounting-4/hahn1_phase_counts_root --trace"
   },
   "result": {

@@ -3,7 +3,7 @@
     "program": "tools/root_evidence/hahn1_phase_counts.rs",
     "root_tag": null,
     "library_build_command": "cargo build --locked --lib",
-    "build_command": "CARGO_MANIFEST_DIR=. rustc --edition=2024 -g tools/root_evidence/hahn1_phase_counts.rs --extern minuit2=target/debug/libminuit2.rlib -L dependency=target/debug/deps $(for d in target/debug/build/*/*/out; do printf ' -L dependency=%s' $d; done) -o target/nfcn-accounting-4/hahn1_phase_counts_rust",
+    "build_command": "mkdir -p target/nfcn-accounting-4 && CARGO_MANIFEST_DIR=. rustc --edition=2024 -g tools/root_evidence/hahn1_phase_counts.rs --extern minuit2=target/debug/libminuit2.rlib -L dependency=target/debug/deps $(for d in target/debug/build/*/*/out; do printf ' -L dependency=%s' $d; done) -o target/nfcn-accounting-4/hahn1_phase_counts_rust",
     "command": "target/nfcn-accounting-4/hahn1_phase_counts_rust --trace"
   },
   "result": {

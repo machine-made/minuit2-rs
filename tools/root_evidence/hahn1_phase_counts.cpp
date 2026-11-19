@@ -11,6 +11,7 @@
 //   target/nfcn-accounting-4/hahn1_phase_counts_root --trace \
 //     > reports/verification/raw/trace/hahn1_phase_counts_hahn1_start2.root.json
 // Built in the C++23 mode of the house standard; this file uses no C++23 feature.
+// The stack parsing targets glibc on Linux (see phase_counts.h).
 // The dataset argument defaults to tools/hahn1_probe/hahn1_dataset.txt.
 // The document holds "provenance" (the build and run commands above) and "result".
 // The program exits with 1 if reported_nfcn and user_calls differ.
@@ -25,19 +26,13 @@
 #include <cmath>
 using namespace ROOT::Minuit2;
 
-// Commands that produce this program (see the header); the run command is added to it.
-static std::string provenanceJson(std::string const &command)
-{
-   return std::string(R"({
-    "program": "tools/root_evidence/hahn1_phase_counts.cpp",
-    "root_tag": "v6-36-08",
-    "library_build_command": "scripts/build_root_reference_runner.sh v6-36-08",
-    "build_command": "g++ -O2 -g -rdynamic -std=c++23 -Ithird_party/root_ref/math/minuit2/inc )"
-                      R"(tools/root_evidence/hahn1_phase_counts.cpp third_party/root_ref_build/minuit2/lib/libMinuit2.a )"
-                      R"(third_party/root_ref_build/minuit2/lib/libMinuit2Math.a -lpthread )"
-                      R"(-o target/nfcn-accounting-4/hahn1_phase_counts_root",
-    "command": ")") + command + "\"\n  }";
-}
+// Commands that build this program; the run command is added to the provenance.
+static std::string const program = "tools/root_evidence/hahn1_phase_counts.cpp";
+static std::string const buildCommand =
+   "mkdir -p target/nfcn-accounting-4 && g++ -O2 -g -rdynamic -std=c++23 -Ithird_party/root_ref/math/minuit2/inc "
+   "tools/root_evidence/hahn1_phase_counts.cpp third_party/root_ref_build/minuit2/lib/libMinuit2.a "
+   "third_party/root_ref_build/minuit2/lib/libMinuit2Math.a -lpthread "
+   "-o target/nfcn-accounting-4/hahn1_phase_counts_root";
 
 // Same objective and arithmetic as tools/hahn1_probe/hahn1_probe.cpp.
 struct CountedHahn1 : ROOT::Minuit2::FCNBase {
@@ -81,15 +76,12 @@ int main(int argc, char **argv)
       parameters.Add("b" + std::to_string(i + 1), start, 0.1);
    }
    auto minimum = MnMigrad(fcn, parameters, MnStrategy(1))(1000000, 0.1);
-   beginRecord(provenanceJson(command), "hahn1_start2");
+   beginRecord(provenanceJson(program, buildCommand, command), "hahn1_start2");
    field("reported_nfcn", minimum.NFcn());
    field("valid", minimum.IsValid());
-   field("fval", jsonNumber(minimum.Fval()));
+   field("fval", minimum.Fval());
    fcn.counts.print();
    endRecord();
-   if (static_cast<unsigned int>(minimum.NFcn()) != fcn.counts.calls) {
-      std::cerr << "reported_nfcn " << minimum.NFcn() << " differs from user_calls " << fcn.counts.calls << '\n';
-      return 1;
-   }
+   if (!fcn.counts.reportedMatches(minimum.NFcn())) return 1;
    return std::cout ? 0 : 1;
 }

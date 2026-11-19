@@ -23,24 +23,17 @@ mod phase_counts;
 mod hahn1 {
     include!("../../tests/hahn1_core_parity.rs");
 
-    use super::phase_counts::{begin_record, end_record, field, json_number};
+    use super::phase_counts::{begin_record, end_record, field, provenance};
 
-    // Commands that produce this program (see the header); the run command is added to it.
-    fn provenance(command: &str) -> String {
-        const HEAD: &str = concat!(
-            r#"{
-    "program": "tools/root_evidence/hahn1_phase_counts.rs",
-    "root_tag": null,
-    "library_build_command": "cargo build --locked --lib",
-    "build_command": "CARGO_MANIFEST_DIR=. rustc --edition=2024 -g "#,
-            r#"tools/root_evidence/hahn1_phase_counts.rs "#,
-            r#"--extern minuit2=target/debug/libminuit2.rlib -L dependency=target/debug/deps "#,
-            r#"$(for d in target/debug/build/*/*/out; do printf ' -L dependency=%s' $d; done) "#,
-            r#"-o target/nfcn-accounting-4/hahn1_phase_counts_rust",
-    "command": ""#
-        );
-        format!("{HEAD}{command}\"\n  }}")
-    }
+    // Commands that build this program; the run command is added to the provenance.
+    const PROGRAM: &str = "tools/root_evidence/hahn1_phase_counts.rs";
+    const BUILD_COMMAND: &str = concat!(
+        "mkdir -p target/nfcn-accounting-4 && CARGO_MANIFEST_DIR=. rustc --edition=2024 -g ",
+        "tools/root_evidence/hahn1_phase_counts.rs ",
+        "--extern minuit2=target/debug/libminuit2.rlib -L dependency=target/debug/deps ",
+        "$(for d in target/debug/build/*/*/out; do printf ' -L dependency=%s' $d; done) ",
+        "-o target/nfcn-accounting-4/hahn1_phase_counts_rust"
+    );
 
     pub fn counts() -> Result<(), String> {
         let mut path = None;
@@ -77,20 +70,16 @@ mod hahn1 {
                 counts.borrow_mut().record(p);
                 fcn.value(p)
             });
-        begin_record(&provenance(&command), "hahn1_start2");
+        begin_record(
+            &provenance(PROGRAM, BUILD_COMMAND, &command),
+            "hahn1_start2",
+        );
         field("reported_nfcn", minimum.nfcn());
         field("valid", minimum.is_valid());
-        field("fval", json_number(minimum.fval()));
+        field("fval", minimum.fval());
         counts.borrow().print();
         end_record();
-        let user_calls = counts.borrow().calls;
-        if minimum.nfcn() != user_calls {
-            return Err(format!(
-                "reported_nfcn {} differs from user_calls {user_calls}",
-                minimum.nfcn()
-            ));
-        }
-        Ok(())
+        counts.borrow().check_reported(minimum.nfcn())
     }
 }
 fn main() -> std::process::ExitCode {

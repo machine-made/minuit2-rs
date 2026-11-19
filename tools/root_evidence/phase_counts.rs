@@ -13,17 +13,67 @@ pub fn json_number(value: f64) -> String {
     }
 }
 
+/// JSON string literal for any text: quote, backslash and control characters escaped.
+pub fn json_string(text: &str) -> String {
+    let mut out = String::from("\"");
+    for c in text.chars() {
+        match c {
+            '"' => out.push_str("\\\""),
+            '\\' => out.push_str("\\\\"),
+            c if (c as u32) < 0x20 => out.push_str(&format!("\\u{:04X}", c as u32)),
+            c => out.push(c),
+        }
+    }
+    out.push('"');
+    out
+}
+
+/// Provenance block of a stored file: the program, how the library was built, and
+/// the commands that build and run the program.
+pub fn provenance(program: &str, build_command: &str, run_command: &str) -> String {
+    format!(
+        "{{\n    \"program\": {},\n    \"root_tag\": null,\n    \"library_build_command\": \"cargo build --locked --lib\",\n    \"build_command\": {},\n    \"command\": {}\n  }}",
+        json_string(program),
+        json_string(build_command),
+        json_string(run_command)
+    )
+}
+
 /// A record is the whole output of one run, in the layout of the stored files:
 /// two-space indent, one key per line, a trailing newline. The caller prints the
 /// result fields, then `PhaseCounts::print`, then `end_record`.
 pub fn begin_record(provenance: &str, workload: &str) {
     print!(
-        "{{\n  \"provenance\": {provenance},\n  \"result\": {{\n    \"workload\": \"{workload}\""
+        "{{\n  \"provenance\": {provenance},\n  \"result\": {{\n    \"workload\": {}",
+        json_string(workload)
     );
 }
 
-pub fn field(name: &str, value: impl std::fmt::Display) {
-    print!(",\n    \"{name}\": {value}");
+/// Values of a field: integers, bool and f64 only, and every f64 goes through `json_number`.
+pub trait JsonValue {
+    fn json(&self) -> String;
+}
+
+impl JsonValue for usize {
+    fn json(&self) -> String {
+        self.to_string()
+    }
+}
+
+impl JsonValue for bool {
+    fn json(&self) -> String {
+        self.to_string()
+    }
+}
+
+impl JsonValue for f64 {
+    fn json(&self) -> String {
+        json_number(*self)
+    }
+}
+
+pub fn field(name: &str, value: impl JsonValue) {
+    print!(",\n    {}: {}", json_string(name), value.json());
 }
 
 pub fn end_record() {
@@ -98,10 +148,23 @@ impl PhaseCounts {
         if self.trace {
             let coordinates: Vec<String> = p.iter().map(|&x| json_number(x)).collect();
             self.evaluations.push(format!(
-                "{{\"call\":{},\"phase\":\"{phase}\",\"p\":[{}]}}",
+                "{{\"call\":{},\"phase\":{},\"p\":[{}]}}",
                 self.calls,
+                json_string(&phase),
                 coordinates.join(",")
             ));
+        }
+    }
+
+    /// The invariant of the call-count change: Minuit2 reports exactly the calls the user function saw.
+    pub fn check_reported(&self, reported_nfcn: usize) -> Result<(), String> {
+        if reported_nfcn == self.calls {
+            Ok(())
+        } else {
+            Err(format!(
+                "reported_nfcn {reported_nfcn} differs from user_calls {}",
+                self.calls
+            ))
         }
     }
 
@@ -112,8 +175,9 @@ impl PhaseCounts {
         );
         for (i, (phase, count)) in self.phases.iter().enumerate() {
             print!(
-                "{}\n      \"{phase}\": {count}",
-                if i > 0 { "," } else { "" }
+                "{}\n      {}: {count}",
+                if i > 0 { "," } else { "" },
+                json_string(phase)
             );
         }
         print!("\n    }}");

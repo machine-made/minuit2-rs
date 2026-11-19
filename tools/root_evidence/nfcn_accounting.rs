@@ -16,6 +16,7 @@
 //   target/nfcn-accounting-4/nfcn_accounting_rust --trace quadratic2_minos_before_minos \
 //     > reports/verification/raw/trace/nfcn_accounting_quadratic2_minos_before_minos.rust.json
 // The document holds "provenance" (the build and run commands above) and "result".
+// The program exits with 1 if reported_nfcn and user_calls differ.
 // Pass --trace to include every evaluation and phase; M2_TRACE_STACKS adds stacks.
 #[allow(dead_code)]
 mod phase_counts;
@@ -24,24 +25,17 @@ mod phase_counts;
 mod runner {
     include!("../../src/bin/ref_compare_runner.rs");
 
-    use super::phase_counts::{PhaseCounts, begin_record, end_record, field, json_number};
+    use super::phase_counts::{PhaseCounts, begin_record, end_record, field, provenance};
     use std::cell::{Cell, RefCell};
 
-    // Commands that produce this program (see the header); the run command is added to it.
-    fn provenance(command: &str) -> String {
-        const HEAD: &str = concat!(
-            r#"{
-    "program": "tools/root_evidence/nfcn_accounting.rs",
-    "root_tag": null,
-    "library_build_command": "cargo build --locked --lib",
-    "build_command": "rustc --edition=2024 -g tools/root_evidence/nfcn_accounting.rs "#,
-            r#"--extern minuit2=target/debug/libminuit2.rlib -L dependency=target/debug/deps "#,
-            r#"$(for d in target/debug/build/*/*/out; do printf ' -L dependency=%s' $d; done) "#,
-            r#"-o target/nfcn-accounting-4/nfcn_accounting_rust",
-    "command": ""#
-        );
-        format!("{HEAD}{command}\"\n  }}")
-    }
+    // Commands that build this program; the run command is added to the provenance.
+    const PROGRAM: &str = "tools/root_evidence/nfcn_accounting.rs";
+    const BUILD_COMMAND: &str = concat!(
+        "mkdir -p target/nfcn-accounting-4 && rustc --edition=2024 -g tools/root_evidence/nfcn_accounting.rs ",
+        "--extern minuit2=target/debug/libminuit2.rlib -L dependency=target/debug/deps ",
+        "$(for d in target/debug/build/*/*/out; do printf ' -L dependency=%s' $d; done) ",
+        "-o target/nfcn-accounting-4/nfcn_accounting_rust"
+    );
 
     struct Counted<T> {
         objective: T,
@@ -99,12 +93,11 @@ mod runner {
             Some("quadratic2_no_g2_migrad") => quadratic2_no_g2_migrad(trace, &command),
             Some("rosenbrock2_maxfcn140") => rosenbrock2_maxfcn140(trace, &command),
             Some("quadratic2_minos_before_minos") => quadratic2_minos_before_minos(trace, &command),
-            _ => return Err(usage.to_owned()),
+            _ => Err(usage.to_owned()),
         }
-        Ok(())
     }
 
-    fn quadratic2_no_g2_migrad(trace: bool, command: &str) {
+    fn quadratic2_no_g2_migrad(trace: bool, command: &str) -> Result<(), String> {
         let quadratic = Counted {
             objective: QuadraticNoG2,
             counts: RefCell::new(PhaseCounts::new(trace)),
@@ -115,7 +108,10 @@ mod runner {
             .add("y", -1.0, 0.1)
             .tolerance(0.1)
             .minimize_grad(&quadratic);
-        begin_record(&provenance(command), "quadratic2_no_g2_migrad");
+        begin_record(
+            &provenance(PROGRAM, BUILD_COMMAND, command),
+            "quadratic2_no_g2_migrad",
+        );
         field("reported_nfcn", minimum.nfcn());
         field("hessian_calls", quadratic.hessian_calls.get());
         print!(",\n    \"state_nfcn\": [");
@@ -125,9 +121,10 @@ mod runner {
         print!("\n    ]");
         quadratic.counts.borrow().print();
         end_record();
+        quadratic.counts.borrow().check_reported(minimum.nfcn())
     }
 
-    fn rosenbrock2_maxfcn140(trace: bool, command: &str) {
+    fn rosenbrock2_maxfcn140(trace: bool, command: &str) -> Result<(), String> {
         let rosenbrock = Counted {
             objective: Rosenbrock2,
             counts: RefCell::new(PhaseCounts::new(trace)),
@@ -139,17 +136,21 @@ mod runner {
             .max_fcn(140)
             .tolerance(0.1)
             .minimize(&rosenbrock);
-        begin_record(&provenance(command), "rosenbrock2_maxfcn140");
+        begin_record(
+            &provenance(PROGRAM, BUILD_COMMAND, command),
+            "rosenbrock2_maxfcn140",
+        );
         field("reported_nfcn", minimum.nfcn());
         field("valid", minimum.is_valid());
         field("call_limit", minimum.reached_call_limit());
         field("above_edm", minimum.is_above_max_edm());
-        field("edm", json_number(minimum.edm()));
+        field("edm", minimum.edm());
         rosenbrock.counts.borrow().print();
         end_record();
+        rosenbrock.counts.borrow().check_reported(minimum.nfcn())
     }
 
-    fn quadratic2_minos_before_minos(trace: bool, command: &str) {
+    fn quadratic2_minos_before_minos(trace: bool, command: &str) -> Result<(), String> {
         let minos = Counted {
             objective: Quadratic2,
             counts: RefCell::new(PhaseCounts::new(trace)),
@@ -163,12 +164,16 @@ mod runner {
         let migrad_calls = minimum.nfcn();
         minos.counts.borrow_mut().begin_standalone();
         let minimum = MnHesse::new().calculate(&minos, &minimum);
-        begin_record(&provenance(command), "quadratic2_minos_before_minos");
+        begin_record(
+            &provenance(PROGRAM, BUILD_COMMAND, command),
+            "quadratic2_minos_before_minos",
+        );
         field("migrad_nfcn", migrad_calls);
         field("reported_nfcn", minimum.nfcn());
         field("hessian_calls", minos.hessian_calls.get());
         minos.counts.borrow().print();
         end_record();
+        minos.counts.borrow().check_reported(minimum.nfcn())
     }
 }
 

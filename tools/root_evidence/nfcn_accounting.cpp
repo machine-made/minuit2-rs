@@ -15,8 +15,10 @@
 //   target/nfcn-accounting-4/nfcn_accounting_root --trace quadratic2_minos_before_minos \
 //     > reports/verification/raw/trace/nfcn_accounting_quadratic2_minos_before_minos.root.json
 // Built in the C++23 mode of the house standard; this file uses no C++23 feature.
+// The stack parsing targets glibc on Linux (see phase_counts.h).
 // Reuse the runner's objectives without changing its stored reference results.
 // The document holds "provenance" (the build and run commands above) and "result".
+// The program exits with 1 if reported_nfcn and user_calls differ.
 // Pass --trace to include every evaluation and its phase. Set M2_TRACE_STACKS to
 // print call stacks on stderr for phase identification.
 #include "phase_counts.h"
@@ -25,19 +27,13 @@
 #include "../ref_runner_cpp/main.cpp"
 #undef main
 
-// Commands that produce this program (see the header); the run command is added to it.
-static std::string provenanceJson(std::string const &command)
-{
-   return std::string(R"({
-    "program": "tools/root_evidence/nfcn_accounting.cpp",
-    "root_tag": "v6-36-08",
-    "library_build_command": "scripts/build_root_reference_runner.sh v6-36-08",
-    "build_command": "g++ -O2 -g -rdynamic -std=c++23 -Ithird_party/root_ref/math/minuit2/inc )"
-                      R"(tools/root_evidence/nfcn_accounting.cpp third_party/root_ref_build/minuit2/lib/libMinuit2.a )"
-                      R"(third_party/root_ref_build/minuit2/lib/libMinuit2Math.a -lpthread )"
-                      R"(-o target/nfcn-accounting-4/nfcn_accounting_root",
-    "command": ")") + command + "\"\n  }";
-}
+// Commands that build this program; the run command is added to the provenance.
+static std::string const program = "tools/root_evidence/nfcn_accounting.cpp";
+static std::string const buildCommand =
+   "mkdir -p target/nfcn-accounting-4 && g++ -O2 -g -rdynamic -std=c++23 -Ithird_party/root_ref/math/minuit2/inc "
+   "tools/root_evidence/nfcn_accounting.cpp third_party/root_ref_build/minuit2/lib/libMinuit2.a "
+   "third_party/root_ref_build/minuit2/lib/libMinuit2Math.a -lpthread "
+   "-o target/nfcn-accounting-4/nfcn_accounting_root";
 
 template <class Objective> class Counted final : public FCNBase {
 public:
@@ -70,6 +66,7 @@ int main(int argc, char **argv)
    char const *usage = "usage: nfcn_accounting_root [--trace] "
                        "quadratic2_no_g2_migrad|rosenbrock2_maxfcn140|quadratic2_minos_before_minos";
    bool trace = false;
+   bool consistent = true;
    std::string workload;
    std::string command = "target/nfcn-accounting-4/nfcn_accounting_root";
    for (int i = 1; i < argc; ++i) {
@@ -91,7 +88,7 @@ int main(int argc, char **argv)
       parameters.Add("x", 0.4, 0.1);
       parameters.Add("y", -1.0, 0.1);
       auto const minimum = MnMigrad(quadratic, parameters)();
-      beginRecord(provenanceJson(command), workload);
+      beginRecord(provenanceJson(program, buildCommand, command), workload);
       field("reported_nfcn", minimum.NFcn());
       field("hessian_calls", quadratic.hessianCalls);
       std::cout << ",\n    \"state_nfcn\": [";
@@ -100,6 +97,7 @@ int main(int argc, char **argv)
       std::cout << "\n    ]";
       quadratic.counts.print();
       endRecord();
+      consistent = quadratic.counts.reportedMatches(minimum.NFcn());
    } else if (workload == "rosenbrock2_maxfcn140") {
       Counted<Rosenbrock2> rosenbrock;
       rosenbrock.counts.trace = trace;
@@ -107,14 +105,15 @@ int main(int argc, char **argv)
       start.Add("x", 0.0, 0.1);
       start.Add("y", 0.0, 0.1);
       auto const continuation = MnMigrad(rosenbrock, start)(140, 0.1);
-      beginRecord(provenanceJson(command), workload);
+      beginRecord(provenanceJson(program, buildCommand, command), workload);
       field("reported_nfcn", continuation.NFcn());
       field("valid", continuation.IsValid());
       field("call_limit", continuation.HasReachedCallLimit());
       field("above_edm", continuation.IsAboveMaxEdm());
-      field("edm", jsonNumber(continuation.Edm()));
+      field("edm", continuation.Edm());
       rosenbrock.counts.print();
       endRecord();
+      consistent = rosenbrock.counts.reportedMatches(continuation.NFcn());
    } else if (workload == "quadratic2_minos_before_minos") {
       // Match the Minos runner up to the point whose NFcn it stores.
       Counted<Quadratic2> minos;
@@ -126,15 +125,16 @@ int main(int argc, char **argv)
       auto migradCalls = minosMinimum.NFcn();
       minos.counts.beginStandalone();
       MnHesse{}(minos, minosMinimum);
-      beginRecord(provenanceJson(command), workload);
+      beginRecord(provenanceJson(program, buildCommand, command), workload);
       field("migrad_nfcn", migradCalls);
       field("reported_nfcn", minosMinimum.NFcn());
       field("hessian_calls", minos.hessianCalls);
       minos.counts.print();
       endRecord();
+      consistent = minos.counts.reportedMatches(minosMinimum.NFcn());
    } else {
       std::cerr << usage << '\n';
       return 1;
    }
-   return std::cout ? 0 : 1;
+   return consistent && std::cout ? 0 : 1;
 }

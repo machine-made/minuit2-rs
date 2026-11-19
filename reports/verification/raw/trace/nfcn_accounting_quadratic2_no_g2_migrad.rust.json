@@ -3,7 +3,7 @@
     "program": "tools/root_evidence/nfcn_accounting.rs",
     "root_tag": null,
     "library_build_command": "cargo build --locked --lib",
-    "build_command": "rustc --edition=2024 -g tools/root_evidence/nfcn_accounting.rs --extern minuit2=target/debug/libminuit2.rlib -L dependency=target/debug/deps $(for d in target/debug/build/*/*/out; do printf ' -L dependency=%s' $d; done) -o target/nfcn-accounting-4/nfcn_accounting_rust",
+    "build_command": "mkdir -p target/nfcn-accounting-4 && rustc --edition=2024 -g tools/root_evidence/nfcn_accounting.rs --extern minuit2=target/debug/libminuit2.rlib -L dependency=target/debug/deps $(for d in target/debug/build/*/*/out; do printf ' -L dependency=%s' $d; done) -o target/nfcn-accounting-4/nfcn_accounting_rust",
     "command": "target/nfcn-accounting-4/nfcn_accounting_rust --trace quadratic2_no_g2_migrad"
   },
   "result": {
