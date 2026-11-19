@@ -65,11 +65,51 @@ fn migrad() -> MnMigrad {
     MnMigrad::new().add("x", 0.4, 0.1).add("y", -1.0, 0.1)
 }
 
+/// Relative comparison for results of floating-point arithmetic.
+///
+/// The factor 1e-12 is about 4500 times the rounding unit 2.2e-16 of `f64`.
+/// A printed run showed exact equality in every comparison except one, which differed by 1.3e-16.
+/// The margin allows another math library or compiler to change `sin`, `cos` and `asin` by a few units in the last place.
+/// Most matrices here have entries of order one. A wrong factor, index or sign changes a result in its first digits.
+///
+/// The floor `f64::EPSILON` matters only when the expected value is zero.
+/// Without it the bound would be zero. With it the bound is 1e-12 * 2.2e-16, about 2.2e-28 absolute.
+/// The expected zeros here are off-diagonal covariances of diagonal Hessians.
+/// They come out as exact zero, so the floor only has to accept a signed zero.
+/// Do not use this function for expected values below 2.2e-16, where the floor sets the bound.
 fn assert_relative(got: f64, want: f64) {
     assert!(
         (got - want).abs() <= 1e-12 * want.abs().max(f64::EPSILON),
         "got {got:.17e}, expected {want:.17e}"
     );
+}
+
+/// Relative comparison without the floor, for values far from one, such as 1e-200 or 1e300.
+///
+/// The factor 1e-12 has the same reason as in `assert_relative`.
+/// A scaled inverse differs from the exact one by a few units in the last place, about 1e-15.
+fn assert_relative_at_scale(got: f64, want: f64) {
+    assert!(
+        (got - want).abs() <= 1e-12 * want.abs(),
+        "got {got:.17e}, expected {want:.17e}"
+    );
+}
+
+/// Compare a 2x2 matrix with `unit * pattern`. Every entry gets the bound 1e-12 * `unit`.
+///
+/// The entries of `pattern` are at most one. An expected zero is therefore compared at the size of the diagonal.
+/// A coupled inverse can leave a rounding residue of that size in an off-diagonal entry.
+fn assert_scaled_matrix(got: &DMatrix<f64>, unit: f64, pattern: [[f64; 2]; 2]) {
+    for (i, row) in pattern.iter().enumerate() {
+        for (j, entry) in row.iter().enumerate() {
+            let want = unit * entry;
+            assert!(
+                (got[(i, j)] - want).abs() <= 1e-12 * unit,
+                "entry ({i}, {j}): got {:.17e}, expected {want:.17e}",
+                got[(i, j)]
+            );
+        }
+    }
 }
 
 #[test]
@@ -211,6 +251,7 @@ fn correlated_hessian_updates_g2_and_edm() {
     for (i, j, want) in [(0, 0, 2.0 / 7.0), (0, 1, -1.0 / 7.0), (1, 1, 4.0 / 7.0)] {
         assert_relative(cov[(i, j)], want);
     }
+    // Exact: the Jacobian of an unrestricted parameter is one, so g2 is the Hessian diagonal.
     assert_eq!(state.gradient().g2().as_slice(), &[4.0, 2.0]);
     assert!(state.gradient().is_analytical());
     assert_relative(state.edm(), 0.5 * (2.88 + 4.8 + 16.0) / 7.0);
@@ -229,6 +270,7 @@ fn missing_or_malformed_hessian_returns_failed_state() {
         assert!(result.hesse_failed);
         assert!(result.state.error().hesse_failed());
         assert!(!result.state.error().is_valid());
+        // Exact: a failed Hesse hands back the old EDM unchanged, so any recomputation would show.
         assert_eq!(result.state.edm(), 42.0);
         assert!(result.state.gradient().is_analytical());
     }
@@ -236,14 +278,184 @@ fn missing_or_malformed_hessian_returns_failed_state() {
 
 #[test]
 fn inversion_failure_returns_original_reciprocal_diagonal() {
-    let result = calculate_at_nonzero_gradient(vec![1e-200, 0.0, 1e-200]);
+    // The exact inverse has entries near 5e310, which `f64` cannot hold, so the inversion fails.
+    // The smallest eigenvalue of the normalised matrix is 1e-6, above the threshold of about 1.2e-7.
+    // The positive-definiteness step then leaves the matrix unchanged.
+    let tiny: f64 = 1e-305;
+    let correlation: f64 = 0.999999;
+    // The exact diagonal of the inverse is 1 / (tiny * (1 - correlation^2)), about 10^310.7.
+    // The largest `f64` is about 10^308.25, so the failure is genuine and not an effect of the scaling.
+    let inverse_log10 = -tiny.log10() - (1.0 - correlation * correlation).log10();
+    assert!(inverse_log10 > f64::MAX.log10());
+    let result = calculate_at_nonzero_gradient(vec![tiny, correlation * tiny, tiny]);
     assert!(result.invert_failed);
+    assert!(!result.made_pos_def);
     assert!(result.state.error().invert_failed());
     assert!(!result.state.error().is_valid());
+    // Exact: the failed state keeps the old EDM and the Hessian diagonal as g2.
     assert_eq!(result.state.edm(), 42.0);
+    assert_eq!(result.state.gradient().g2().as_slice(), &[tiny, tiny]);
+    // Exact: ROOT returns 1 / g2 from one division per entry (MnHesse.cxx:145), so the bits must agree.
+    // The off-diagonal entries are exactly zero.
+    let matrix = result.state.error().matrix();
+    assert_eq!(matrix[(0, 0)], 1.0 / tiny);
+    assert_eq!(matrix[(1, 1)], 1.0 / tiny);
+    assert_eq!(matrix[(0, 1)], 0.0);
+}
+
+#[test]
+fn inverse_that_overflows_is_a_failure_not_an_infinite_covariance() {
+    // The determinant of diag(1e-320, 1) is 1e-320, which `f64` can hold, but the inverse entry 1e320 it gives is infinite.
+    let result = calculate_at_nonzero_gradient(vec![1e-320, 0.0, 1.0]);
+    assert!(
+        result.invert_failed,
+        "covariance {:e}, accurate {}",
+        result.state.error().matrix()[(0, 0)],
+        result.state.error().is_accurate()
+    );
+    assert!(!result.state.error().is_valid());
+    // Exact: the failed state keeps the old EDM.
+    assert_eq!(result.state.edm(), 42.0);
+}
+
+/// Constant packed Hessian for any number of unrestricted parameters. The objective must never be evaluated.
+struct Packed(Vec<f64>);
+
+impl FCN for Packed {
+    fn value(&self, _p: &[f64]) -> f64 {
+        panic!("analytical Hesse must not evaluate the objective");
+    }
+    fn has_gradient(&self) -> bool {
+        true
+    }
+    fn has_hessian(&self) -> bool {
+        true
+    }
+    fn hessian(&self, _p: &[f64]) -> Vec<f64> {
+        self.0.clone()
+    }
+}
+
+/// Run the analytical Hesse for a diagonal Hessian with `n` equal entries and a gradient of ones.
+fn calculate_with_diagonal(n: usize, entry: f64) -> calculator::HesseResult {
+    let mut packed = vec![0.0; n * (n + 1) / 2];
+    for i in 0..n {
+        packed[i * (i + 1) / 2 + i] = entry;
+    }
+    let trafo = MnUserTransformation::new(
+        (0..n)
+            .map(|i| MinuitParameter::new(i, format!("p{i}"), 0.0, 0.1))
+            .collect(),
+    );
+    let state = MinimumState::new(
+        MinimumParameters::new(DVector::zeros(n), 0.0),
+        MinimumError::new(DMatrix::identity(n, n), 1.0),
+        FunctionGradient::analytical(DVector::from_element(n, 1.0)),
+        42.0,
+        0,
+    );
+    let function = Packed(packed);
+    let fcn = MnFcn::new(&function, &trafo);
+    calculator::calculate(&fcn, &state, &trafo, &MnStrategy::default(), 0)
+}
+
+#[test]
+fn diagonal_hessians_of_any_size_invert_at_extreme_scales() {
+    // The determinant of an n x n diagonal matrix is entry^n, so it overflows or underflows earlier for larger n.
+    // Each case would give zero, NaN or a failed inversion without the scaling.
+    for (n, entry) in [
+        (2, 1e200),
+        (3, 1e110),
+        (4, 1e90),
+        (4, 1e-90),
+        (5, 1e70),
+        (3, 1e-110),
+    ] {
+        let result = calculate_with_diagonal(n, entry);
+        assert!(!result.invert_failed, "n = {n}, entry = {entry:e}");
+        assert!(!result.made_pos_def, "n = {n}, entry = {entry:e}");
+        assert!(
+            result.state.error().is_accurate(),
+            "n = {n}, entry = {entry:e}"
+        );
+        // Exact: the Jacobians of unrestricted parameters are one, so g2 is the Hessian diagonal.
+        assert!(result.state.gradient().g2().iter().all(|g2| *g2 == entry));
+        let covariance = result.state.error().matrix();
+        for i in 0..n {
+            for j in 0..n {
+                let want = if i == j { 1.0 / entry } else { 0.0 };
+                assert!(
+                    (covariance[(i, j)] - want).abs() <= 1e-12 / entry,
+                    "n = {n}, entry = {entry:e}, ({i}, {j}): got {:e}",
+                    covariance[(i, j)]
+                );
+            }
+        }
+        // The gradient is ones, so the EDM is 0.5 * n / entry.
+        assert_relative_at_scale(result.state.edm(), 0.5 * n as f64 / entry);
+    }
+}
+
+#[test]
+fn tiny_hessian_inverts_as_in_root() {
+    // ROOT normalises the diagonal before inverting (MnMatrix.cxx:33-41), so a tiny Hessian is not singular.
+    let result = calculate_at_nonzero_gradient(vec![1e-200, 0.0, 1e-200]);
+    assert!(!result.invert_failed);
+    assert!(!result.made_pos_def);
+    assert!(result.state.error().is_accurate());
+    // Exact: the Jacobians of unrestricted parameters are one, so g2 is the Hessian diagonal.
     assert_eq!(result.state.gradient().g2().as_slice(), &[1e-200, 1e-200]);
-    assert_relative(result.state.error().matrix()[(0, 0)], 1e200);
-    assert_relative(result.state.error().matrix()[(1, 1)], 1e200);
+    assert_scaled_matrix(
+        result.state.error().matrix(),
+        1e200,
+        [[1.0, 0.0], [0.0, 1.0]],
+    );
+    // The gradient is (-1.2, 2.0), so the EDM is 0.5 * (1.44 + 4.0) * 1e200.
+    assert_relative_at_scale(result.state.edm(), 2.72e200);
+}
+
+#[test]
+fn huge_hessian_inverts_without_overflow() {
+    // The determinant of diag(1e200, 1e200) is 1e400, which overflows `f64`.
+    let result = calculate_at_nonzero_gradient(vec![1e200, 0.0, 1e200]);
+    assert!(!result.invert_failed);
+    assert!(!result.made_pos_def);
+    assert!(result.state.error().is_accurate());
+    assert_eq!(result.state.gradient().g2().as_slice(), &[1e200, 1e200]);
+    assert_scaled_matrix(
+        result.state.error().matrix(),
+        1e-200,
+        [[1.0, 0.0], [0.0, 1.0]],
+    );
+    // The gradient is (-1.2, 2.0), so the EDM is 0.5 * (1.44 + 4.0) * 1e-200.
+    assert_relative_at_scale(result.state.edm(), 2.72e-200);
+}
+
+#[test]
+fn huge_correlated_hessian_keeps_its_inverse_pattern() {
+    // 1e200 times the matrix of `correlated_hessian_updates_g2_and_edm`, whose inverse is (1/7) [[2, -1], [-1, 4]].
+    let result = calculate_at_nonzero_gradient(vec![4e200, 1e200, 2e200]);
+    assert!(!result.invert_failed);
+    assert!(result.state.error().is_accurate());
+    assert_scaled_matrix(
+        result.state.error().matrix(),
+        1e-200,
+        [[2.0 / 7.0, -1.0 / 7.0], [-1.0 / 7.0, 4.0 / 7.0]],
+    );
+    assert_relative_at_scale(result.state.edm(), 0.5 * (2.88 + 4.8 + 16.0) / 7.0 * 1e-200);
+}
+
+#[test]
+fn mixed_scale_hessian_keeps_the_unscaled_inverse() {
+    // The determinant of diag(1e300, 1e-300) is one, so the plain inversion works.
+    // Scaling by the largest entry would underflow the small one. The scaled attempt must fall back to the plain one.
+    let result = calculate_at_nonzero_gradient(vec![1e300, 0.0, 1e-300]);
+    assert!(!result.invert_failed);
+    let covariance = result.state.error().matrix();
+    assert_relative_at_scale(covariance[(0, 0)], 1e-300);
+    assert_relative_at_scale(covariance[(1, 1)], 1e300);
+    // Exact: the inverse of a diagonal matrix has exact zeros off the diagonal.
+    assert_eq!(covariance[(0, 1)], 0.0);
 }
 
 #[test]
@@ -251,6 +463,7 @@ fn indefinite_hessian_is_made_positive_definite() {
     let result = calculate_at_nonzero_gradient(vec![1.0, 2.0, 1.0]);
     assert!(result.made_pos_def);
     assert!(result.state.error().is_made_pos_def());
+    // Exact: the status constant for a corrected matrix, not a computed value.
     assert_eq!(result.state.error().dcovar(), 1.0);
     assert!(!result.state.error().is_accurate());
     assert!(
@@ -264,6 +477,7 @@ fn indefinite_hessian_is_made_positive_definite() {
             .min()
             > 0.0
     );
+    // Exact: g2 is saved before the matrix is made positive definite, so it keeps the supplied diagonal.
     assert_eq!(result.state.gradient().g2().as_slice(), &[1.0, 1.0]);
     assert_relative(
         result.state.error().matrix()[(0, 0)],
@@ -290,26 +504,30 @@ fn diagonal_shift_alone_preserves_root_accurate_status() {
     assert_eq!(result.state.error().dcovar(), 0.0);
     let shift = 2.5 + minuit2::precision::MnMachinePrecision::new().eps2();
     assert_relative(result.state.error().matrix()[(0, 0)], 1.0 / (-2.0 + shift));
+    // Exact: the saved g2 is not shifted, only the matrix that is inverted.
     assert_eq!(result.state.gradient().g2().as_slice(), &[-2.0, 2.0]);
+}
+
+/// One parameter with a constant Hessian entry. The objective must never be evaluated.
+struct Scalar(f64);
+
+impl FCN for Scalar {
+    fn value(&self, _p: &[f64]) -> f64 {
+        panic!("analytical Hesse must not evaluate the objective");
+    }
+    fn has_gradient(&self) -> bool {
+        true
+    }
+    fn has_hessian(&self) -> bool {
+        true
+    }
+    fn hessian(&self, _p: &[f64]) -> Vec<f64> {
+        vec![self.0]
+    }
 }
 
 #[test]
 fn scalar_hessian_uses_root_precision_threshold() {
-    struct Scalar(f64);
-    impl FCN for Scalar {
-        fn value(&self, _p: &[f64]) -> f64 {
-            panic!("analytical Hesse must not evaluate the objective");
-        }
-        fn has_gradient(&self) -> bool {
-            true
-        }
-        fn has_hessian(&self) -> bool {
-            true
-        }
-        fn hessian(&self, _p: &[f64]) -> Vec<f64> {
-            vec![self.0]
-        }
-    }
     let eps = minuit2::precision::MnMachinePrecision::new().eps();
     for (curvature, inverse, corrected) in [
         (-2.0, 1.0, true),
@@ -329,10 +547,55 @@ fn scalar_hessian_uses_root_precision_threshold() {
         let fcn = MnFcn::new(&scalar, &trafo);
         let result = calculator::calculate(&fcn, &state, &trafo, &MnStrategy::default(), 0);
         assert_eq!(result.made_pos_def, corrected);
+        // Exact: the Jacobian is one, so g2 is the supplied curvature.
         assert_eq!(result.state.gradient().g2()[0], curvature);
         assert_relative(result.state.error().matrix()[(0, 0)], inverse);
         assert_relative(result.state.edm(), 4.5 * inverse);
     }
+}
+
+#[test]
+fn overflow_after_the_jacobians_returns_the_failed_state() {
+    // At the midpoint of the limits the Jacobian is 0.5 * 2e155 = 1e155.
+    // Then 1e155 * 2.0 * 1e155 overflows to infinity, although the supplied Hessian is finite.
+    let trafo = MnUserTransformation::new(vec![MinuitParameter::with_limits(
+        0, "x", 0.0, 0.1, -1e155, 1e155,
+    )]);
+    let internal = DVector::from_vec(trafo.initial_internal_values());
+    assert_relative_at_scale(trafo.dint2ext(0, internal[0]), 1e155);
+    let state = MinimumState::new(
+        MinimumParameters::new(internal.clone(), 0.0),
+        MinimumError::new(DMatrix::identity(1, 1), 1.0),
+        FunctionGradient::analytical(DVector::from_vec(vec![3.0])),
+        42.0,
+        7,
+    );
+    let scalar = Scalar(2.0);
+    let fcn = MnFcn::new(&scalar, &trafo);
+    let result = calculator::calculate(&fcn, &state, &trafo, &MnStrategy::default(), 0);
+    assert!(
+        result.hesse_failed,
+        "covariance {:e}, accurate {}",
+        result.state.error().matrix()[(0, 0)],
+        result.state.error().is_accurate()
+    );
+    assert!(!result.invert_failed);
+    assert!(result.state.error().hesse_failed());
+    assert!(!result.state.error().is_valid());
+    // Exact: a failed Hesse returns the input parameters, gradient, EDM and call count unchanged.
+    assert_eq!(result.state.parameters().vec(), &internal);
+    assert_eq!(result.state.gradient().grad().as_slice(), &[3.0]);
+    assert!(result.state.gradient().is_analytical());
+    assert_eq!(result.state.edm(), 42.0);
+    assert_eq!(result.state.nfcn(), 7);
+    assert!(
+        result
+            .state
+            .error()
+            .matrix()
+            .iter()
+            .all(|entry| *entry == 0.0)
+    );
 }
 
 #[test]
@@ -397,6 +660,9 @@ fn internal_gradient_space_still_uses_external_hessian_and_jacobians() {
             minuit2::fcn::GradientParameterSpace::Internal
         }
         fn hessian(&self, p: &[f64]) -> Vec<f64> {
+            // The limited coordinate passes through `asin` and `sin` and comes back 2.2e-16 off, one unit in the last place.
+            // The bound 1e-14 is about 45 times that.
+            // The unrestricted coordinate is exact. Passing an internal value instead would move the first coordinate by about 1.
             assert!((p[0] - 1.3).abs() < 1e-14);
             assert!((p[1] + 2.5).abs() < 1e-14);
             vec![4.0, 1.0, 2.0]

@@ -10,6 +10,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ### Fixed
 
 - Hesse now uses a supplied analytical Hessian, changing covariance values and removing extra function calls from `nfcn()`.
+  This needs two things: the saved gradient must be analytical, and the function must report both a gradient and a Hessian.
+  A function that reports a Hessian without a gradient still uses finite differences.
 
 - Hesse marks the diagonal covariance returned at the call limit as invalid and not accurate.
 - `nfcn()` after Hesse and strategy-2 Migrad now reports the running total, including seed evaluations.

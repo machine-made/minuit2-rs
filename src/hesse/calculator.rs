@@ -64,6 +64,12 @@ fn call_limit_result(
 ///
 /// Use the supplied Hessian when the saved gradient is analytical and the function supports both derivatives.
 /// Otherwise, compute finite differences. Invert the Hessian and return an updated state.
+///
+/// The supplied-Hessian path returns the first derivatives of the input state with zero step sizes.
+/// ROOT also drops the saved steps there (MnHesse.cxx:128). Its numerical pass then recomputes the steps (MnHesse.cxx:202-210).
+/// The numerical path in this crate does not. It takes its starting step from the gradient of the state it receives.
+/// A later numerical Hesse on a returned or analytical state therefore needs a nonzero step, set by the caller.
+/// With a zero step the first probe distance is only 8 * eps2 * (|x| + eps2). For 1 + x^2 at x = 0 every probe rounds to the centre and Hesse fails.
 pub fn calculate(
     fcn: &MnFcn,
     state: &MinimumState,
