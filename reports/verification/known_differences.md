@@ -19,12 +19,14 @@ This ledger records currently observed differences from differential verificatio
   - `third_party/root_ref/math/minuit2/src/Numerical2PGradientCalculator.cxx`: `operator()(par)` constructs an `InitialGradientCalculator` and then central-difference probes each variable parameter via `mfcnCaller(x)` at `xtf + step` and `xtf - step` for up to `GradientNCycles()` cycles.
   - `third_party/root_ref/math/minuit2/src/InitialGradientCalculator.cxx`: the initial rough gradient itself is heuristic and does not call the FCN.
 - Details:
-  - The extra C++ evaluations are seed-phase numerical-gradient probes counted by ROOT's `MnFcn`; they are not Hesse sweeps or covariance-squeeze work.
-  - The fixed parameter is not differentiated as a variable slot in either implementation; the divergence appears before Migrad iteration 0 because ROOT counts the seed central-difference probes while minuit2-rs reaches the same fixed-parameter minimum without reproducing that extra seed work.
+  - Both Rust rows now report the running count, checked against a counter inside the user function in `tests/nfcn_accounting.rs`.
+  - Migrad uses 22 calls against ROOT's 29. Rust stops at EDM `1.492603e-05`; ROOT reaches `1.072811e-25`.
+  - Hesse uses 36 calls against ROOT's 39. The Rust count includes 22 Migrad calls and 14 Hesse calls.
+  - The runner uses analytical gradients in Rust. The remaining gap includes different seed work and stopping EDM; the old counter reset does not explain it.
   - Correctness metrics pass tolerances, including `quadratic3_fixx_migrad` parameter max abs diff `3.886512e-04` and `quadratic3_fixx_hesse` covariance max abs diff `1.006964e-09` in the current differential report.
 - Disposition: explicit per-workload waiver; no global NFCN threshold change.
 - Next step:
-  - If future fixed-parameter workloads show correctness degradation, revisit route (a) and reproduce the ROOT seed probe accounting in code.
+  - Retain the existing manifest waivers. Isolate the remaining seed and stopping differences before changing the numerical path.
 
 ## D-003: Residual Rosenbrock covariance differences
 
@@ -37,6 +39,60 @@ This ledger records currently observed differences from differential verificatio
 - Evidence: `reports/verification/diff_results.csv` and the stored outputs in `reports/verification/raw/ref/` and `reports/verification/raw/rust/`.
 - Details: the strategy-2 seed Hesse, triangular covariance-update sum, and line-search corrections closed the former 0.13–0.18 gap.
 - Disposition: retain this entry for the measured residuals; their precise rounding source remains unisolated.
+
+## D-004: No-g2 warning reflects numerical Hesse work, not a ROOT undercount
+
+- Workload: `quadratic2_no_g2_migrad`.
+- Classification: `algorithmic/hessian-path`.
+- Severity: `low` (numerical metrics pass; call-count warning remains).
+- Evidence: `tools/root_evidence/nfcn_accounting.cpp` and `tools/root_evidence/nfcn_accounting.rs` reuse the reference and Rust runners' objectives.
+- Measurements:
+
+  | Runner | Reported `nfcn` | User-side function calls | Analytical Hessian calls | State call totals |
+  |---|---:|---:|---:|---|
+  | ROOT `v6-36-08` | 2 | 2 | 2 | 1, 2, 2 |
+  | Rust | 12 | 12 | 1 | 2, 12 |
+
+- ROOT's count is accurate. Rust's ten extra evaluations occur during numerical Hesse verification after iteration reaches two calls.
+- ROOT `MnHesse.cxx:87-95,100-168` uses the supplied analytical Hessian without objective evaluations during verification.
+  Rust `src/hesse/calculator.rs::calculate` uses finite differences, even when the objective supplies a Hessian.
+- The previous Rust count of 10 omitted the initial seed evaluation; the running count also includes ROOT's numerical Hesse centre call now.
+- The relative difference is `10/12 = 0.833333`, above the unchanged threshold of `0.8`.
+- Disposition: leave the warning open. Using the supplied analytical Hessian in Hesse, as ROOT does, changes the numerical path and is a separate change. No waiver is added.
+
+## D-005: Hesse gradient refinement and seed gradient steps differ from ROOT
+
+- Follow-up: a change that aligns the steps with ROOT's tightens the Rosenbrock and Hahn1 call-count bounds to zero.
+- Rosenbrock strategy 1 uses 144 calls against ROOT's 140. Both enter Hesse verification at 130.
+  Rust then makes 1 centre, 4 diagonal, 8 refinement and 1 mixed-derivative evaluation.
+  ROOT makes 1 centre, 4 diagonal, 4 refinement and 1 mixed-derivative evaluation.
+  The four extra refinement calls explain the entire current gap.
+- The call-by-call trace of the Rosenbrock run first differs at call 4, during seed generation on both sides:
+  ROOT evaluates `(0.00069049922586661124, 0)`; Rust evaluates `(0.00069049941105437588, 0)`.
+  This change leaves the numerical refinement and seed-step rules unchanged.
+- Rust's refinement starts from zero and needs at least two cycles per parameter.
+  ROOT starts from the diagonal sweep's gradient and takes one cycle on these fits
+  (`HessianGradientCalculator.cxx:68,112-127`; Rust `src/hesse/gradient.rs`).
+- Hahn1 uses 470 calls against ROOT's 456. Temporary user-side counters and call stacks measured every Hesse pass:
+
+  | Phase | ROOT calls | Rust calls |
+  |---|---:|---:|
+  | Before Hesse | 294 | 294 |
+  | Hesse passes | 1 | 1 |
+  | Centre evaluation | 1 | 1 |
+  | Diagonal evaluations | 14 | 14 |
+  | Gradient refinement in that pass | 14 | 28 |
+  | Mixed derivatives | 21 | 21 |
+  | Continuation after Hesse | 112 | 112 |
+  | Final total | 456 | 470 |
+
+  ROOT's Hesse pass spans calls 295–344, with refinement at 310–323.
+  Rust's pass spans calls 295–358, with refinement at 310–337.
+  Refinement explains all fourteen extra calls; zero calls remain unexplained.
+- Evidence: the traces from `tools/root_evidence/nfcn_accounting.cpp` and `.rs` identify the Rosenbrock seed and refinement differences.
+  The Hahn1 measurement adds temporary counters to copies of `tools/hahn1_probe/hahn1_probe.cpp` and `tests/hahn1_core_parity.rs`.
+- Disposition: retain bounds of four calls for Rosenbrock and fourteen for Hahn1 until the steps are aligned.
+  These measure the honest running totals, including ROOT's centre call; no manifest tolerance or waiver changes.
 
 ## Resolved since previous snapshot
 
