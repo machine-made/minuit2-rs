@@ -1,22 +1,13 @@
 {
   "algorithm": "simplex",
-  "covariance": [
-    [
-      2.0,
-      0.0
-    ],
-    [
-      0.0,
-      2.0
-    ]
-  ],
+  "covariance": null,
   "edm": 0.03348873519897433,
   "errors": [
-    1.4142135623730951,
-    1.4142135623730951
+    0.44719268330370093,
+    0.401566222179042
   ],
   "fval": -0.6747499999999998,
-  "has_covariance": true,
+  "has_covariance": false,
   "has_minos": false,
   "minos": null,
   "nfcn": 19,

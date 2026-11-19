@@ -7,6 +7,8 @@
 use nalgebra::DVector;
 
 use super::parameters::SimplexParameters;
+use crate::minimum::error::MinimumError;
+use crate::minimum::gradient::FunctionGradient;
 use crate::minimum::parameters::MinimumParameters;
 use crate::minimum::seed::MinimumSeed;
 use crate::minimum::state::MinimumState;
@@ -191,7 +193,13 @@ impl SimplexBuilder {
             final_fval,
         );
 
-        let state = MinimumState::from_params_edm(final_params, edm, fcn.num_of_calls());
+        // ROOT SimplexBuilder returns MinimumState(MinimumParameters, edm, nfcn) with no error
+        // matrix, so MnUserParameterState has no covariance and takes the errors from the step.
+        let error = MinimumError::not_available(n);
+        let gradient =
+            FunctionGradient::new(DVector::zeros(n), DVector::zeros(n), DVector::zeros(n));
+
+        let state = MinimumState::new(final_params, error, gradient, edm, fcn.num_of_calls());
         vec![state]
     }
 

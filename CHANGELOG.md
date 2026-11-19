@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Fixed Simplex now reports ROOT's errors and no covariance, where it reported a unit-scale covariance. On the `quadratic2` Simplex fit, both errors were 1.414 and are now 0.447 and 0.402
 - Fixed Numerical gradient steps now keep ROOT's curvature floor, and Hesse gradient refinement follows ROOT's steps and stopping rule. Call counts and some covariance digits change
 - Fixed Hesse now uses a supplied analytical Hessian, changing covariance values and removing extra function calls from `nfcn()`. This needs two things: the saved gradient must be analytical, and the function must report both a gradient and a Hessian. A function that reports a Hessian without a gradient still uses finite differences
 - Fixed Hesse marks the diagonal covariance returned at the call limit as invalid and not accurate
