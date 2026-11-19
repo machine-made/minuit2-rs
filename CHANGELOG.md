@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- Numerical gradient steps now keep ROOT's curvature floor, and Hesse gradient refinement follows ROOT's steps and stopping rule. Call counts and some covariance digits change.
+
 - Hesse now uses a supplied analytical Hessian, changing covariance values and removing extra function calls from `nfcn()`.
   This needs two things: the saved gradient must be analytical, and the function must report both a gradient and a Hessian.
   A function that reports a Hessian without a gradient still uses finite differences.

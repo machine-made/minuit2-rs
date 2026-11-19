@@ -1,9 +1,7 @@
 //! Hessian-based gradient refinement.
 //!
-//! Refines the gradient using second-derivative information from the Hessian
-//! diagonal. The step sizes use `g2` from the Hessian computation.
-
-use nalgebra::DVector;
+//! Start from the diagonal sweep's gradient, curvature and steps.
+//! Follow ROOT's HessianGradientCalculator.cxx:68-132 for probe sizes and convergence.
 
 use crate::minimum::gradient::FunctionGradient;
 use crate::minimum::parameters::MinimumParameters;
@@ -18,93 +16,60 @@ impl HessianGradientCalculator {
         strategy.hessian_gradient_ncycles()
     }
 
-    /// Refine gradient using Hessian diagonal information.
-    ///
-    /// `hessian_g2` contains the second derivatives from the Hessian diagonal step.
-    /// `hessian_gstep` contains the step sizes used during Hessian computation.
+    /// Refine first derivatives while keeping the diagonal sweep's curvature estimates.
     pub fn compute(
         fcn: &MnFcn,
         params: &MinimumParameters,
         trafo: &MnUserTransformation,
         strategy: &MnStrategy,
-        hessian_g2: &DVector<f64>,
-        hessian_gstep: &DVector<f64>,
+        gradient: &FunctionGradient,
     ) -> FunctionGradient {
-        let n = trafo.variable_parameters();
-        let eps2 = trafo.precision().eps2();
-        let fcnmin = params.fval();
-        let dfmin = 8.0 * eps2 * (fcnmin.abs() + fcn.up());
-        let vrysml = 8.0 * eps2 * eps2;
+        let precision = trafo.precision();
+        let eps2 = precision.eps2();
+        let dfmin = 4.0 * eps2 * (params.fval().abs() + fcn.up());
+        let mut x = params.vec().clone();
+        let mut grad = gradient.grad().clone();
+        let mut gstep = gradient.gstep().clone();
+        let g2 = gradient.g2();
 
-        let x = params.vec();
-        let ncycles = Self::ncycle(strategy);
-        let step_tol = strategy.grad_step_tol();
-        let grad_tol = strategy.grad_tol();
-
-        let mut grad = DVector::zeros(n);
-        let mut g2 = DVector::zeros(n);
-        let mut gstep = DVector::zeros(n);
-
-        for i in 0..n {
-            let ext_idx = trafo.ext_of_int(i);
+        for i in 0..x.len() {
             let xi = x[i];
-            let p = &trafo.parameters()[ext_idx];
-            let has_limits = p.has_limits() || p.has_lower_limit() || p.has_upper_limit();
+            let dmin = 4.0 * eps2 * (xi + eps2);
+            let epspri = eps2 + (grad[i] * eps2).abs();
+            let optstp = (dfmin / (g2[i].abs() + epspri)).sqrt();
+            let mut d = (0.2 * gstep[i].abs()).min(optstp).max(dmin);
+            let mut previous_change = 10000.0;
 
-            // Use Hessian g2 and gstep as starting point
-            let mut g2i = hessian_g2[i];
-            let mut gstepi = hessian_gstep[i].max(vrysml);
+            for cycle in 0..Self::ncycle(strategy) {
+                x[i] = xi + d;
+                let fp = fcn.call(x.as_slice());
+                x[i] = xi - d;
+                let fm = fcn.call(x.as_slice());
+                x[i] = xi;
 
-            for cycle in 0..ncycles {
-                let optstp = (dfmin / (g2i.abs() + eps2)).sqrt();
-                let mut step = optstp.max(0.1 * gstepi.abs());
-
-                if has_limits {
-                    step = step.min(0.5);
+                let old = grad[i];
+                let new = (fp - fm) / (2.0 * d);
+                let roundoff = precision.eps() * (fp.abs() + fm.abs()) / d;
+                // ROOT stops on an exactly zero gradient; classify() avoids a float comparison
+                // and keeps both signed zeros, with no epsilon.
+                if matches!(new.classify(), std::num::FpCategory::Zero) {
+                    break;
                 }
-
-                let stpmax = 10.0 * gstepi.abs();
-                let stpmin = vrysml.max(8.0 * eps2 * xi.abs());
-                step = if stpmax >= stpmin {
-                    step.clamp(stpmin, stpmax)
-                } else {
-                    stpmin
-                };
-
-                let stepb4 = gstepi;
-                let grdb4 = grad[i];
-
-                gstepi = step;
-
-                let mut xp = x.clone();
-                let mut xm = x.clone();
-                xp[i] = xi + step;
-                xm[i] = xi - step;
-
-                let fp = fcn.call(xp.as_slice());
-                let fm = fcn.call(xm.as_slice());
-
-                let grdi = 0.5 * (fp - fm) / step;
-                let g2i_new = (fp + fm - 2.0 * fcnmin) / (step * step);
-
-                grad[i] = grdi;
-                g2[i] = g2i_new;
-                gstep[i] = gstepi;
-                g2i = g2i_new;
-
-                if cycle > 0 {
-                    let step_change = (gstepi - stepb4).abs() / gstepi.abs();
-                    if step_change < step_tol {
-                        break;
-                    }
-                    let grad_change = (grdi - grdb4).abs() / (grdi.abs() + dfmin / step);
-                    if grad_change < grad_tol {
-                        break;
-                    }
+                let change = ((old - new) / new).abs();
+                if change > previous_change && cycle > 1 {
+                    break;
                 }
+                previous_change = change;
+                grad[i] = new;
+                gstep[i] = d;
+
+                if change < 0.05 || (old - new).abs() < roundoff || d < dmin {
+                    break;
+                }
+                d *= 0.2;
             }
         }
 
-        FunctionGradient::new(grad, g2, gstep)
+        FunctionGradient::new(grad, g2.clone(), gstep)
     }
 }

@@ -245,20 +245,9 @@ fn root_migrad_rosenbrock2_nfcn_stays_at_root_parity() {
 
     assert!(min.is_valid());
     assert_eq!(min.nfcn(), calls.get());
-    // Measured: Rust 144 calls against ROOT 140; both enter Hesse at 130.
-    // Hesse gradient refinement takes 8 calls in Rust and 4 in ROOT;
-    // both also make 1 centre, 4 diagonal and 1 mixed-derivative call.
-    // The seed gradient step first differs at call 4 of the call trace.
-    // D-005 in reports/verification/known_differences.md records the follow-up
-    // that aligns these steps and tightens this bound to zero.
+    // Both enter Hesse at 130 and make four gradient refinement calls.
     const ROOT_NFCN: usize = 140;
-    assert_eq!(min.nfcn(), 144);
-    assert!(
-        min.nfcn().abs_diff(ROOT_NFCN) <= 4,
-        "nfcn {} differs from the reference {} by more than 4",
-        min.nfcn(),
-        ROOT_NFCN
-    );
+    assert_eq!(min.nfcn(), ROOT_NFCN);
 }
 
 /// Check the strategy-2 Rosenbrock seed and its first covariance update.
@@ -291,7 +280,8 @@ fn strategy2_rosenbrock_first_dcovar_matches_reference() {
 #[test]
 fn root_migrad_continuation_budget_does_not_report_call_limit_when_converged() {
     let f = Rosenbrock2;
-    let maxfcn = 140;
+    // A budget below the 140-call fit keeps this test inside the continuation window.
+    let maxfcn = 139;
     let min = MnMigrad::new()
         .add("x", 0.0, 0.1)
         .add("y", 0.0, 0.1)
