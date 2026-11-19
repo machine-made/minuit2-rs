@@ -48,8 +48,7 @@ fn trace_iteration(
     };
     let _ = writeln!(
         file,
-        "{{\"runner\":\"minuit2-rs\",\"iter\":{},\"nfcn\":{},\"fval\":{:.17},\"edm\":{:.17},\"lambda\":{:.17},\"grad_norm\":{:.17},\"dcovar\":{:.17}}}",
-        iter, nfcn, fval, edm, lambda, grad_norm, dcovar,
+        "{{\"runner\":\"minuit2-rs\",\"iter\":{iter},\"nfcn\":{nfcn},\"fval\":{fval:.17},\"edm\":{edm:.17},\"lambda\":{lambda:.17},\"grad_norm\":{grad_norm:.17},\"dcovar\":{dcovar:.17}}}",
     );
 }
 
@@ -85,6 +84,10 @@ impl VariableMetricBuilder {
     }
 
     /// Top-level Migrad minimization with analytical gradients.
+    #[expect(
+        clippy::used_underscore_binding,
+        reason = "the public signature stays as it is"
+    )]
     pub fn minimum_with_gradient(
         fcn: &MnFcn,
         gradient_fcn: &dyn FCNGradient,
@@ -105,6 +108,15 @@ impl VariableMetricBuilder {
     /// `next_grad(new_params, prev_grad)` computes the gradient at `new_params`;
     /// the numerical strategy uses `prev_grad` for step-size warm-starting while
     /// the analytical strategy ignores it.
+    #[expect(
+        clippy::cast_precision_loss,
+        reason = "keeps the call budget rounding of the ROOT reference"
+    )]
+    #[expect(
+        clippy::cast_possible_truncation,
+        reason = "keeps the operation order of the ROOT reference"
+    )]
+    #[expect(clippy::cast_sign_loss, reason = "the call budget is nonnegative")]
     fn minimize_with_reseed(
         fcn: &MnFcn,
         seed: &MinimumSeed,
@@ -216,6 +228,10 @@ impl VariableMetricBuilder {
 
     /// Core quasi-Newton iteration: Newton step → pos-def fallback → line search
     /// → gradient update (via `next_grad`) → DFP update → EDM check.
+    #[expect(
+        clippy::too_many_lines,
+        reason = "keeps the iteration and stopping branches together in reference order"
+    )]
     fn iterate(
         fcn: &MnFcn,
         seed: &MinimumSeed,
@@ -393,6 +409,7 @@ impl VariableMetricBuilder {
     /// Rank-2 DFP update of the inverse Hessian approximation.
     ///
     /// Returns `(V_new, dcovar)` where `dcovar` measures how much the matrix changed.
+    #[must_use]
     pub fn update(
         error: &MinimumError,
         p_new: &MinimumParameters,
@@ -403,10 +420,12 @@ impl VariableMetricBuilder {
         Self::dfp_update(error, p_new, p_old, g_new, g_old)
     }
 
+    #[must_use]
     pub fn nrow(error: &MinimumError) -> usize {
         error.matrix().nrows()
     }
 
+    #[must_use]
     pub fn has_negative_g2(gradient: &FunctionGradient) -> bool {
         gradient.g2().iter().any(|g2| *g2 <= 0.0)
     }
@@ -415,6 +434,10 @@ impl VariableMetricBuilder {
         states.push(state);
     }
 
+    #[expect(
+        clippy::manual_midpoint,
+        reason = "keeps the operation order of the ROOT reference"
+    )]
     fn dfp_update(
         error: &MinimumError,
         p_new: &MinimumParameters,

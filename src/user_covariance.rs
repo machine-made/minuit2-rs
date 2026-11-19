@@ -10,6 +10,7 @@ pub struct MnUserCovariance {
 
 impl MnUserCovariance {
     /// Create a zero covariance matrix for `n` parameters.
+    #[must_use]
     pub fn new(n: usize) -> Self {
         Self {
             data: vec![0.0; n * (n + 1) / 2],
@@ -18,17 +19,23 @@ impl MnUserCovariance {
     }
 
     /// Create from raw upper-triangle data.
+    ///
+    /// # Panics
+    /// Panics if the data length differs from `n * (n + 1) / 2`.
+    #[must_use]
     pub fn from_vec(data: Vec<f64>, n: usize) -> Self {
         assert_eq!(data.len(), n * (n + 1) / 2, "data size mismatch");
         Self { data, nrow: n }
     }
 
     /// Get the number of rows (parameters).
+    #[must_use]
     pub fn nrow(&self) -> usize {
         self.nrow
     }
 
     /// Access element (row, col). Symmetric: (i,j) == (j,i).
+    #[must_use]
     pub fn get(&self, row: usize, col: usize) -> f64 {
         let (r, c) = if row <= col { (row, col) } else { (col, row) };
         self.data[r + c * (c + 1) / 2]
@@ -41,6 +48,7 @@ impl MnUserCovariance {
     }
 
     /// Get the raw upper-triangle data.
+    #[must_use]
     pub fn data(&self) -> &[f64] {
         &self.data
     }
@@ -55,6 +63,7 @@ impl MnUserCovariance {
         }
     }
 
+    #[must_use]
     pub fn size(&self) -> usize {
         self.data.len()
     }

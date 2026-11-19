@@ -15,24 +15,28 @@ use crate::mn_fcn::MnFcn;
 pub struct SimplexBuilder;
 
 impl SimplexBuilder {
+    #[expect(
+        clippy::too_many_lines,
+        reason = "keeps the simplex steps and stopping branches together in reference order"
+    )]
     pub fn minimum(
         fcn: &MnFcn,
         seed: &MinimumSeed,
         maxfcn: usize,
         minedm: f64,
     ) -> Vec<MinimumState> {
+        const REFLECTION: f64 = 1.0;
+        const CONTRACTION: f64 = 0.5;
+        const EXPANSION: f64 = 2.0;
+        const MIN_EXTRAPOLATION: f64 = 4.0;
+        const MAX_EXTRAPOLATION: f64 = 8.0;
+
         let n = seed.n_variable_params();
         let prec = seed.precision();
 
         let start = seed.parameters().vec().clone();
         let mut initial_steps: Vec<f64> =
             (0..n).map(|i| 10.0 * seed.gradient().gstep()[i]).collect();
-
-        const REFLECTION: f64 = 1.0;
-        const CONTRACTION: f64 = 0.5;
-        const EXPANSION: f64 = 2.0;
-        const MIN_EXTRAPOLATION: f64 = 4.0;
-        const MAX_EXTRAPOLATION: f64 = 8.0;
 
         let reflected_weight = 1.0 + REFLECTION;
         let expanded_weight = 1.0 + REFLECTION * EXPANSION;
@@ -170,7 +174,7 @@ impl SimplexBuilder {
         for i in 0..n {
             let mut lo = f64::MAX;
             let mut hi = f64::MIN;
-            for (_, v) in simplex.params().iter() {
+            for (_, v) in simplex.params() {
                 if v[i] < lo {
                     lo = v[i];
                 }
@@ -191,6 +195,10 @@ impl SimplexBuilder {
         vec![state]
     }
 
+    #[expect(
+        clippy::cast_precision_loss,
+        reason = "the count is far below 2^53, so the conversion is exact"
+    )]
     fn centroid_without(simplex: &SimplexParameters, excluded: usize, n: usize) -> Vec<f64> {
         let weight = 1.0 / n as f64;
         let mut centroid = vec![0.0; n];

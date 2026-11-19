@@ -1,9 +1,9 @@
 //! Remove a parameter from a covariance/Hessian matrix.
 //!
 //! Three covariance squeeze operations:
-//! 1. Squeeze a DMatrix (remove row/col n)
-//! 2. Squeeze an MnUserCovariance (invert → squeeze Hessian → invert back)
-//! 3. Squeeze a MinimumError (extract Hessian → squeeze → invert → new MinimumError)
+//! 1. Squeeze a `DMatrix` (remove row/col n)
+//! 2. Squeeze an `MnUserCovariance` (invert → squeeze Hessian → invert back)
+//! 3. Squeeze a `MinimumError` (extract Hessian → squeeze → invert → new `MinimumError`)
 
 use nalgebra::DMatrix;
 
@@ -11,6 +11,10 @@ use crate::minimum::error::MinimumError;
 use crate::user_covariance::MnUserCovariance;
 
 /// Remove row and column `n` from a square matrix.
+///
+/// # Panics
+/// Panics if `n` is outside the rows, or the matrix has fewer columns than rows.
+#[must_use]
 pub fn squeeze_matrix(mat: &DMatrix<f64>, n: usize) -> DMatrix<f64> {
     let dim = mat.nrows();
     assert!(n < dim, "index {n} out of range for {dim}x{dim} matrix");
@@ -38,6 +42,10 @@ pub fn squeeze_matrix(mat: &DMatrix<f64>, n: usize) -> DMatrix<f64> {
 /// Squeeze a user covariance matrix: invert → remove row/col → invert back.
 ///
 /// If inversion fails, returns a diagonal matrix from the remaining elements.
+///
+/// # Panics
+/// Panics if `n` is outside the covariance matrix.
+#[must_use]
 pub fn squeeze_user_covariance(cov: &MnUserCovariance, n: usize) -> MnUserCovariance {
     let nrow = cov.nrow();
     assert!(
@@ -54,23 +62,17 @@ pub fn squeeze_user_covariance(cov: &MnUserCovariance, n: usize) -> MnUserCovari
     }
 
     // Invert to get Hessian
-    let hessian = match mat.clone().try_inverse() {
-        Some(h) => h,
-        None => {
-            // Fallback: return diagonal of remaining elements
-            return make_diagonal_user_cov(cov, n);
-        }
+    let Some(hessian) = mat.clone().try_inverse() else {
+        // Inversion failure keeps the diagonal of the remaining elements.
+        return make_diagonal_user_cov(cov, n);
     };
 
     // Squeeze the Hessian
     let squeezed_h = squeeze_matrix(&hessian, n);
 
     // Invert back to covariance
-    let squeezed_cov = match squeezed_h.try_inverse() {
-        Some(c) => c,
-        None => {
-            return make_diagonal_user_cov(cov, n);
-        }
+    let Some(squeezed_cov) = squeezed_h.try_inverse() else {
+        return make_diagonal_user_cov(cov, n);
     };
 
     // Convert back to MnUserCovariance
@@ -84,7 +86,11 @@ pub fn squeeze_user_covariance(cov: &MnUserCovariance, n: usize) -> MnUserCovari
     result
 }
 
-/// Squeeze a MinimumError: extract Hessian → squeeze → invert → new error.
+/// Squeeze a `MinimumError`: extract Hessian → squeeze → invert → new error.
+///
+/// # Panics
+/// Panics if `n` is outside the matrix, or the matrix has fewer columns than rows.
+#[must_use]
 pub fn squeeze_error(err: &MinimumError, n: usize) -> MinimumError {
     let mat = err.matrix();
     let dim = mat.nrows();
@@ -94,39 +100,35 @@ pub fn squeeze_error(err: &MinimumError, n: usize) -> MinimumError {
     );
 
     // Get Hessian (inverse of error matrix)
-    let hessian = match mat.clone().try_inverse() {
-        Some(h) => h,
-        None => {
-            // Fallback: diagonal from squeezed covariance
-            let squeezed = squeeze_matrix(mat, n);
-            return MinimumError::new(squeezed, err.dcovar());
-        }
+    let Some(hessian) = mat.clone().try_inverse() else {
+        // Inversion failure keeps the squeezed covariance.
+        let squeezed = squeeze_matrix(mat, n);
+        return MinimumError::new(squeezed, err.dcovar());
     };
 
     // Squeeze the Hessian
     let squeezed_h = squeeze_matrix(&hessian, n);
 
     // Invert back to covariance
-    match squeezed_h.try_inverse() {
-        Some(cov) => MinimumError::new(cov, err.dcovar()),
-        None => {
-            // Fallback: use diagonal
-            let new_dim = dim - 1;
-            let mut diag = DMatrix::zeros(new_dim, new_dim);
-            let mut ri = 0;
-            for i in 0..dim {
-                if i == n {
-                    continue;
-                }
-                diag[(ri, ri)] = mat[(i, i)];
-                ri += 1;
+    if let Some(cov) = squeezed_h.try_inverse() {
+        MinimumError::new(cov, err.dcovar())
+    } else {
+        // Fallback: use diagonal
+        let new_dim = dim - 1;
+        let mut diag = DMatrix::zeros(new_dim, new_dim);
+        let mut ri = 0;
+        for i in 0..dim {
+            if i == n {
+                continue;
             }
-            MinimumError::new(diag, err.dcovar())
+            diag[(ri, ri)] = mat[(i, i)];
+            ri += 1;
         }
+        MinimumError::new(diag, err.dcovar())
     }
 }
 
-/// Fallback: create diagonal MnUserCovariance from remaining elements.
+/// Fallback: create diagonal `MnUserCovariance` from remaining elements.
 fn make_diagonal_user_cov(cov: &MnUserCovariance, skip: usize) -> MnUserCovariance {
     let new_dim = cov.nrow() - 1;
     let mut result = MnUserCovariance::new(new_dim);

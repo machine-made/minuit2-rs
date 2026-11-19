@@ -1,4 +1,4 @@
-//! MnContours: 2D confidence contours.
+//! `MnContours`: 2D confidence contours.
 //!
 //! Computes points tracing a contour where `F(x, y) = Fmin + Up` in the
 //! `(par_x, par_y)` plane.
@@ -31,6 +31,7 @@ impl<'a> MnContours<'a> {
     }
 
     /// Set strategy level.
+    #[must_use]
     pub fn with_strategy(mut self, level: u32) -> Self {
         self.strategy = MnStrategy::new(level);
         self
@@ -40,6 +41,15 @@ impl<'a> MnContours<'a> {
     ///
     /// Returns `npoints` points tracing the F = Fmin + Up contour.
     /// Minimum 4 points (the MINOS cardinal points).
+    #[must_use]
+    #[expect(
+        clippy::manual_midpoint,
+        reason = "keeps the operation order of the ROOT reference"
+    )]
+    #[expect(
+        clippy::no_effect_underscore_binding,
+        reason = "retains the reference call budget calculation"
+    )]
     pub fn points(&self, par_x: usize, par_y: usize, npoints: usize) -> Vec<(f64, f64)> {
         let npoints = npoints.max(4);
         let nvar = self.minimum.n_variable_params();
@@ -80,12 +90,12 @@ impl<'a> MnContours<'a> {
         }
 
         // Scale factors for distance computation
-        let scalx = if (x_up - x_lo).abs() > 1e-15 {
+        let horizontal_scale = if (x_up - x_lo).abs() > 1e-15 {
             1.0 / (x_up - x_lo)
         } else {
             1.0
         };
-        let scaly = if (y_up - y_lo).abs() > 1e-15 {
+        let vertical_scale = if (y_up - y_lo).abs() > 1e-15 {
             1.0 / (y_up - y_lo)
         } else {
             1.0
@@ -103,8 +113,8 @@ impl<'a> MnContours<'a> {
             let mut max_idx = 0;
             for i in 0..pts.len() {
                 let j = (i + 1) % pts.len();
-                let dx = (pts[j].0 - pts[i].0) * scalx;
-                let dy = (pts[j].1 - pts[i].1) * scaly;
+                let dx = (pts[j].0 - pts[i].0) * horizontal_scale;
+                let dy = (pts[j].1 - pts[i].1) * vertical_scale;
                 let dist = (dx * dx + dy * dy).sqrt();
                 if dist > max_dist {
                     max_dist = dist;
@@ -120,8 +130,8 @@ impl<'a> MnContours<'a> {
             let dx = pts[j].0 - pts[max_idx].0;
             let dy = pts[j].1 - pts[max_idx].1;
             // Normal to the gap segment, pointing outward from minimum
-            let nx = -dy * scalx;
-            let ny = dx * scaly;
+            let nx = -dy * horizontal_scale;
+            let ny = dx * vertical_scale;
             let norm = (nx * nx + ny * ny).sqrt();
             if norm < 1e-15 {
                 continue;
@@ -170,6 +180,7 @@ impl<'a> MnContours<'a> {
     }
 
     /// Compute full contour with MINOS errors for both axes.
+    #[must_use]
     pub fn contour(&self, par_x: usize, par_y: usize, npoints: usize) -> ContoursError {
         let (x_minos, y_minos) = self.minos_errors(par_x, par_y);
 

@@ -433,8 +433,7 @@ mod tests {
         let x_end = seed.state().parameters().vec()[0];
         assert!(
             (x_end - 0.1).abs() > 0.5,
-            "the escape did not move x from 0.1: x = {}",
-            x_end
+            "the escape did not move x from 0.1: x = {x_end}"
         );
         let g2 = seed.state().gradient().g2();
         let expected_x = 12.0 * x_end * x_end - 4.0;

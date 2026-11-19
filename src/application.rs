@@ -4,6 +4,7 @@
 //! where `n` is the number of variable parameters.
 
 /// Compute default maximum function calls for `n` variable parameters.
+#[must_use]
 pub fn default_max_fcn(n: usize) -> usize {
     200 + 100 * n + 5 * n * n
 }

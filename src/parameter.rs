@@ -3,6 +3,10 @@
 /// Parameters can be free, fixed, or constant.
 /// "Constant" means permanently fixed (never released during minimization).
 #[derive(Debug, Clone)]
+#[expect(
+    clippy::struct_excessive_bools,
+    reason = "the public signature stays as it is"
+)]
 pub struct MinuitParameter {
     num: usize,
     name: String,
@@ -116,10 +120,12 @@ impl MinuitParameter {
         }
     }
 
+    #[must_use]
     pub fn number(&self) -> usize {
         self.num
     }
 
+    #[must_use]
     pub fn name(&self) -> &str {
         &self.name
     }
@@ -128,10 +134,12 @@ impl MinuitParameter {
         self.name = name.into();
     }
 
+    #[must_use]
     pub fn value(&self) -> f64 {
         self.value
     }
 
+    #[must_use]
     pub fn error(&self) -> f64 {
         self.error
     }
@@ -146,6 +154,9 @@ impl MinuitParameter {
 
     // --- Limits ---
 
+    ///
+    /// # Panics
+    /// Panics if the lower limit is not less than the upper limit.
     pub fn set_limits(&mut self, lower: f64, upper: f64) {
         assert!(lower < upper, "lower limit must be less than upper limit");
         self.has_lower_limit = true;
@@ -169,22 +180,27 @@ impl MinuitParameter {
         self.has_upper_limit = false;
     }
 
+    #[must_use]
     pub fn has_lower_limit(&self) -> bool {
         self.has_lower_limit
     }
 
+    #[must_use]
     pub fn has_upper_limit(&self) -> bool {
         self.has_upper_limit
     }
 
+    #[must_use]
     pub fn has_limits(&self) -> bool {
         self.has_lower_limit && self.has_upper_limit
     }
 
+    #[must_use]
     pub fn lower_limit(&self) -> f64 {
         self.lower_limit
     }
 
+    #[must_use]
     pub fn upper_limit(&self) -> f64 {
         self.upper_limit
     }
@@ -201,10 +217,12 @@ impl MinuitParameter {
         }
     }
 
+    #[must_use]
     pub fn is_fixed(&self) -> bool {
         self.is_fixed
     }
 
+    #[must_use]
     pub fn is_const(&self) -> bool {
         self.is_const
     }

@@ -17,6 +17,7 @@ pub struct MinimumState {
 }
 
 impl MinimumState {
+    #[must_use]
     pub fn new(
         parameters: MinimumParameters,
         error: MinimumError,
@@ -35,6 +36,7 @@ impl MinimumState {
 
     /// Create a minimal state with just parameters (no gradient/error info).
     /// Used by Simplex which doesn't compute a Hessian.
+    #[must_use]
     pub fn from_params_edm(parameters: MinimumParameters, edm: f64, nfcn: usize) -> Self {
         let n = parameters.vec().len();
         Self {
@@ -51,44 +53,54 @@ impl MinimumState {
     }
 
     /// Get the parameters at this state.
+    #[must_use]
     pub fn parameters(&self) -> &MinimumParameters {
         &self.parameters
     }
 
     /// Get the error matrix at this state.
+    #[must_use]
     pub fn error(&self) -> &MinimumError {
         &self.error
     }
 
     /// Get the gradient at this state.
+    #[must_use]
     pub fn gradient(&self) -> &FunctionGradient {
         &self.gradient
     }
 
+    #[must_use]
     pub fn fval(&self) -> f64 {
         self.parameters.fval()
     }
 
+    #[must_use]
     pub fn edm(&self) -> f64 {
         self.edm
     }
 
+    #[must_use]
     pub fn nfcn(&self) -> usize {
         self.nfcn
     }
 
+    #[must_use]
     pub fn is_valid(&self) -> bool {
         self.parameters.is_valid()
     }
 
+    #[must_use]
     pub fn has_parameters(&self) -> bool {
         true
     }
 
+    #[must_use]
     pub fn has_covariance(&self) -> bool {
         self.error.is_available()
     }
 
+    #[must_use]
     pub fn size(&self) -> usize {
         self.parameters.vec().len()
     }

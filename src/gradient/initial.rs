@@ -4,7 +4,7 @@
 //! parameter errors and the error definition (`Up` value). It does not evaluate
 //! the FCN.
 //!
-//! The key formula: g2 = 2 * error_def / dirin^2, grad = g2 * dirin,
+//! The key formula: g2 = 2 * `error_def` / dirin^2, grad = g2 * dirin,
 //! where dirin is the internal-space step derived from the external error.
 
 use nalgebra::DVector;
@@ -20,12 +20,17 @@ pub struct InitialGradientCalculator {
 }
 
 impl InitialGradientCalculator {
+    #[must_use]
     pub fn new(strategy: MnStrategy) -> Self {
         Self {
             _strategy: strategy,
         }
     }
 
+    #[expect(
+        clippy::manual_midpoint,
+        reason = "keeps the operation order of the ROOT reference"
+    )]
     pub fn compute(
         &self,
         fcn: &MnFcn,

@@ -1,4 +1,4 @@
-//! SimplexMinimizer: composes seed generator + builder.
+//! `SimplexMinimizer`: composes seed generator + builder.
 //!
 //! Internal minimizer component used by the public `MnSimplex` API.
 

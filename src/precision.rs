@@ -9,6 +9,7 @@ pub struct MnMachinePrecision {
 
 impl MnMachinePrecision {
     /// Return the precision ROOT stores for double arithmetic.
+    #[must_use]
     pub fn new() -> Self {
         // MnMachinePrecision.cxx:26-27. Four times machine epsilon.
         let eps = 4.0 * f64::EPSILON;
@@ -19,11 +20,13 @@ impl MnMachinePrecision {
     }
 
     /// Return the stored machine epsilon.
+    #[must_use]
     pub fn eps(&self) -> f64 {
         self.eps
     }
 
     /// Return `2 * sqrt(eps)`.
+    #[must_use]
     pub fn eps2(&self) -> f64 {
         self.eps2
     }

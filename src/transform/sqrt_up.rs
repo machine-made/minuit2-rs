@@ -8,6 +8,7 @@ use crate::precision::MnMachinePrecision;
 pub struct SqrtUpTransform;
 
 impl SqrtUpTransform {
+    #[must_use]
     pub fn dext2int(&self, value: f64, upper: f64, lower: f64, prec: &MnMachinePrecision) -> f64 {
         let int = self.ext2int(value, upper, lower, prec);
         let d = self.dint2ext(int, upper, lower);

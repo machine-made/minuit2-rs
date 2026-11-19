@@ -7,9 +7,9 @@ use nalgebra::DVector;
 
 #[derive(Debug, Clone)]
 pub struct FunctionGradient {
-    /// First derivatives ∂f/∂p_i.
+    /// First derivatives ∂`f/∂p_i`.
     grad: DVector<f64>,
-    /// Second derivative estimates ∂²f/∂p_i².
+    /// Second derivative estimates ∂`²f/∂p_i²`.
     g2: DVector<f64>,
     /// Step sizes used to compute the gradient.
     gstep: DVector<f64>,
@@ -21,6 +21,7 @@ pub struct FunctionGradient {
 
 impl FunctionGradient {
     /// Numerical gradient with grad, g2, and gstep.
+    #[must_use]
     pub fn new(grad: DVector<f64>, g2: DVector<f64>, gstep: DVector<f64>) -> Self {
         Self {
             grad,
@@ -32,6 +33,7 @@ impl FunctionGradient {
     }
 
     /// Analytical gradient (only grad vector, no g2/gstep).
+    #[must_use]
     pub fn analytical(grad: DVector<f64>) -> Self {
         let n = grad.len();
         Self {
@@ -43,22 +45,27 @@ impl FunctionGradient {
         }
     }
 
+    #[must_use]
     pub fn grad(&self) -> &DVector<f64> {
         &self.grad
     }
 
+    #[must_use]
     pub fn g2(&self) -> &DVector<f64> {
         &self.g2
     }
 
+    #[must_use]
     pub fn gstep(&self) -> &DVector<f64> {
         &self.gstep
     }
 
+    #[must_use]
     pub fn is_valid(&self) -> bool {
         self.valid
     }
 
+    #[must_use]
     pub fn is_analytical(&self) -> bool {
         self.analytical
     }

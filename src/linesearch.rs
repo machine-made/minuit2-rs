@@ -13,6 +13,14 @@ use nalgebra::DVector;
 ///
 /// `gdel` is the directional derivative: step · gradient (should be negative
 /// for a descent direction). Returns `MnParabolaPoint { x: λ_opt, y: f_opt }`.
+#[expect(
+    clippy::too_many_lines,
+    reason = "keeps the line search branches together in reference order"
+)]
+#[expect(
+    clippy::manual_midpoint,
+    reason = "keeps the operation order of the ROOT reference"
+)]
 pub fn mn_linesearch(
     fcn: &MnFcn,
     params: &MinimumParameters,
@@ -77,10 +85,10 @@ pub fn mn_linesearch(
     let second_value = loop {
         let denom = 2.0 * (flast - start_value - gdel * slam) / (slam * slam);
         // exact zero only: no finite ratio
-        if denom != 0.0 {
-            slam = -gdel / denom;
-        } else {
+        if denom == 0.0 {
             slam = 1.0;
+        } else {
+            slam = -gdel / denom;
         }
         if slam < 0.0 {
             slam = slamax;

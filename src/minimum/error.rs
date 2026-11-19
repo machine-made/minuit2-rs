@@ -19,6 +19,10 @@ pub enum ErrorMatrixStatus {
 }
 
 #[derive(Debug, Clone)]
+#[expect(
+    clippy::struct_excessive_bools,
+    reason = "the public signature stays as it is"
+)]
 pub struct MinimumError {
     /// Inverse Hessian matrix in internal space.
     matrix: DMatrix<f64>,
@@ -40,6 +44,7 @@ pub struct MinimumError {
 
 impl MinimumError {
     /// Create an approximate error matrix from a diagonal (step sizes squared).
+    #[must_use]
     pub fn from_diagonal(n: usize) -> Self {
         Self {
             matrix: DMatrix::identity(n, n),
@@ -54,6 +59,7 @@ impl MinimumError {
     }
 
     /// Create from a full inverse Hessian matrix.
+    #[must_use]
     pub fn new(matrix: DMatrix<f64>, dcovar: f64) -> Self {
         Self {
             matrix,
@@ -67,15 +73,18 @@ impl MinimumError {
         }
     }
 
+    #[must_use]
     pub fn matrix(&self) -> &DMatrix<f64> {
         &self.matrix
     }
 
+    #[must_use]
     pub fn dcovar(&self) -> f64 {
         self.dcovar
     }
 
     /// Get the status of the error matrix.
+    #[must_use]
     pub fn status(&self) -> ErrorMatrixStatus {
         self.status
     }
@@ -84,20 +93,24 @@ impl MinimumError {
         self.status = status;
     }
 
+    #[must_use]
     pub fn is_valid(&self) -> bool {
         self.valid
     }
 
     /// An error matrix that stopped at the call limit is never accurate.
+    #[must_use]
     pub fn is_accurate(&self) -> bool {
         self.status == ErrorMatrixStatus::Accurate && !self.reached_call_limit
     }
 
+    #[must_use]
     pub fn is_pos_def(&self) -> bool {
         !self.made_pos_def
     }
 
     /// Check if the Hessian calculation failed.
+    #[must_use]
     pub fn hesse_failed(&self) -> bool {
         self.hesse_failed
     }
@@ -109,10 +122,12 @@ impl MinimumError {
         }
     }
 
+    #[must_use]
     pub fn invert_failed(&self) -> bool {
         self.invert_failed
     }
 
+    #[must_use]
     pub fn has_reached_call_limit(&self) -> bool {
         self.reached_call_limit
     }
@@ -124,14 +139,17 @@ impl MinimumError {
         }
     }
 
+    #[must_use]
     pub fn is_available(&self) -> bool {
         self.valid
     }
 
+    #[must_use]
     pub fn is_made_pos_def(&self) -> bool {
         self.made_pos_def
     }
 
+    #[must_use]
     pub fn is_not_pos_def(&self) -> bool {
         self.invert_failed
     }
@@ -151,16 +169,19 @@ impl MinimumError {
     }
 
     /// Inverse of the error matrix = the Hessian itself.
+    #[must_use]
     pub fn hessian(&self) -> Option<DMatrix<f64>> {
         self.matrix.clone().try_inverse()
     }
 
     /// Invert a matrix and return `None` on failure.
+    #[must_use]
     pub fn invert_matrix(matrix: &DMatrix<f64>) -> Option<DMatrix<f64>> {
         matrix.clone().try_inverse()
     }
 
     /// Debug rendering helper.
+    #[must_use]
     pub fn print(&self) -> String {
         format!(
             "MinimumError(valid={}, accurate={}, made_pos_def={}, invert_failed={}, dcovar={:.6e})",
@@ -173,6 +194,7 @@ impl MinimumError {
     }
 
     /// Compatibility shim for a heuristic parser false positive in upstream header extraction.
+    #[must_use]
     pub fn tmp(&self) -> Option<DMatrix<f64>> {
         self.hessian()
     }

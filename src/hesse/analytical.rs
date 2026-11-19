@@ -138,6 +138,14 @@ fn hesse_failed(state: &MinimumState) -> HesseResult {
 /// The sums in the cofactors add at most a factor of 24 for four rows.
 /// Larger matrices use a pivoted elimination without a determinant, but the same bound is kept for all sizes.
 /// Every other matrix takes the plain `try_inverse()` path, so its result does not change by a single bit.
+#[expect(
+    clippy::cast_precision_loss,
+    reason = "the count is far below 2^53, so the conversion is exact"
+)]
+#[expect(
+    clippy::cast_possible_truncation,
+    reason = "the rounded binary exponent fits in i32"
+)]
 fn invert(matrix: DMatrix<f64>) -> Option<DMatrix<f64>> {
     let n = matrix.nrows() as f64;
     let largest = matrix
@@ -219,14 +227,22 @@ mod tests {
     use super::*;
 
     /// Deterministic numbers in [0, 1) from a linear congruential generator.
+    #[expect(
+        clippy::cast_precision_loss,
+        reason = "shifting leaves at most 53 bits, so the conversion is exact"
+    )]
     fn uniform(state: &mut u64) -> f64 {
         *state = state
-            .wrapping_mul(6364136223846793005)
-            .wrapping_add(1442695040888963407);
-        (*state >> 11) as f64 / 9007199254740992.0
+            .wrapping_mul(6_364_136_223_846_793_005)
+            .wrapping_add(1_442_695_040_888_963_407);
+        (*state >> 11) as f64 / 9_007_199_254_740_992.0
     }
 
     /// Symmetric, diagonally dominant matrix with diagonal entries from 10^low to 10^high.
+    #[expect(
+        clippy::cast_precision_loss,
+        reason = "the count is far below 2^53, so the conversion is exact"
+    )]
     fn ordinary_matrix(n: usize, low: f64, high: f64, seed: u64) -> DMatrix<f64> {
         let mut state = seed;
         let diagonal: Vec<f64> = (0..n)
@@ -247,6 +263,10 @@ mod tests {
     }
 
     #[test]
+    #[expect(
+        clippy::cast_precision_loss,
+        reason = "the count is far below 2^53, so the conversion is exact"
+    )]
     fn ordinary_matrices_keep_the_plain_inverse_bit_for_bit() {
         for n in [1, 2, 3, 4, 5, 8, 13, 20] {
             for (low, high) in [(0.0, 10.0), (-5.0, 5.0)] {

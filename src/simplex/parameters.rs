@@ -5,7 +5,7 @@
 
 #[derive(Debug, Clone)]
 pub struct SimplexParameters {
-    /// (function_value, parameter_vector) pairs for each vertex.
+    /// (`function_value`, `parameter_vector`) pairs for each vertex.
     params: Vec<(f64, Vec<f64>)>,
     /// Index of vertex with lowest function value.
     jlow: usize,
@@ -14,6 +14,7 @@ pub struct SimplexParameters {
 }
 
 impl SimplexParameters {
+    #[must_use]
     pub fn new(params: Vec<(f64, Vec<f64>)>) -> Self {
         let (jlow, jhigh) = Self::find_extremes(&params);
         Self {
@@ -45,44 +46,53 @@ impl SimplexParameters {
         self.jhigh = jhigh;
     }
 
+    #[must_use]
     pub fn params(&self) -> &[(f64, Vec<f64>)] {
         &self.params
     }
 
     /// Index of best (lowest) vertex.
+    #[must_use]
     pub fn jlow(&self) -> usize {
         self.jlow
     }
 
+    #[must_use]
     pub fn jl(&self) -> usize {
         self.jlow()
     }
 
     /// Index of worst (highest) vertex.
+    #[must_use]
     pub fn jhigh(&self) -> usize {
         self.jhigh
     }
 
+    #[must_use]
     pub fn jh(&self) -> usize {
         self.jhigh()
     }
 
     /// Function value at best vertex.
+    #[must_use]
     pub fn fval_best(&self) -> f64 {
         self.params[self.jlow].0
     }
 
     /// Function value at worst vertex.
+    #[must_use]
     pub fn fval_worst(&self) -> f64 {
         self.params[self.jhigh].0
     }
 
     /// Parameter vector at best vertex.
+    #[must_use]
     pub fn best(&self) -> &[f64] {
         &self.params[self.jlow].1
     }
 
     /// Compatibility helper for the current direction-like span in simplex space.
+    #[must_use]
     pub fn dirin(&self) -> Vec<f64> {
         if self.params.is_empty() {
             return Vec::new();
@@ -93,23 +103,27 @@ impl SimplexParameters {
     }
 
     /// Number of vertices (N+1).
+    #[must_use]
     pub fn len(&self) -> usize {
         self.params.len()
     }
 
     /// Whether the simplex has no vertices.
+    #[must_use]
     pub fn is_empty(&self) -> bool {
         self.params.is_empty()
     }
 
     /// EDM estimate: difference between worst and best function values.
+    #[must_use]
     pub fn edm(&self) -> f64 {
         self.fval_worst() - self.fval_best()
     }
 
     /// Index of second-worst vertex.
+    #[must_use]
     pub fn jsecond_high(&self) -> usize {
-        let mut jsec = if self.jhigh == 0 { 1 } else { 0 };
+        let mut jsec = usize::from(self.jhigh == 0);
         for (i, (fval, _)) in self.params.iter().enumerate() {
             if i != self.jhigh && *fval > self.params[jsec].0 {
                 jsec = i;

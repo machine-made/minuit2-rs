@@ -12,6 +12,7 @@ use crate::user_transformation::MnUserTransformation;
 pub struct HessianGradientCalculator;
 
 impl HessianGradientCalculator {
+    #[must_use]
     pub fn ncycle(strategy: &MnStrategy) -> u32 {
         strategy.hessian_gradient_ncycles()
     }
@@ -34,10 +35,10 @@ impl HessianGradientCalculator {
 
         for i in 0..x.len() {
             let xi = x[i];
-            let dmin = 4.0 * eps2 * (xi + eps2);
+            let minimum_step = 4.0 * eps2 * (xi + eps2);
             let epspri = eps2 + (grad[i] * eps2).abs();
             let optstp = (dfmin / (g2[i].abs() + epspri)).sqrt();
-            let mut d = (0.2 * gstep[i].abs()).min(optstp).max(dmin);
+            let mut d = (0.2 * gstep[i].abs()).min(optstp).max(minimum_step);
             let mut previous_change = 10000.0;
 
             for cycle in 0..Self::ncycle(strategy) {
@@ -63,7 +64,7 @@ impl HessianGradientCalculator {
                 grad[i] = new;
                 gstep[i] = d;
 
-                if change < 0.05 || (old - new).abs() < roundoff || d < dmin {
+                if change < 0.05 || (old - new).abs() < roundoff || d < minimum_step {
                     break;
                 }
                 d *= 0.2;

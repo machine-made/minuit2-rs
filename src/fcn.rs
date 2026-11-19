@@ -70,7 +70,7 @@ pub trait FCN {
     }
 }
 
-/// Blanket impl: any `Fn(&[f64]) -> f64` is a valid FCN with error_def = 1.0.
+/// Blanket impl: any `Fn(&[f64]) -> f64` is a valid FCN with `error_def` = 1.0.
 impl<F> FCN for F
 where
     F: Fn(&[f64]) -> f64,
@@ -134,6 +134,9 @@ mod tests {
         let f = QuadGrad;
         assert_eq!(FCNGradient::gradient(&f, &[3.0]), vec![6.0]);
         assert!(!FCN::has_gradient(&f));
-        assert!(FCN::gradient_with_prev_result(&f, &[3.0], None, None, None).is_empty());
+        assert_eq!(
+            FCN::gradient_with_prev_result(&f, &[3.0], None, None, None).len(),
+            0
+        );
     }
 }

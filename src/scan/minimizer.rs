@@ -1,4 +1,4 @@
-//! SCAn minimizer: composes seed generator + brute-force builder.
+//! `SCAn` minimizer: composes seed generator + brute-force builder.
 
 use super::builder::ScanBuilder;
 use super::seed::ScanSeedGenerator;

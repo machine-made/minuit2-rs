@@ -21,6 +21,7 @@ pub struct Numerical2PGradientCalculator {
 }
 
 impl Numerical2PGradientCalculator {
+    #[must_use]
     pub fn new(strategy: MnStrategy) -> Self {
         Self { strategy }
     }

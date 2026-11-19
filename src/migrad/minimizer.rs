@@ -1,4 +1,4 @@
-//! VariableMetricMinimizer: composes seed generator + builder.
+//! `VariableMetricMinimizer`: composes seed generator + builder.
 //!
 //! Orchestrates the Migrad minimization by generating the seed, then running
 //! the `VariableMetricBuilder` loop.

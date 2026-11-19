@@ -9,6 +9,10 @@ use nalgebra::DMatrix;
 ///
 /// Returns `(coefficients, is_valid)`. If the matrix cannot be inverted,
 /// returns zeros and `is_valid = false`.
+///
+/// # Panics
+/// Panics if the covariance matrix is not square.
+#[must_use]
 pub fn global_correlation_coefficients(cov: &DMatrix<f64>) -> (Vec<f64>, bool) {
     let n = cov.nrows();
     assert_eq!(n, cov.ncols(), "covariance matrix must be square");
@@ -38,6 +42,7 @@ pub fn global_correlation_coefficients(cov: &DMatrix<f64>) -> (Vec<f64>, bool) {
     (gcc, valid)
 }
 
+#[must_use]
 pub fn is_valid(cov: &DMatrix<f64>) -> bool {
     global_correlation_coefficients(cov).1
 }

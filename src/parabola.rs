@@ -11,14 +11,17 @@ pub struct MnParabolaPoint {
 }
 
 impl MnParabolaPoint {
+    #[must_use]
     pub fn new(x: f64, y: f64) -> Self {
         Self { x, y }
     }
 
+    #[must_use]
     pub fn x(&self) -> f64 {
         self.x
     }
 
+    #[must_use]
     pub fn y(&self) -> f64 {
         self.y
     }
@@ -33,47 +36,56 @@ pub struct MnParabola {
 }
 
 impl MnParabola {
+    #[must_use]
     pub fn new(a: f64, b: f64, c: f64) -> Self {
         Self { a, b, c }
     }
 
     /// x coordinate of the minimum: -b / (2a).
+    #[must_use]
     pub fn min(&self) -> f64 {
         -self.b / (2.0 * self.a)
     }
 
     /// y value at the minimum.
+    #[must_use]
     pub fn y_min(&self) -> f64 {
         let xmin = self.min();
         self.a * xmin * xmin + self.b * xmin + self.c
     }
 
     /// Evaluate at a given x.
+    #[must_use]
     pub fn y(&self, x: f64) -> f64 {
         self.a * x * x + self.b * x + self.c
     }
 
     /// Larger x root for a target y value.
+    #[must_use]
     pub fn x_pos(&self, y: f64) -> f64 {
         (y / self.a + self.min() * self.min() - self.c / self.a).sqrt() + self.min()
     }
 
     /// Smaller x root for a target y value.
+    #[must_use]
     pub fn x_neg(&self, y: f64) -> f64 {
         -(y / self.a + self.min() * self.min() - self.c / self.a).sqrt() + self.min()
     }
 
     /// Get the quadratic coefficient.
+    #[must_use]
     pub fn a(&self) -> f64 {
         self.a
     }
 
     /// Get the linear coefficient.
+    #[must_use]
     pub fn b(&self) -> f64 {
         self.b
     }
 
     /// Get the constant coefficient.
+    #[must_use]
     pub fn c(&self) -> f64 {
         self.c
     }
@@ -82,6 +94,7 @@ impl MnParabola {
 /// Fit a parabola through two points with a known derivative at the first.
 ///
 /// Given (x1, y1) with dfdx at x1, and (x2, y2), solve for a, b, c.
+#[must_use]
 pub fn from_2_points_gradient(
     p1: MnParabolaPoint,
     p2: MnParabolaPoint,
@@ -110,7 +123,8 @@ pub fn from_2_points_gradient(
     MnParabola::new(a, b, c)
 }
 
-/// Fit a parabola through three points using the C++ MnParabola::operator() formula.
+/// Fit a parabola through three points using the C++ `MnParabola::operator()` formula.
+#[must_use]
 pub fn from_3_points(p1: MnParabolaPoint, p2: MnParabolaPoint, p3: MnParabolaPoint) -> MnParabola {
     // Standard Lagrange interpolation for 3 points, rearranged to ax²+bx+c
     let x1 = p1.x;

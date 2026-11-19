@@ -28,6 +28,7 @@ pub struct FunctionMinimum {
 }
 
 impl FunctionMinimum {
+    #[must_use]
     pub fn new(seed: MinimumSeed, states: Vec<MinimumState>, up: f64) -> Self {
         // Build user state from the final internal state
         let user_state = Self::build_user_state(&seed, states.last().unwrap_or(seed.state()), up);
@@ -43,6 +44,7 @@ impl FunctionMinimum {
     }
 
     /// Create a result that hit the call limit.
+    #[must_use]
     pub fn with_call_limit(seed: MinimumSeed, states: Vec<MinimumState>, up: f64) -> Self {
         let user_state = Self::build_user_state(&seed, states.last().unwrap_or(seed.state()), up);
         Self {
@@ -56,6 +58,7 @@ impl FunctionMinimum {
     }
 
     /// Create a result above max EDM.
+    #[must_use]
     pub fn above_max_edm(seed: MinimumSeed, states: Vec<MinimumState>, up: f64) -> Self {
         let user_state = Self::build_user_state(&seed, states.last().unwrap_or(seed.state()), up);
         Self {
@@ -160,68 +163,82 @@ impl FunctionMinimum {
     // --- Accessors ---
 
     /// Get the initial seed.
+    #[must_use]
     pub fn seed(&self) -> &MinimumSeed {
         &self.seed
     }
 
+    #[must_use]
     pub fn states(&self) -> &[MinimumState] {
         &self.states
     }
 
     /// Get the final state.
+    #[must_use]
     pub fn state(&self) -> &MinimumState {
         self.states.last().unwrap_or_else(|| self.seed.state())
     }
 
     /// Get the user-facing state (external space).
+    #[must_use]
     pub fn user_state(&self) -> &MnUserParameterState {
         &self.user_state
     }
 
     /// Function value at the minimum.
+    #[must_use]
     pub fn fval(&self) -> f64 {
         self.state().fval()
     }
 
     /// Estimated distance to minimum.
+    #[must_use]
     pub fn edm(&self) -> f64 {
         self.state().edm()
     }
 
     /// Total function calls.
+    #[must_use]
     pub fn nfcn(&self) -> usize {
         self.state().nfcn()
     }
 
     /// Error definition (Up value): 1.0 for chi-square, 0.5 for likelihood.
+    #[must_use]
     pub fn up(&self) -> f64 {
         self.up
     }
 
     /// Whether the minimization converged properly.
+    #[must_use]
     pub fn is_valid(&self) -> bool {
         self.state().is_valid() && !self.is_above_max_edm && !self.reached_call_limit
     }
 
+    #[must_use]
     pub fn has_valid_parameters(&self) -> bool {
         self.state().has_parameters()
     }
 
+    #[must_use]
     pub fn has_made_pos_def_covar(&self) -> bool {
         self.state().error().is_made_pos_def()
     }
 
     /// Check if the result is above the maximum EDM threshold.
+    #[must_use]
     pub fn is_above_max_edm(&self) -> bool {
         self.is_above_max_edm
     }
 
     /// Check if the function call limit was reached.
+    #[must_use]
     pub fn reached_call_limit(&self) -> bool {
         self.reached_call_limit
     }
 
     /// Parameter values in external (user) space.
+    #[must_use]
     pub fn params(&self) -> Vec<f64> {
         self.seed
             .trafo()
@@ -229,6 +246,7 @@ impl FunctionMinimum {
     }
 
     /// Number of variable parameters.
+    #[must_use]
     pub fn n_variable_params(&self) -> usize {
         self.seed.n_variable_params()
     }

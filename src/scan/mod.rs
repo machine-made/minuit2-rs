@@ -1,4 +1,4 @@
-//! MnScan / MnParameterScan: 1D parameter scan.
+//! `MnScan` / `MnParameterScan`: 1D parameter scan.
 //!
 //! Evaluates the function along one parameter direction, keeping others at
 //! their minimum values.
@@ -16,11 +16,11 @@ use crate::user_parameters::MnUserParameters;
 #[cfg(feature = "parallel")]
 use rayon::prelude::*;
 
-/// Builder for ROOT Minuit2's brute-force SCAn minimizer.
+/// Builder for ROOT Minuit2's brute-force `SCAn` minimizer.
 ///
-/// SCAn evaluates a coarse one-dimensional grid around the starting point for
+/// `SCAn` evaluates a coarse one-dimensional grid around the starting point for
 /// each variable parameter and keeps the best point found.  Use it as a robust
-/// pre-pass for bad starting values, often before running `MnMigrad`.  SCAn does
+/// pre-pass for bad starting values, often before running `MnMigrad`.  `SCAn` does
 /// not calculate parameter errors or a covariance matrix; run `MnHesse` after it
 /// when uncertainties are needed.
 pub struct MnScanMinimizer {
@@ -30,7 +30,8 @@ pub struct MnScanMinimizer {
 }
 
 impl MnScanMinimizer {
-    /// Create a new SCAn minimizer with default settings.
+    /// Create a new `SCAn` minimizer with default settings.
+    #[must_use]
     pub fn new() -> Self {
         Self {
             params: MnUserParameters::new(),
@@ -40,18 +41,21 @@ impl MnScanMinimizer {
     }
 
     /// Set the optimization strategy level used for seed generation.
+    #[must_use]
     pub fn with_strategy(mut self, level: u32) -> Self {
         self.strategy = MnStrategy::new(level);
         self
     }
 
     /// Add a free parameter.
+    #[must_use]
     pub fn add(mut self, name: impl Into<String>, value: f64, error: f64) -> Self {
         self.params.add(name, value, error);
         self
     }
 
     /// Add a parameter with both bounds.
+    #[must_use]
     pub fn add_limited(
         mut self,
         name: impl Into<String>,
@@ -65,12 +69,13 @@ impl MnScanMinimizer {
     }
 
     /// Set maximum number of function calls. Default = 200 + 100*n + 5*n^2.
+    #[must_use]
     pub fn max_fcn(mut self, max: usize) -> Self {
         self.max_fcn = Some(max);
         self
     }
 
-    /// Run the SCAn minimization.
+    /// Run the `SCAn` minimization.
     pub fn minimize(&self, fcn: &dyn FCN) -> FunctionMinimum {
         let n = self.params.variable_parameters();
         let max_fcn = self.max_fcn.unwrap_or_else(|| default_max_fcn(n));
@@ -142,14 +147,18 @@ impl<'a, F: FCN + ?Sized> MnParameterScan<'a, F> {
     }
 
     fn update_best(&mut self, par: usize, result: &[(f64, f64)]) {
-        if let Some((x_best, f_best)) = result.iter().copied().min_by(|a, b| a.1.total_cmp(&b.1))
-            && f_best < self.fval
-        {
-            self.fval = f_best;
-            self.params.set_value(par, x_best);
+        if let Some((x_best, f_best)) = result.iter().copied().min_by(|a, b| a.1.total_cmp(&b.1)) {
+            if f_best < self.fval {
+                self.fval = f_best;
+                self.params.set_value(par, x_best);
+            }
         }
     }
 
+    #[expect(
+        clippy::cast_precision_loss,
+        reason = "the count is far below 2^53, so the conversion is exact"
+    )]
     fn scan_points(
         &self,
         par: usize,
@@ -179,6 +188,10 @@ impl<'a, F: FCN + ?Sized> MnParameterScan<'a, F> {
     }
 
     #[cfg(feature = "parallel")]
+    #[expect(
+        clippy::cast_precision_loss,
+        reason = "the count is far below 2^53, so the conversion is exact"
+    )]
     fn scan_points_parallel(
         &self,
         par: usize,
@@ -215,7 +228,7 @@ impl<'a, F: FCN + ?Sized> MnParameterScan<'a, F> {
         let (low, high) = if (low - high).abs() < 1e-15 {
             let lo = val - 2.0 * err;
             let hi = val + 2.0 * err;
-            self.clamp_scan_bounds(
+            Self::clamp_scan_bounds(
                 lo,
                 hi,
                 p.has_lower_limit(),
@@ -224,7 +237,7 @@ impl<'a, F: FCN + ?Sized> MnParameterScan<'a, F> {
                 p.upper_limit(),
             )
         } else {
-            self.clamp_scan_bounds(
+            Self::clamp_scan_bounds(
                 low,
                 high,
                 p.has_lower_limit(),
@@ -244,17 +257,19 @@ impl<'a, F: FCN + ?Sized> MnParameterScan<'a, F> {
     }
 
     /// Current best function value (may have been updated by scan).
+    #[must_use]
     pub fn fval(&self) -> f64 {
         self.fval
     }
 
     /// Current parameters (may have been updated by scan).
+    #[must_use]
     pub fn params(&self) -> &MnUserParameters {
         &self.params
     }
 }
 
-/// High-level scan builder working with a FunctionMinimum.
+/// High-level scan builder working with a `FunctionMinimum`.
 pub struct MnScan<'a, F: FCN + ?Sized> {
     fcn: &'a F,
     minimum: &'a FunctionMinimum,
@@ -269,11 +284,13 @@ impl<'a, F: FCN + ?Sized> MnScan<'a, F> {
     /// Scan parameter `par` over `nsteps` points.
     ///
     /// If `low == high == 0.0`, auto-range to +/- 2*error.
+    #[must_use]
     pub fn scan(&self, par: usize, nsteps: usize, low: f64, high: f64) -> Vec<(f64, f64)> {
         self.scan_serial(par, nsteps, low, high)
     }
 
     /// Serial scan implementation.
+    #[must_use]
     pub fn scan_serial(&self, par: usize, nsteps: usize, low: f64, high: f64) -> Vec<(f64, f64)> {
         let mut scanner =
             MnParameterScan::new(self.fcn, self.build_user_parameters(), self.minimum.fval());
@@ -282,6 +299,7 @@ impl<'a, F: FCN + ?Sized> MnScan<'a, F> {
 
     /// Parallel scan implementation (requires `parallel` feature).
     #[cfg(feature = "parallel")]
+    #[must_use]
     pub fn scan_parallel(&self, par: usize, nsteps: usize, low: f64, high: f64) -> Vec<(f64, f64)>
     where
         F: Sync,
@@ -327,7 +345,6 @@ fn add_param_from_state(params: &mut MnUserParameters, p: &crate::parameter::Min
 
 impl<F: FCN + ?Sized> MnParameterScan<'_, F> {
     fn clamp_scan_bounds(
-        &self,
         low: f64,
         high: f64,
         has_lower: bool,
