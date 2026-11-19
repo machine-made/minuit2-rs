@@ -6,7 +6,7 @@ project="$repo/proofs/lean"
 scratch="$repo/target/lean-scratch"
 mkdir -p "$scratch"
 
-version=$(lean --version)
+version=$(env -C "$project" lean --version)
 printf '%s\n' "$version"
 if [[ ! "$version" =~ ^Lean\ \(version\ 4\.35\.0, ]]; then
     printf '%s\n' 'Lean 4.35.0 is required.' >&2
@@ -14,11 +14,19 @@ if [[ ! "$version" =~ ^Lean\ \(version\ 4\.35\.0, ]]; then
 fi
 
 # Keep downloads inside the worktree and run heavy steps in sequence.
+# jobscope limits memory and priority where it is installed; without it the steps run as they are.
+heavy() {
+    if command -v jobscope > /dev/null 2>&1; then
+        jobscope "$@"
+    else
+        "$@"
+    fi
+}
 export MATHLIB_CACHE_DIR="$project/.lake/cache"
 export RAYON_NUM_THREADS=2
 export CARGO_BUILD_JOBS=2
-env -C "$project" jobscope lake exe cache get | tee "$scratch/cache.log"
-env -C "$project" jobscope lake build | tee "$scratch/build.log"
+heavy env -C "$project" lake exe cache get | tee "$scratch/cache.log"
+heavy env -C "$project" lake build | tee "$scratch/build.log"
 
 if grep -rnE '\b(sorry|admit|axiom)\b' "$project" --include='*.lean' --exclude-dir=.lake; then
     printf '%s\n' 'Proof integrity check failed.' >&2
@@ -30,7 +38,7 @@ else
     fi
 fi
 
-env -C "$project" jobscope lake env lean "$project/CheckAxioms.lean" | tee "$scratch/axioms.log"
+heavy env -C "$project" lake env lean "$project/CheckAxioms.lean" | tee "$scratch/axioms.log"
 python3 - "$scratch/axioms.log" <<'PY'
 import re
 import sys

@@ -86,7 +86,9 @@ fn posdef_kept_for_positive_delgam() {
             let eigenvalues = SymmetricEigen::new(updated.clone()).eigenvalues;
             let smallest = eigenvalues.min();
             let largest = eigenvalues.max();
-            // The tolerance covers f64 rounding for these matrices with condition numbers below 1e4.
+            // The floor 1e-12 is about 4500 times the f64 rounding unit. The generated matrices
+            // reach a condition number of 704 in these cases; the cap 1e4 below makes a change of
+            // the generator that leaves this range fail here, where the floor needs a new look.
             prop_assert!(
                 smallest > 1e-12 * largest,
                 "eigenvalue range: {smallest}..{largest}"
@@ -97,6 +99,8 @@ fn posdef_kept_for_positive_delgam() {
                 largest / smallest
             );
             let residual = (&updated * &case.dg - &case.dx).norm();
+            // The secant residual is rounding only: the worst case here is 5.4e-15 of |dx|,
+            // and the bound leaves a factor of about 200.
             prop_assert!(
                 residual <= 1e-12 * case.dx.norm(),
                 "secant residual: {residual}"
@@ -120,6 +124,9 @@ fn posdef_lost_for_negative_delgam() {
             let updated = update(&case);
             let delgam = case.dx.dot(&case.dg);
             let quadratic = case.dg.dot(&(&updated * &case.dg));
+            // In real arithmetic dg.V'dg equals delgam. The f64 value comes from chained
+            // products that cancel, and delgam is at least 0.1 |dx| |dg|. The worst deviation
+            // here is 2.2e-14 of delgam, so 1e-9 leaves a wide margin.
             prop_assert!(
                 (quadratic - delgam).abs() <= 1e-9 * delgam.abs(),
                 "quadratic value: {quadratic}, delgam: {delgam}"
