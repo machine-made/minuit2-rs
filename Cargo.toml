@@ -63,7 +63,7 @@ harness = false
 all-features = true
 
 [lints.rust]
-# Only the Python bindings permit unsafe macro expansions.
+# No module allows unsafe code, the Python bindings included.
 unsafe_code = "deny"
 
 [lints.clippy]

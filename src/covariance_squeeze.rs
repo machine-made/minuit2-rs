@@ -13,7 +13,8 @@ use crate::user_covariance::MnUserCovariance;
 /// Remove row and column `n` from a square matrix.
 ///
 /// # Panics
-/// Panics if `n` is outside the rows, or the matrix has fewer columns than rows.
+/// Panics if `n` is outside the rows. The matrix must be square: a matrix with fewer columns
+/// than rows can panic when the function reads a column that does not exist.
 #[must_use]
 pub fn squeeze_matrix(mat: &DMatrix<f64>, n: usize) -> DMatrix<f64> {
     let dim = mat.nrows();

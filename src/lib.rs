@@ -10,7 +10,7 @@
 //!
 //! With a deterministic function, the same inputs and build give bit-identical results on one CPU type.
 //! The `parallel` feature evaluates scan points concurrently and returns them in input order.
-//! Only the `python` feature permits unsafe code from pyo3 macro expansions.
+//! The crate contains no unsafe code, and the lint denies it in every module, the `python` feature included.
 //! No features are enabled by default.
 //! The `python` feature provides Python bindings, and `trace` enables iteration tracing.
 //!

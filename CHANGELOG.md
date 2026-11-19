@@ -45,7 +45,7 @@
 
 ## 0.5.2
 
-- Fixed Migrad now performs ROOT's Hesse-verified convergence check (strategy ≥ 2, or strategy 1 with `dcovar > 0.05`) and continues minimization from the Hesse state with an enlarged call budget when Hesse raises EDM above tolerance, mirroring `VariableMetricBuilder.cxx`. The NIST Hahn1 dataset now reaches the certified solution from the standard starting values with plain strategy-1 Migrad — previously it returned `valid=False` (`above_max_edm`). Includes MnHesse parity fixes (cross-term `yy` caching, sag-failure failed state), a NaN/negative-EDM guard in the inner loop, and correct call-limit reporting for fits that converge inside the extended verification budget. (minuit2-rs-j2j)
+- Fixed Migrad now performs ROOT's Hesse-verified convergence check (strategy ≥ 2, or strategy 1 with `dcovar > 0.05`) and continues minimization from the Hesse state with an enlarged call budget when Hesse raises EDM above tolerance, mirroring `VariableMetricBuilder.cxx`. The NIST Hahn1 dataset now reaches the certified solution from the standard starting values with plain strategy-1 Migrad — previously it returned `valid=False` (`above_max_edm`). Includes MnHesse parity fixes (cross-term `yy` caching, sag-failure failed state), a NaN/negative-EDM guard in the inner loop, and correct call-limit reporting for fits that converge inside the extended verification budget.
 
 ## 0.5.1
 

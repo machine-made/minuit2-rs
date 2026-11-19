@@ -1,6 +1,3 @@
-// The pyo3 macro expansions require unsafe code.
-#![allow(unsafe_code)]
-
 use numpy::ndarray::Array2;
 use numpy::{IntoPyArray, PyArray1, PyArray2};
 use pyo3::exceptions::{
