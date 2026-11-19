@@ -1,4 +1,4 @@
-//! MinosError: paired upper/lower crossing results for one parameter.
+//! `MinosError`: paired upper/lower crossing results for one parameter.
 //!
 //! Wraps two crossing results (upper and lower) and computes the actual
 //! parameter error in external space.
@@ -21,6 +21,7 @@ pub struct MinosError {
 }
 
 impl MinosError {
+    #[must_use]
     pub fn new(
         parameter: usize,
         min: f64,
@@ -39,7 +40,8 @@ impl MinosError {
 
     /// The lower (negative) MINOS error.
     ///
-    /// Returns: -err * (1 + lower.value) if valid, else -hesse_error.
+    /// Returns: -err * (1 + lower.value) if valid, else -`hesse_error`.
+    #[must_use]
     pub fn lower_error(&self) -> f64 {
         if self.lower.is_valid() {
             -self.hesse_error * (1.0 + self.lower.value())
@@ -50,7 +52,8 @@ impl MinosError {
 
     /// The upper (positive) MINOS error.
     ///
-    /// Returns: err * (1 + upper.value) if valid, else hesse_error.
+    /// Returns: err * (1 + upper.value) if valid, else `hesse_error`.
+    #[must_use]
     pub fn upper_error(&self) -> f64 {
         if self.upper.is_valid() {
             self.hesse_error * (1.0 + self.upper.value())
@@ -59,62 +62,76 @@ impl MinosError {
         }
     }
 
+    #[must_use]
     pub fn parameter(&self) -> usize {
         self.parameter
     }
 
+    #[must_use]
     pub fn lower(&self) -> &MnCross {
         &self.lower
     }
 
+    #[must_use]
     pub fn upper(&self) -> &MnCross {
         &self.upper
     }
 
     /// Check if both upper and lower errors are valid.
+    #[must_use]
     pub fn is_valid(&self) -> bool {
         self.lower.is_valid() && self.upper.is_valid()
     }
 
+    #[must_use]
     pub fn lower_valid(&self) -> bool {
         self.lower.is_valid()
     }
 
+    #[must_use]
     pub fn upper_valid(&self) -> bool {
         self.upper.is_valid()
     }
 
     /// Check if the lower crossing is at a limit.
+    #[must_use]
     pub fn at_lower_limit(&self) -> bool {
         self.lower.at_limit()
     }
 
     /// Check if the upper crossing is at a limit.
+    #[must_use]
     pub fn at_upper_limit(&self) -> bool {
         self.upper.at_limit()
     }
 
+    #[must_use]
     pub fn at_lower_max_fcn(&self) -> bool {
         self.lower.at_max_fcn()
     }
 
+    #[must_use]
     pub fn at_upper_max_fcn(&self) -> bool {
         self.upper.at_max_fcn()
     }
 
+    #[must_use]
     pub fn lower_new_min(&self) -> bool {
         self.lower.new_minimum()
     }
 
+    #[must_use]
     pub fn upper_new_min(&self) -> bool {
         self.upper.new_minimum()
     }
 
+    #[must_use]
     pub fn nfcn(&self) -> usize {
         self.lower.nfcn() + self.upper.nfcn()
     }
 
     /// Parameter value at the minimum.
+    #[must_use]
     pub fn min(&self) -> f64 {
         self.min
     }

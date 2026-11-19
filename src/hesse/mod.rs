@@ -1,6 +1,6 @@
-//! MnHesse: accurate error analysis via full Hessian computation.
+//! `MnHesse`: accurate error analysis via full Hessian computation.
 //!
-//! After Migrad converges, MnHesse computes the full second-derivative matrix
+//! After Migrad converges, `MnHesse` computes the full second-derivative matrix
 //! (Hessian) to get accurate parameter errors and correlations. This is
 //! especially important when Migrad's DFP-updated inverse Hessian is only
 //! approximate.
@@ -26,6 +26,7 @@ pub struct MnHesse {
 
 impl MnHesse {
     /// Create a new Hesse error calculator with default settings.
+    #[must_use]
     pub fn new() -> Self {
         Self {
             strategy: MnStrategy::default(),
@@ -34,32 +35,37 @@ impl MnHesse {
     }
 
     /// Set strategy level (0=low, 1=medium, 2=high).
+    #[must_use]
     pub fn with_strategy(mut self, level: u32) -> Self {
         self.strategy = MnStrategy::new(level);
         self
     }
 
     /// Set maximum number of function calls.
+    #[must_use]
     pub fn with_max_calls(mut self, max: usize) -> Self {
         self.max_calls = Some(max);
         self
     }
 
+    #[must_use]
     pub fn ncycles(&self) -> u32 {
         self.strategy.hessian_ncycles()
     }
 
+    #[must_use]
     pub fn tolerstp(&self) -> f64 {
         self.strategy.hessian_step_tolerance()
     }
 
+    #[must_use]
     pub fn toler_g2(&self) -> f64 {
         self.strategy.hessian_g2_tolerance()
     }
 
     /// Run Hesse on a minimization result.
     ///
-    /// Returns a new FunctionMinimum with accurate covariance matrix.
+    /// Returns a new `FunctionMinimum` with accurate covariance matrix.
     ///
     /// The call limit includes calls already made by the minimum. The default is
     /// `200 + 100n + 5n²`, where `n` is the number of variable parameters.
@@ -103,9 +109,9 @@ impl MnHesse {
         min
     }
 
-    /// Compute errors and covariance without modifying the FunctionMinimum.
+    /// Compute errors and covariance without modifying the `FunctionMinimum`.
     ///
-    /// Returns an MnUserParameterState with updated errors and covariance.
+    /// Returns an `MnUserParameterState` with updated errors and covariance.
     ///
     /// The call limit includes calls already made by the minimum. The default is
     /// `200 + 100n + 5n²`, where `n` is the number of variable parameters.
@@ -146,7 +152,7 @@ impl Default for MnHesse {
     }
 }
 
-/// Build an MnUserParameterState with covariance from the internal error matrix.
+/// Build an `MnUserParameterState` with covariance from the internal error matrix.
 fn build_user_state_with_covariance(
     minimum: &FunctionMinimum,
     internal_cov: &nalgebra::DMatrix<f64>,

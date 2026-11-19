@@ -2,7 +2,7 @@ use minuit2::{MnHesse, MnMigrad};
 
 /// Quadratic: f(x,y) = a*x^2 + b*y^2
 /// ROOT Minuit2 user covariance convention: V = 2 * up * H^-1.
-/// Therefore sigma_x = sqrt(2*up / (2*a)) = sqrt(up/a), and similarly for y.
+/// Therefore `sigma_x` = sqrt(2*up / (2*a)) = sqrt(up/a), and similarly for y.
 #[test]
 fn hesse_quadratic_errors() {
     let a = 2.0;
@@ -31,12 +31,15 @@ fn hesse_quadratic_errors() {
     let err_x = state.error("x").unwrap();
     let err_y = state.error("y").unwrap();
 
+    // The measured errors equal the closed form 0.7071068 and 0.3535534 to double precision.
+    // The bounds 0.05 and 0.03 are generous sanity limits. Dropping the factor 2 of
+    // V = 2 * up * H^-1 would give sigma_x = 0.5 and sigma_y = 0.25, outside both bounds.
     assert!(
         (err_x - std::f64::consts::FRAC_1_SQRT_2).abs() < 0.05,
         "sigma_x should be ~0.707, got {err_x}"
     );
     assert!(
-        (err_y - 0.3535533905932738).abs() < 0.03,
+        (err_y - 0.353_553_390_593_273_8).abs() < 0.03,
         "sigma_y should be ~0.354, got {err_y}"
     );
 }
@@ -75,12 +78,12 @@ fn hesse_rosenbrock_valid() {
 // The constants below are the `migrad_inverse_hessian` and `hesse_inverse_hessian`
 // entries of reports/verification/raw/trace/repeated_hesse_strategy2.root.json.
 const ROOT_AFTER_MIGRAD: [[f64; 2]; 2] = [
-    [0.5094002615280409, 1.017172600092039],
-    [1.017172600092039, 2.036094556713421],
+    [0.509_400_261_528_040_9, 1.017_172_600_092_039],
+    [1.017_172_600_092_039, 2.036_094_556_713_421],
 ];
 const ROOT_AFTER_HESSE: [[f64; 2]; 2] = [
-    [0.5053474996457947, 1.0090700670429817],
-    [1.0090700670429817, 2.019895494517758],
+    [0.505_347_499_645_794_7, 1.009_070_067_042_981_7],
+    [1.009_070_067_042_981_7, 2.019_895_494_517_758],
 ];
 
 /// Every entry of `matrix` must be within a relative 1e-5 of the ROOT entry.
@@ -176,7 +179,7 @@ fn hesse_global_correlations() {
     }
 }
 
-/// Hesse with calculate_errors (doesn't modify minimum).
+/// Hesse with `calculate_errors` (doesn't modify minimum).
 #[test]
 fn hesse_calculate_errors() {
     let result = MnMigrad::new()

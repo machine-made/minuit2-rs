@@ -49,6 +49,10 @@ impl FCN for PythonFCN {
 // Minuit Class
 // ============================================================================
 
+#[expect(
+    clippy::struct_excessive_bools,
+    reason = "the public signature stays as it is"
+)]
 struct StoredMError {
     name: String,
     lower: f64,
@@ -68,6 +72,10 @@ struct StoredMError {
 
 #[pyclass(frozen, skip_from_py_object)]
 #[derive(Clone)]
+#[expect(
+    clippy::struct_excessive_bools,
+    reason = "the public signature stays as it is"
+)]
 struct FMin {
     fval: f64,
     edm: f64,
@@ -152,6 +160,10 @@ impl FMin {
 }
 
 #[pyclass(frozen)]
+#[expect(
+    clippy::struct_excessive_bools,
+    reason = "the public signature stays as it is"
+)]
 struct MError {
     name: String,
     lower: f64,
@@ -331,6 +343,14 @@ fn finite_or_none(v: Option<f64>) -> Option<f64> {
 }
 
 /// Resolve an int (incl. negative) or str key to a parameter name.
+#[expect(
+    clippy::cast_possible_wrap,
+    reason = "an allocated vector of names fits in isize"
+)]
+#[expect(
+    clippy::cast_sign_loss,
+    reason = "the bounds check rejects negative indices"
+)]
 fn resolve_param_name(names: &[String], key: &Bound<'_, PyAny>) -> PyResult<String> {
     if let Ok(i) = key.extract::<isize>() {
         let n = names.len() as isize;
@@ -360,6 +380,10 @@ struct ValueView {
 }
 
 #[pymethods]
+#[expect(
+    clippy::needless_pass_by_value,
+    reason = "the public signature stays as it is"
+)]
 impl ValueView {
     fn __getitem__(&self, py: Python<'_>, key: Bound<'_, PyAny>) -> PyResult<f64> {
         let m = self.owner.borrow(py);
@@ -402,6 +426,10 @@ struct ErrorView {
 }
 
 #[pymethods]
+#[expect(
+    clippy::needless_pass_by_value,
+    reason = "the public signature stays as it is"
+)]
 impl ErrorView {
     fn __getitem__(&self, py: Python<'_>, key: Bound<'_, PyAny>) -> PyResult<f64> {
         let m = self.owner.borrow(py);
@@ -444,6 +472,10 @@ struct FixedView {
 }
 
 #[pymethods]
+#[expect(
+    clippy::needless_pass_by_value,
+    reason = "the public signature stays as it is"
+)]
 impl FixedView {
     fn __getitem__(&self, py: Python<'_>, key: Bound<'_, PyAny>) -> PyResult<bool> {
         let m = self.owner.borrow(py);
@@ -495,6 +527,10 @@ impl LimitView {
 }
 
 #[pymethods]
+#[expect(
+    clippy::needless_pass_by_value,
+    reason = "the public signature stays as it is"
+)]
 impl LimitView {
     fn __getitem__(&self, py: Python<'_>, key: Bound<'_, PyAny>) -> PyResult<(f64, f64)> {
         let m = self.owner.borrow(py);
@@ -583,18 +619,22 @@ impl Minuit {
             name
         } else {
             let mut introspected = Vec::new();
-            if let Ok(inspect) = py.import("inspect")
-                && let Ok(sig) = inspect.call_method1("signature", (&fcn,))
-                && let Ok(params_map) = sig.getattr("parameters")
-                && let Ok(keys) = params_map.call_method0("keys")
-                && let Ok(iter) = keys.try_iter()
-            {
-                for param_name in iter {
-                    let param_name = param_name?;
-                    let param = params_map.call_method1("__getitem__", (&param_name,))?;
-                    let kind = param.getattr("kind")?.extract::<u8>()?;
-                    if kind != 2 && kind != 4 {
-                        introspected.push(param_name.extract::<String>()?);
+            if let Ok(inspect) = py.import("inspect") {
+                if let Ok(sig) = inspect.call_method1("signature", (&fcn,)) {
+                    if let Ok(params_map) = sig.getattr("parameters") {
+                        if let Ok(keys) = params_map.call_method0("keys") {
+                            if let Ok(iter) = keys.try_iter() {
+                                for param_name in iter {
+                                    let param_name = param_name?;
+                                    let param =
+                                        params_map.call_method1("__getitem__", (&param_name,))?;
+                                    let kind = param.getattr("kind")?.extract::<u8>()?;
+                                    if kind != 2 && kind != 4 {
+                                        introspected.push(param_name.extract::<String>()?);
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -632,8 +672,7 @@ impl Minuit {
                 let name_str = name.extract::<String>()?;
                 if !values.contains_key(&name_str) {
                     return Err(PyValueError::new_err(format!(
-                        "unknown parameter: {}",
-                        name_str
+                        "unknown parameter: {name_str}"
                     )));
                 }
                 let val = value.extract::<f64>()?;
@@ -741,6 +780,10 @@ impl Minuit {
     }
 
     #[setter]
+    #[expect(
+        clippy::needless_pass_by_value,
+        reason = "the public signature stays as it is"
+    )]
     fn set_limits(&mut self, limits: Bound<'_, PyDict>) -> PyResult<()> {
         for (key, value) in limits.iter() {
             let name = key.extract::<String>()?;
@@ -749,15 +792,15 @@ impl Minuit {
             }
             if value.is_none() {
                 self.limits.remove(&name);
-            } else if let Ok(tuple) = value.cast::<PyTuple>()
-                && tuple.len() == 2
-            {
-                let l = finite_or_none(tuple.get_item(0)?.extract::<Option<f64>>()?);
-                let u = finite_or_none(tuple.get_item(1)?.extract::<Option<f64>>()?);
-                if l.is_none() && u.is_none() {
-                    self.limits.remove(&name);
-                } else {
-                    self.limits.insert(name, (l, u));
+            } else if let Ok(tuple) = value.cast::<PyTuple>() {
+                if tuple.len() == 2 {
+                    let l = finite_or_none(tuple.get_item(0)?.extract::<Option<f64>>()?);
+                    let u = finite_or_none(tuple.get_item(1)?.extract::<Option<f64>>()?);
+                    if l.is_none() && u.is_none() {
+                        self.limits.remove(&name);
+                    } else {
+                        self.limits.insert(name, (l, u));
+                    }
                 }
             }
         }
@@ -783,36 +826,39 @@ impl Minuit {
 
     #[getter]
     fn get_fval(&self) -> Option<f64> {
-        self.scan_fmin
-            .as_ref()
-            .map(|m| m.fval)
-            .or_else(|| self.last_minimum.as_ref().map(|m| m.fval()))
+        self.scan_fmin.as_ref().map(|m| m.fval).or_else(|| {
+            self.last_minimum
+                .as_ref()
+                .map(super::minimum::FunctionMinimum::fval)
+        })
     }
 
     #[getter]
     fn get_valid(&self) -> Option<bool> {
-        self.scan_fmin
-            .as_ref()
-            .map(|m| m.is_valid)
-            .or_else(|| self.last_minimum.as_ref().map(|m| m.is_valid()))
+        self.scan_fmin.as_ref().map(|m| m.is_valid).or_else(|| {
+            self.last_minimum
+                .as_ref()
+                .map(super::minimum::FunctionMinimum::is_valid)
+        })
     }
 
     #[getter]
     fn get_covariance(&self) -> Option<Vec<Vec<f64>>> {
-        if self.scan_fmin.is_none()
-            && let Some(min) = &self.last_minimum
-            && let Some(cov) = min.user_state().covariance()
-        {
-            let n = cov.nrow();
-            let mut matrix = Vec::with_capacity(n);
-            for r in 0..n {
-                let mut row = Vec::with_capacity(n);
-                for c in 0..n {
-                    row.push(cov.get(r, c));
+        if self.scan_fmin.is_none() {
+            if let Some(min) = &self.last_minimum {
+                if let Some(cov) = min.user_state().covariance() {
+                    let n = cov.nrow();
+                    let mut matrix = Vec::with_capacity(n);
+                    for r in 0..n {
+                        let mut row = Vec::with_capacity(n);
+                        for c in 0..n {
+                            row.push(cov.get(r, c));
+                        }
+                        matrix.push(row);
+                    }
+                    return Some(matrix);
                 }
-                matrix.push(row);
             }
-            return Some(matrix);
         }
         None
     }
@@ -822,7 +868,7 @@ impl Minuit {
         self.last_minimum
             .as_ref()
             .and_then(|m| m.user_state().global_cc())
-            .map(|s| s.to_vec())
+            .map(<[f64]>::to_vec)
     }
 
     #[getter]
@@ -872,7 +918,11 @@ impl Minuit {
         self.scan_fmin
             .as_ref()
             .map(|m| m.nfcn)
-            .or_else(|| self.last_minimum.as_ref().map(|m| m.nfcn()))
+            .or_else(|| {
+                self.last_minimum
+                    .as_ref()
+                    .map(super::minimum::FunctionMinimum::nfcn)
+            })
             .unwrap_or(0)
     }
 
@@ -902,10 +952,11 @@ impl Minuit {
     }
 
     fn reset(mut slf: PyRefMut<'_, Self>) -> Py<Minuit> {
-        slf.values = slf.init_values.clone();
-        slf.errors = slf.init_errors.clone();
-        slf.fixed = slf.init_fixed.clone();
-        slf.limits = slf.init_limits.clone();
+        let state = &mut *slf;
+        state.values.clone_from(&state.init_values);
+        state.errors.clone_from(&state.init_errors);
+        state.fixed.clone_from(&state.init_fixed);
+        state.limits.clone_from(&state.init_limits);
         slf.last_minimum = None;
         slf.scan_fmin = None;
         slf.merrors.clear();
@@ -913,6 +964,10 @@ impl Minuit {
     }
 
     #[pyo3(signature = (key, value))]
+    #[expect(
+        clippy::needless_pass_by_value,
+        reason = "the public signature stays as it is"
+    )]
     fn fixto(
         mut slf: PyRefMut<'_, Self>,
         key: Bound<'_, PyAny>,
@@ -922,13 +977,13 @@ impl Minuit {
             slf.names
                 .get(idx)
                 .ok_or_else(|| {
-                    PyValueError::new_err(format!("parameter index {} out of range", idx))
+                    PyValueError::new_err(format!("parameter index {idx} out of range"))
                 })?
                 .clone()
         } else {
             let s = key.extract::<String>()?;
             if !slf.names.contains(&s) {
-                return Err(PyValueError::new_err(format!("unknown parameter: {}", s)));
+                return Err(PyValueError::new_err(format!("unknown parameter: {s}")));
             }
             s
         };
@@ -937,6 +992,10 @@ impl Minuit {
         Ok(slf.into())
     }
 
+    #[expect(
+        clippy::unnecessary_wraps,
+        reason = "the public signature stays as it is"
+    )]
     fn migrad(mut slf: PyRefMut<'_, Self>, py: Python<'_>) -> PyResult<Py<Minuit>> {
         {
             let fcn = PythonFCN {
@@ -953,6 +1012,10 @@ impl Minuit {
         Ok(slf.into())
     }
 
+    #[expect(
+        clippy::unnecessary_wraps,
+        reason = "the public signature stays as it is"
+    )]
     fn simplex(mut slf: PyRefMut<'_, Self>, py: Python<'_>) -> PyResult<Py<Minuit>> {
         {
             let fcn = PythonFCN {
@@ -995,6 +1058,10 @@ impl Minuit {
     }
 
     #[pyo3(signature = (*parameters))]
+    #[expect(
+        clippy::needless_pass_by_value,
+        reason = "the public signature stays as it is"
+    )]
     fn minos(
         mut slf: PyRefMut<'_, Self>,
         py: Python<'_>,
@@ -1063,6 +1130,14 @@ impl Minuit {
     }
 
     #[pyo3(signature = (vname, *, size=100, bound=2.0, subtract_min=false))]
+    #[expect(
+        clippy::needless_pass_by_value,
+        reason = "the public signature stays as it is"
+    )]
+    #[expect(
+        clippy::cast_precision_loss,
+        reason = "the count is far below 2^53, so the conversion is exact"
+    )]
     fn profile<'py>(
         &self,
         py: Python<'py>,
@@ -1079,7 +1154,7 @@ impl Minuit {
             .names
             .iter()
             .position(|n| *n == vname)
-            .ok_or_else(|| PyValueError::new_err(format!("Parameter '{}' not found", vname)))?;
+            .ok_or_else(|| PyValueError::new_err(format!("Parameter '{vname}' not found")))?;
         let v = *self.values.get(&vname).unwrap_or(&0.0);
         let e = self
             .errors
@@ -1125,6 +1200,14 @@ impl Minuit {
     }
 
     #[pyo3(signature = (vname, *, size=30, bound=2.0, subtract_min=false))]
+    #[expect(
+        clippy::needless_pass_by_value,
+        reason = "the public signature stays as it is"
+    )]
+    #[expect(
+        clippy::cast_precision_loss,
+        reason = "the count is far below 2^53, so the conversion is exact"
+    )]
     fn mnprofile<'py>(
         &self,
         py: Python<'py>,
@@ -1140,7 +1223,7 @@ impl Minuit {
         self.names
             .iter()
             .position(|n| *n == vname)
-            .ok_or_else(|| PyValueError::new_err(format!("Parameter '{}' not found", vname)))?;
+            .ok_or_else(|| PyValueError::new_err(format!("Parameter '{vname}' not found")))?;
         let v = *self.values.get(&vname).unwrap_or(&0.0);
         let e = self
             .errors
@@ -1184,6 +1267,10 @@ impl Minuit {
     }
 
     #[pyo3(signature = (x, y, *, cl=None, size=100))]
+    #[expect(
+        clippy::needless_pass_by_value,
+        reason = "the public signature stays as it is"
+    )]
     fn mncontour<'py>(
         &self,
         py: Python<'py>,
@@ -1205,12 +1292,12 @@ impl Minuit {
             .names
             .iter()
             .position(|n| *n == x)
-            .ok_or_else(|| PyValueError::new_err(format!("Parameter '{}' not found", x)))?;
+            .ok_or_else(|| PyValueError::new_err(format!("Parameter '{x}' not found")))?;
         let idx_y = self
             .names
             .iter()
             .position(|n| *n == y)
-            .ok_or_else(|| PyValueError::new_err(format!("Parameter '{}' not found", y)))?;
+            .ok_or_else(|| PyValueError::new_err(format!("Parameter '{y}' not found")))?;
         let fcn = PythonFCN {
             fcn: self.fcn.clone_ref(py),
             errordef: self.errordef,
@@ -1230,6 +1317,14 @@ impl Minuit {
     }
 
     #[pyo3(signature = (x, y, *, size=50, bound=2.0, subtract_min=false))]
+    #[expect(
+        clippy::needless_pass_by_value,
+        reason = "the public signature stays as it is"
+    )]
+    #[expect(
+        clippy::cast_precision_loss,
+        reason = "the count is far below 2^53, so the conversion is exact"
+    )]
     fn contour<'py>(
         &self,
         py: Python<'py>,
@@ -1247,12 +1342,12 @@ impl Minuit {
             .names
             .iter()
             .position(|n| *n == x)
-            .ok_or_else(|| PyValueError::new_err(format!("Parameter '{}' not found", x)))?;
+            .ok_or_else(|| PyValueError::new_err(format!("Parameter '{x}' not found")))?;
         let idx_y = self
             .names
             .iter()
             .position(|n| *n == y)
-            .ok_or_else(|| PyValueError::new_err(format!("Parameter '{}' not found", y)))?;
+            .ok_or_else(|| PyValueError::new_err(format!("Parameter '{y}' not found")))?;
         let vx = *self.values.get(&x).unwrap_or(&0.0);
         let ex = self.errors.get(&x).copied().unwrap_or(0.1).abs().max(1e-10);
         let vy = *self.values.get(&y).unwrap_or(&0.0);
@@ -1306,11 +1401,59 @@ impl Minuit {
     }
 
     #[pyo3(signature = (ncall=None))]
+    #[expect(
+        clippy::too_many_lines,
+        reason = "keeps the scan grid search and result flags together"
+    )]
+    #[expect(
+        clippy::unnecessary_wraps,
+        reason = "the public signature stays as it is"
+    )]
+    #[expect(
+        clippy::cast_possible_truncation,
+        reason = "keeps the scan grid size rounded down as in the Python API"
+    )]
+    #[expect(
+        clippy::cast_sign_loss,
+        reason = "the root of a nonnegative call budget is nonnegative"
+    )]
+    #[expect(
+        clippy::cast_precision_loss,
+        reason = "keeps the call budget conversion and grid spacing of the Python API"
+    )]
+    #[expect(
+        clippy::float_cmp,
+        reason = "exact equality detects collapsed bounds and keeps both signed zeros"
+    )]
     fn scan(
         mut slf: PyRefMut<'_, Self>,
         py: Python<'_>,
         ncall: Option<usize>,
     ) -> PyResult<Py<Minuit>> {
+        fn run(
+            ipar: usize,
+            grids: &[Vec<f64>],
+            point: &mut [f64],
+            best: &mut Vec<f64>,
+            best_f: &mut f64,
+            nfcn: &mut usize,
+            fcn: &PythonFCN,
+        ) {
+            if ipar == grids.len() {
+                let f = fcn.value(point);
+                *nfcn += 1;
+                if f < *best_f {
+                    *best_f = f;
+                    best.clone_from_slice(point);
+                }
+            } else {
+                for &x in &grids[ipar] {
+                    point[ipar] = x;
+                    run(ipar + 1, grids, point, best, best_f, nfcn, fcn);
+                }
+            }
+        }
+
         let nfit = slf.names.iter().filter(|n| !slf.fixed.contains(*n)).count();
         let ncall = ncall
             .or(slf.max_calls)
@@ -1351,29 +1494,6 @@ impl Minuit {
         let mut best = point.clone();
         let mut best_f = f64::INFINITY;
         let mut nfcn = 0usize;
-        fn run(
-            ipar: usize,
-            grids: &[Vec<f64>],
-            point: &mut [f64],
-            best: &mut Vec<f64>,
-            best_f: &mut f64,
-            nfcn: &mut usize,
-            fcn: &PythonFCN,
-        ) {
-            if ipar == grids.len() {
-                let f = fcn.value(point);
-                *nfcn += 1;
-                if f < *best_f {
-                    *best_f = f;
-                    best.clone_from_slice(point);
-                }
-            } else {
-                for &x in &grids[ipar] {
-                    point[ipar] = x;
-                    run(ipar + 1, grids, point, best, best_f, nfcn, fcn);
-                }
-            }
-        }
         run(
             0,
             &grids,
@@ -1534,6 +1654,10 @@ impl Minuit {
 // ============================================================================
 
 #[pymodule]
+#[expect(
+    clippy::used_underscore_items,
+    reason = "the exported Python module name stays as it is"
+)]
 fn _minuit2(m: &Bound<'_, pyo3::types::PyModule>) -> PyResult<()> {
     m.add_class::<Minuit>()?;
     m.add_class::<FMin>()?;

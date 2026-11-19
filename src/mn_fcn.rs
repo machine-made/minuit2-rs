@@ -16,7 +16,7 @@ pub struct MnFcn<'a> {
 }
 
 impl<'a> MnFcn<'a> {
-    /// Create a new MnFcn wrapper.
+    /// Create a new `MnFcn` wrapper.
     pub fn new(fcn: &'a dyn FCN, trafo: &'a MnUserTransformation) -> Self {
         Self::with_num_calls(fcn, trafo, 0)
     }

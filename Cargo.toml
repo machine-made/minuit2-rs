@@ -2,12 +2,11 @@
 name = "minuit2"
 version = "0.5.5"
 edition = "2024"
-rust-version = "1.85"
+rust-version = "1.86"
 description = "Pure Rust implementation of Minuit-style parameter optimization"
 license = "LGPL-2.1-or-later"
 repository = "https://github.com/machine-made/minuit2-rs"
 documentation = "https://docs.rs/minuit2"
-homepage = "https://github.com/machine-made/minuit2-rs"
 readme = "README.md"
 keywords = ["optimization", "minimization", "fitting", "physics"]
 categories = ["science", "mathematics"]
@@ -64,13 +63,12 @@ harness = false
 all-features = true
 
 [lints.rust]
-# No hand-written unsafe in this crate. `warn` (not `deny`) because macro
-# expansions in the optional pyo3 feature legitimately produce unsafe
-# blocks and we do not want to force every downstream proc-macro change
-# through this gate.
-unsafe_code = "warn"
+# No module allows unsafe code, the Python bindings included.
+unsafe_code = "deny"
 
 [lints.clippy]
+all = { level = "warn", priority = -1 }
+pedantic = { level = "warn", priority = -1 }
 # Bug-catching lints at deny: these should never slip into a release.
 dbg_macro = "deny"
 todo = "deny"

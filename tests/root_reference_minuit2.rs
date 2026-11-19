@@ -183,14 +183,14 @@ fn root_simplex_reference_quadratic2() {
     );
     // 5e-4 covers endpoint drift and rounding the stored ROOT EDM to seven decimal places.
     assert!(
-        (min.edm() - 0.0334887).abs() < 5e-4,
+        (min.edm() - 0.033_488_7).abs() < 5e-4,
         "edm mismatch: {}",
         min.edm()
     );
 }
 
 /// Regression for ROOT v6-36-08 parity:
-/// MnMinimize is not "Simplex then Migrad" by default.
+/// `MnMinimize` is not "Simplex then Migrad" by default.
 /// It runs Migrad first and falls back only if needed, yielding a covariant minimum here.
 #[test]
 fn root_minimize_reference_rosenbrock2() {
@@ -231,6 +231,10 @@ fn root_minimize_reference_rosenbrock2() {
 /// ROOT's Hesse-verification loop appends the post-Hesse state for this
 /// strategy-1 fit; the Rust path now includes the same verification calls.
 #[test]
+#[expect(
+    clippy::items_after_statements,
+    reason = "keeps the reference call count beside its assertion"
+)]
 fn root_migrad_rosenbrock2_nfcn_stays_at_root_parity() {
     let calls = std::cell::Cell::new(0_usize);
     let f = |p: &[f64]| {
@@ -267,7 +271,7 @@ fn strategy2_rosenbrock_first_dcovar_matches_reference() {
     let first = min.states().first().expect("the first accepted state");
     // ROOT v6-36-08, iteration 1 in
     // reports/verification/raw/trace/rosenbrock2_migrad_strategy2.root.jsonl.
-    let reference_dcovar = 0.16098749348302552;
+    let reference_dcovar = 0.160_987_493_483_025_52;
     // 1e-8 covers finite-difference cancellation in Hesse and the first matrix update.
     assert!(
         (first.error().dcovar() - reference_dcovar).abs() < 1e-8,
@@ -278,6 +282,15 @@ fn strategy2_rosenbrock_first_dcovar_matches_reference() {
 }
 
 #[test]
+#[expect(
+    clippy::cast_possible_truncation,
+    reason = "the positive continuation budget fits in usize"
+)]
+#[expect(clippy::cast_sign_loss, reason = "the continuation budget is positive")]
+#[expect(
+    clippy::cast_precision_loss,
+    reason = "the call budget is 139, so the conversion is exact"
+)]
 fn root_migrad_continuation_budget_does_not_report_call_limit_when_converged() {
     let f = Rosenbrock2;
     // A budget below the 140-call fit keeps this test inside the continuation window.

@@ -1,4 +1,4 @@
-//! MnFunctionCross: iterative crossing-point finder.
+//! `MnFunctionCross`: iterative crossing-point finder.
 //!
 //! Finds the point where the function value equals `fmin + Up`, by iteratively
 //! running Migrad with the scanned parameter fixed and using parabolic
@@ -24,7 +24,18 @@ use super::cross::MnCross;
 /// - `tlr`: tolerance for convergence (default 0.1)
 /// - `maxcalls`: maximum function calls
 /// - `strategy`: minimization strategy
-#[allow(clippy::too_many_arguments)]
+#[expect(
+    clippy::too_many_arguments,
+    reason = "the public signature stays as it is"
+)]
+#[expect(
+    clippy::too_many_lines,
+    reason = "keeps the crossing search branches together in reference order"
+)]
+#[expect(
+    clippy::manual_midpoint,
+    reason = "keeps the operation order of the ROOT reference"
+)]
 pub fn find_crossing(
     fcn: &dyn FCN,
     minimum: &FunctionMinimum,

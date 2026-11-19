@@ -73,7 +73,7 @@ fn gaussian_fit() {
     let true_sigma = 2.0;
 
     let n_data = 50;
-    let x_data: Vec<f64> = (0..n_data).map(|i| i as f64 * 0.2).collect();
+    let x_data: Vec<f64> = (0..n_data).map(|i| f64::from(i) * 0.2).collect();
     let y_data: Vec<f64> = x_data
         .iter()
         .map(|&x| true_amp * (-(x - true_mean).powi(2) / (2.0 * true_sigma * true_sigma)).exp())

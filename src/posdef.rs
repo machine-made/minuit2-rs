@@ -10,6 +10,14 @@ use nalgebra::DMatrix;
 ///
 /// Returns `(corrected_matrix, was_modified)`. The correction adds a small
 /// amount to the diagonal until all eigenvalues are safely positive.
+///
+/// # Panics
+/// Panics if the matrix is not square.
+#[expect(
+    clippy::many_single_char_names,
+    reason = "the names follow the matrix notation of the reference"
+)]
+#[must_use]
 pub fn make_pos_def(mat: &DMatrix<f64>, prec: &MnMachinePrecision) -> (DMatrix<f64>, bool) {
     let n = mat.nrows();
     assert_eq!(n, mat.ncols(), "matrix must be square");
@@ -139,7 +147,7 @@ mod tests {
         // Check all eigenvalues of result are positive
         let eigen = result.symmetric_eigen();
         for ev in eigen.eigenvalues.iter() {
-            assert!(*ev > 0.0, "eigenvalue {} should be positive", ev);
+            assert!(*ev > 0.0, "eigenvalue {ev} should be positive");
         }
     }
 
@@ -154,7 +162,7 @@ mod tests {
 
         let eigen = result.symmetric_eigen();
         for ev in eigen.eigenvalues.iter() {
-            assert!(*ev > 0.0, "eigenvalue {} should be positive", ev);
+            assert!(*ev > 0.0, "eigenvalue {ev} should be positive");
         }
     }
 }

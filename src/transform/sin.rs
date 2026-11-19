@@ -13,6 +13,7 @@ use crate::precision::MnMachinePrecision;
 pub struct SinTransform;
 
 impl SinTransform {
+    #[must_use]
     pub fn dext2int(&self, value: f64, upper: f64, lower: f64, prec: &MnMachinePrecision) -> f64 {
         let int = self.ext2int(value, upper, lower, prec);
         let d = self.dint2ext(int, upper, lower);
@@ -83,7 +84,7 @@ mod tests {
         let t = SinTransform;
         let prec = MnMachinePrecision::new();
         // Very close to upper bound
-        let int = t.ext2int(9.9999999999, 10.0, 0.0, &prec);
+        let int = t.ext2int(9.999_999_999_9, 10.0, 0.0, &prec);
         let ext = t.int2ext(int, 10.0, 0.0);
         assert!((ext - 10.0).abs() < 0.01);
     }

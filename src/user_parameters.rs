@@ -16,6 +16,7 @@ pub struct MnUserParameters {
 
 impl MnUserParameters {
     /// Create an empty parameter collection.
+    #[must_use]
     pub fn new() -> Self {
         Self {
             trafo: MnUserTransformation::new(Vec::new()),
@@ -24,6 +25,7 @@ impl MnUserParameters {
     }
 
     /// Get the internal transformation object.
+    #[must_use]
     pub fn trafo(&self) -> &MnUserTransformation {
         &self.trafo
     }
@@ -152,45 +154,60 @@ impl MnUserParameters {
     }
 
     /// Lookup external index by name.
+    #[must_use]
     pub fn index(&self, name: &str) -> Option<usize> {
         self.name_map.get(name).copied()
     }
 
     /// Get parameter by name.
+    #[must_use]
     pub fn parameter(&self, name: &str) -> Option<&MinuitParameter> {
         self.name_map.get(name).map(|&i| self.trafo.parameter(i))
     }
 
     /// Get parameter value by name.
+    #[must_use]
     pub fn value(&self, name: &str) -> Option<f64> {
-        self.parameter(name).map(|p| p.value())
+        self.parameter(name)
+            .map(super::parameter::MinuitParameter::value)
     }
 
     /// Get parameter error by name.
+    #[must_use]
     pub fn error(&self, name: &str) -> Option<f64> {
-        self.parameter(name).map(|p| p.error())
+        self.parameter(name)
+            .map(super::parameter::MinuitParameter::error)
     }
 
+    #[must_use]
     pub fn errors(&self) -> Vec<f64> {
-        self.trafo.parameters().iter().map(|p| p.error()).collect()
+        self.trafo
+            .parameters()
+            .iter()
+            .map(super::parameter::MinuitParameter::error)
+            .collect()
     }
 
     /// Number of total parameters.
+    #[must_use]
     pub fn len(&self) -> usize {
         self.trafo.parameters_len()
     }
 
     /// Whether there are no parameters.
+    #[must_use]
     pub fn is_empty(&self) -> bool {
         self.len() == 0
     }
 
     /// Number of variable (non-fixed) parameters.
+    #[must_use]
     pub fn variable_parameters(&self) -> usize {
         self.trafo.variable_parameters()
     }
 
     /// All parameter references.
+    #[must_use]
     pub fn params(&self) -> &[MinuitParameter] {
         self.trafo.parameters()
     }

@@ -41,7 +41,7 @@ fn high_dim_stress() {
 
     // Add 50 parameters: x0, x1, ...
     for i in 0..n {
-        builder = builder.add(format!("x{}", i), i as f64, 0.1);
+        builder = builder.add(format!("x{i}"), f64::from(i), 0.1);
     }
 
     // Minimize sum(x_i^2)
@@ -53,7 +53,7 @@ fn high_dim_stress() {
     assert!(result.fval() < 1e-4);
 
     for i in 0..n {
-        assert!(result.user_state().value(&format!("x{}", i)).unwrap().abs() < 1e-2);
+        assert!(result.user_state().value(&format!("x{i}")).unwrap().abs() < 1e-2);
     }
 }
 
@@ -114,7 +114,7 @@ fn boundary_edge_case() {
     // The API documentation says we must provide valid start values.
     // Let's test starting VERY close to the boundary.
     let result_near_bound = MnMigrad::new()
-        .add_limited("x", 4.999999, 0.1, 0.0, 5.0)
+        .add_limited("x", 4.999_999, 0.1, 0.0, 5.0)
         .minimize(&|p: &[f64]| (p[0] - 5.0).powi(2));
 
     assert!(result_near_bound.is_valid());

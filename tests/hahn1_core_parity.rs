@@ -123,16 +123,16 @@ fn load_hahn1(path: &Path) -> Hahn1Dataset {
 // ROOT Minuit2 v6-36-08 result for this fit: strategy 1, tolerance 0.1, error 0.1, start 2.
 // Source file: reports/verification/raw/ref/hahn1_core_start2_migrad_root.txt.
 // The program that made it is tools/hahn1_probe/hahn1_probe.cpp.
-const ROOT_FVAL: f64 = 1.532556828;
+const ROOT_FVAL: f64 = 1.532_556_828;
 const ROOT_NFCN: usize = 456;
 const ROOT_PARAMS: [f64; 7] = [
-    1.0921524521e+00,
-    -1.2364426928e-01,
-    4.1023021838e-03,
-    -1.4502052372e-06,
-    -5.7671451500e-03,
-    2.4123541679e-04,
-    -1.2428333949e-07,
+    1.092_152_452_1e+00,
+    -1.236_442_692_8e-01,
+    4.102_302_183_8e-03,
+    -1.450_205_237_2e-06,
+    -5.767_145_150_0e-03,
+    2.412_354_167_9e-04,
+    -1.242_833_394_9e-07,
 ];
 
 #[test]
@@ -167,8 +167,12 @@ fn hahn1_core_start2_matches_root_and_stays_near_certified_solution() {
         min.edm(),
         min.nfcn()
     );
+    // The residual sum of squares (RSS) is 1.5325568, which is 1.2e-4 above the certified NIST
+    // value 1.5324383, as in ROOT. The fit stops at an EDM of 1.4e-4, under the Migrad goal
+    // 0.1 * 0.002 = 2e-4. The bound of 1 percent is 129 times the excess; a fit that stops early
+    // ends far higher (the start RSS is 2.1e6).
     assert!(
-        (min.fval() - 1.5324382854).abs() <= 1.5324382854e-2,
+        (min.fval() - 1.532_438_285_4).abs() <= 1.532_438_285_4e-2,
         "Hahn1 fval {} did not reach the certified RSS basin",
         min.fval()
     );

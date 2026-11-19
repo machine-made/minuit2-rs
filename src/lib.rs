@@ -1,5 +1,21 @@
 //! minuit2 — Pure Rust implementation of Minuit-style parameter optimization.
 //!
+//! # Contract
+//!
+//! This crate minimizes user functions and estimates parameter uncertainties with algorithms ported from ROOT's `Minuit2`.
+//! Parameter vectors and covariance dimensions must match the configured parameters.
+//! Fixed parameters keep their values, and parameter limits use internal coordinate transformations.
+//! Rust minimizers report failure through validity flags on the minimum and covariance, rather than `Result`.
+//! Callers must check these flags before using fitted values or uncertainties.
+//!
+//! With a deterministic function, the same inputs and build give bit-identical results on one CPU type.
+//! The `parallel` feature evaluates scan points concurrently and returns them in input order.
+//! The crate contains no unsafe code, and the lint denies it in every module, the `python` feature included.
+//! No features are enabled by default.
+//! The `python` feature provides Python bindings, and `trace` enables iteration tracing.
+//!
+//! Not proven: parity outside the 12 workloads of `reports/verification/diff_summary.md`
+//!
 //! # Quick Start — Migrad (recommended)
 //!
 //! ```

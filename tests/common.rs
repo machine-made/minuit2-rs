@@ -1,6 +1,9 @@
 use std::fmt::Display;
 
-/// Shared assertion for the FunctionMinimum `Display` contract.
+/// Shared assertion for the `FunctionMinimum` `Display` contract.
+///
+/// # Panics
+/// Panics if the display lacks required fields, finite values, or parameter names.
 pub fn assert_function_minimum_display<T: Display>(result: &T, required_params: &[&str]) {
     let output = format!("{result}");
 

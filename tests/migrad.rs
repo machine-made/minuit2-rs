@@ -77,8 +77,11 @@ fn nd_quadratic() {
         .minimize(&|p: &[f64]| p.iter().map(|x| x * x).sum());
 
     assert!(result.is_valid(), "N-dim quadratic should converge");
+    // The largest |x_i| is 2.1e-9, so the bound 1e-3 has a margin of 4.7e5. Migrad ends at an EDM
+    // of 7.9e-18, far below its goal 0.1 * 0.002 = 2e-4. The bound is a generous sanity limit:
+    // a run that stops early keeps values of order 1 (the starts are 1 to 7 in size).
     for (i, &val) in result.params().iter().enumerate() {
-        assert!(val.abs() < 1e-3, "x{} should be near 0, got {}", i, val);
+        assert!(val.abs() < 1e-3, "x{i} should be near 0, got {val}");
     }
 }
 
@@ -134,7 +137,7 @@ fn gaussian_fit() {
     let true_sigma = 2.0;
 
     let n_data = 50;
-    let x_data: Vec<f64> = (0..n_data).map(|i| i as f64 * 0.2).collect();
+    let x_data: Vec<f64> = (0..n_data).map(|i| f64::from(i) * 0.2).collect();
     let y_data: Vec<f64> = x_data
         .iter()
         .map(|&x| true_amp * (-(x - true_mean).powi(2) / (2.0 * true_sigma * true_sigma)).exp())
@@ -184,6 +187,10 @@ fn gaussian_fit() {
 /// Compare Migrad vs Simplex: with tight tolerance, Migrad should achieve
 /// a very small fval on quadratic-like functions with far fewer FCN calls.
 #[test]
+#[expect(
+    clippy::cast_precision_loss,
+    reason = "the count is far below 2^53, so the conversion is exact"
+)]
 fn migrad_vs_simplex_quadratic() {
     // On a 5D quadratic bowl, Migrad should converge much faster
     let quadratic = |p: &[f64]| -> f64 {

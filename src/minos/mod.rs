@@ -1,6 +1,6 @@
-//! MnMinos: asymmetric profile-likelihood errors.
+//! `MnMinos`: asymmetric profile-likelihood errors.
 //!
-//! After Migrad, and optionally Hesse, MnMinos computes asymmetric errors by
+//! After Migrad, and optionally Hesse, `MnMinos` computes asymmetric errors by
 //! finding where `F(x) = Fmin + Up` for each parameter.
 
 pub mod cross;
@@ -37,35 +37,41 @@ impl<'a> MnMinos<'a> {
     }
 
     /// Set strategy level.
+    #[must_use]
     pub fn with_strategy(mut self, level: u32) -> Self {
         self.strategy = MnStrategy::new(level);
         self
     }
 
     /// Set maximum function calls.
+    #[must_use]
     pub fn with_max_calls(mut self, max: usize) -> Self {
         self.max_calls = Some(max);
         self
     }
 
     /// Set tolerance for crossing convergence (default 0.1).
+    #[must_use]
     pub fn with_tolerance(mut self, tol: f64) -> Self {
         self.tolerance = tol;
         self
     }
 
     /// Compute both upper and lower MINOS errors for parameter `par`.
+    #[must_use]
     pub fn errors(&self, par: usize) -> (f64, f64) {
         let me = self.minos_error(par);
         (me.lower_error(), me.upper_error())
     }
 
     /// Alias for `errors`.
+    #[must_use]
     pub fn minos(&self, par: usize) -> MinosError {
         self.minos_error(par)
     }
 
-    /// Full MinosError (both crossings) for parameter `par`.
+    /// Full `MinosError` (both crossings) for parameter `par`.
+    #[must_use]
     pub fn minos_error(&self, par: usize) -> MinosError {
         let p = self.minimum.user_state().parameter(par);
         let min_val = p.value();
@@ -76,26 +82,31 @@ impl<'a> MnMinos<'a> {
     }
 
     /// Lower crossing only.
+    #[must_use]
     pub fn lower(&self, par: usize) -> MnCross {
         self.find_crossing(par, -1.0)
     }
 
     /// Upper crossing only.
+    #[must_use]
     pub fn upper(&self, par: usize) -> MnCross {
         self.find_crossing(par, 1.0)
     }
 
     /// Alias for the lower crossing object.
+    #[must_use]
     pub fn loval(&self, par: usize) -> MnCross {
         self.lower(par)
     }
 
     /// Alias for the upper crossing object.
+    #[must_use]
     pub fn upval(&self, par: usize) -> MnCross {
         self.upper(par)
     }
 
     /// Helper with explicit crossing direction.
+    #[must_use]
     pub fn find_cross_value(&self, dir: i32, par: usize, maxcalls: usize, toler: f64) -> MnCross {
         let direction = if dir < 0 { -1.0 } else { 1.0 };
         let nvar = self.minimum.n_variable_params();

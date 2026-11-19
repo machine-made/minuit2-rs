@@ -22,6 +22,10 @@ impl AnalyticalGradientCalculator {
     /// A user g2 is stored only when the function has no Hessian.
     /// A short or non-finite g2 is not stored.
     /// The step-size estimate stays in that case.
+    #[expect(
+        clippy::manual_midpoint,
+        reason = "keeps the operation order of the ROOT reference"
+    )]
     pub fn compute(
         fcn: &dyn FCNGradient,
         trafo: &MnUserTransformation,
@@ -289,8 +293,8 @@ mod tests {
         // Should not panic and should produce valid gradients
         assert!(grad.is_valid());
         assert!(grad.is_analytical());
-        assert!(grad.grad().len() == 2);
-        assert!(grad.g2().len() == 2);
-        assert!(grad.gstep().len() == 2);
+        assert_eq!(grad.grad().len(), 2);
+        assert_eq!(grad.g2().len(), 2);
+        assert_eq!(grad.gstep().len(), 2);
     }
 }

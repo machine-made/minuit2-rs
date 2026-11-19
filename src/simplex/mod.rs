@@ -25,6 +25,7 @@ pub struct MnSimplex {
 
 impl MnSimplex {
     /// Create a new Simplex minimizer with default settings.
+    #[must_use]
     pub fn new() -> Self {
         Self {
             params: MnUserParameters::new(),
@@ -35,18 +36,21 @@ impl MnSimplex {
     }
 
     /// Set the optimization strategy level.
+    #[must_use]
     pub fn with_strategy(mut self, level: u32) -> Self {
         self.strategy = MnStrategy::new(level);
         self
     }
 
     /// Add a free parameter.
+    #[must_use]
     pub fn add(mut self, name: impl Into<String>, value: f64, error: f64) -> Self {
         self.params.add(name, value, error);
         self
     }
 
     /// Add a parameter with both bounds.
+    #[must_use]
     pub fn add_limited(
         mut self,
         name: impl Into<String>,
@@ -60,6 +64,7 @@ impl MnSimplex {
     }
 
     /// Add a parameter with lower bound only.
+    #[must_use]
     pub fn add_lower_limited(
         mut self,
         name: impl Into<String>,
@@ -72,6 +77,7 @@ impl MnSimplex {
     }
 
     /// Add a parameter with upper bound only.
+    #[must_use]
     pub fn add_upper_limited(
         mut self,
         name: impl Into<String>,
@@ -84,24 +90,28 @@ impl MnSimplex {
     }
 
     /// Add a constant parameter.
+    #[must_use]
     pub fn add_const(mut self, name: impl Into<String>, value: f64) -> Self {
         self.params.add_const(name, value);
         self
     }
 
     /// Fix parameter by index.
+    #[must_use]
     pub fn fix(mut self, ext: usize) -> Self {
         self.params.fix(ext);
         self
     }
 
     /// Set maximum number of function calls. Default = 200 + 100*n + 5*n^2.
+    #[must_use]
     pub fn max_fcn(mut self, max: usize) -> Self {
         self.max_fcn = Some(max);
         self
     }
 
-    /// Set tolerance (relative to error_def). Default = 0.1.
+    /// Set tolerance (relative to `error_def`). Default = 0.1.
+    #[must_use]
     pub fn tolerance(mut self, tol: f64) -> Self {
         self.tolerance = tol;
         self

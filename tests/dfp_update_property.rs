@@ -24,6 +24,10 @@ struct Case {
     dg: DVector<f64>,
 }
 
+#[expect(
+    clippy::cast_precision_loss,
+    reason = "the dimension is at most six, so the conversion is exact"
+)]
 fn cases(positive: bool) -> impl Strategy<Value = Case> {
     (2usize..=6)
         .prop_flat_map(|n| {

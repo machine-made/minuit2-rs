@@ -1,4 +1,4 @@
-//! Seed generator for the SCAn minimizer.
+//! Seed generator for the `SCAn` minimizer.
 //!
 //! ROOT Minuit2's `ScanMinimizer` (v6-36-08
 //! `math/minuit2/inc/Minuit2/ScanMinimizer.h`) composes the regular

@@ -1,10 +1,10 @@
 //! NOAA Mauna Loa CO2 harmonic trend fit.
 //!
 //! Data source:
-//! - examples/data/noaa/co2_mm_mlo.csv
+//! - `examples/data/noaa/co2_mm_mlo.csv`
 //!
 //! Run:
-//!   cargo run --example noaa_co2
+//!   `cargo run --example noaa_co2`
 
 use std::f64::consts::PI;
 use std::fs::{File, create_dir_all};
@@ -132,6 +132,14 @@ impl FCN for NoaaCo2Chi2 {
 
 type NoaaSeries = (Vec<f64>, Vec<f64>, Vec<f64>);
 
+#[expect(
+    clippy::many_single_char_names,
+    reason = "keeps the existing data column names"
+)]
+#[expect(
+    clippy::manual_let_else,
+    reason = "keeps the existing CSV parsing branches"
+)]
 fn parse_noaa_csv(path: &str) -> Result<NoaaSeries, String> {
     let f = File::open(path).map_err(|e| format!("failed to open {path}: {e}"))?;
     let reader = BufReader::new(f);
@@ -228,6 +236,14 @@ fn bench_solve_times(
     Ok(())
 }
 
+#[expect(
+    clippy::cast_possible_wrap,
+    reason = "the observation count fits in i64"
+)]
+#[expect(
+    clippy::cast_precision_loss,
+    reason = "the count is far below 2^53, so the conversion is exact"
+)]
 fn main() -> Result<(), String> {
     let cli = parse_cli()?;
     let (t_abs, y, sigma) = parse_noaa_csv(DATA_PATH)?;
@@ -295,9 +311,9 @@ fn main() -> Result<(), String> {
     }
 
     let mut out =
-        File::create(out_path).map_err(|e| format!("failed to create {}: {e}", OUTPUT_PATH))?;
+        File::create(out_path).map_err(|e| format!("failed to create {OUTPUT_PATH}: {e}"))?;
     writeln!(out, "decimal_date,observed,uncertainty,fitted,residual")
-        .map_err(|e| format!("failed to write {}: {e}", OUTPUT_PATH))?;
+        .map_err(|e| format!("failed to write {OUTPUT_PATH}: {e}"))?;
 
     let params = hesse.params();
     for i in 0..t_abs.len() {
@@ -308,7 +324,7 @@ fn main() -> Result<(), String> {
             "{:.6},{:.6},{:.6},{:.6},{:.6}",
             t_abs[i], y[i], sigma[i], fitted, residual
         )
-        .map_err(|e| format!("failed to write {}: {e}", OUTPUT_PATH))?;
+        .map_err(|e| format!("failed to write {OUTPUT_PATH}: {e}"))?;
     }
 
     println!();

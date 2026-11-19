@@ -1,4 +1,4 @@
-//! NIST StRD nonlinear regression validation demo.
+//! NIST `StRD` nonlinear regression validation demo.
 //!
 //! Data sources:
 //! - examples/data/nist/Misra1a.dat
@@ -6,7 +6,7 @@
 //! - examples/data/nist/Rat43.dat
 //!
 //! Run:
-//!   cargo run --example nist_strd
+//!   `cargo run --example nist_strd`
 
 use std::fs::{File, create_dir_all};
 use std::io::{BufRead, BufReader, Write};
@@ -492,6 +492,10 @@ fn write_curve(
     Ok(())
 }
 
+#[expect(
+    clippy::unnecessary_wraps,
+    reason = "keeps the existing reporting return type and callers"
+)]
 fn report_dataset(
     ds: &NistDataset,
     params: &[f64],
@@ -501,8 +505,8 @@ fn report_dataset(
 ) -> Result<(), String> {
     println!("=== {} ===", ds.name);
     println!("points            : {}", ds.x.len());
-    println!("nfcn              : {}", nfcn);
-    println!("rss (fit)         : {:.10e}", rss);
+    println!("nfcn              : {nfcn}");
+    println!("rss (fit)         : {rss:.10e}");
     println!("rss (certified)   : {:.10e}", ds.certified_rss);
     println!(
         "rss abs diff      : {:.10e}",

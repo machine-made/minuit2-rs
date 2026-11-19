@@ -1,4 +1,4 @@
-//! Brute-force SCAn minimum builder.
+//! Brute-force `SCAn` minimum builder.
 //!
 //! Port of ROOT Minuit2 v6-36-08 `math/minuit2/src/ScanBuilder.cxx`.
 
@@ -42,6 +42,10 @@ impl ScanBuilder {
         )]
     }
 
+    #[expect(
+        clippy::cast_precision_loss,
+        reason = "the count is far below 2^53, so the conversion is exact"
+    )]
     fn scan_parameter(
         fcn: &MnFcn,
         seed: &MinimumSeed,

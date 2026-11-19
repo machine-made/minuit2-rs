@@ -19,6 +19,7 @@ pub struct MnStrategy {
 
 impl MnStrategy {
     /// Create a new strategy with the given level (0=low, 1=medium, 2=high).
+    #[must_use]
     pub fn new(level: u32) -> Self {
         let mut s = Self {
             strategy: level,
@@ -84,81 +85,99 @@ impl MnStrategy {
     }
 
     /// Get the strategy level.
+    #[must_use]
     pub fn strategy(&self) -> u32 {
         self.strategy
     }
 
     /// Get the number of gradient calculation cycles.
+    #[must_use]
     pub fn grad_ncycles(&self) -> u32 {
         self.grad_ncycles
     }
 
+    #[must_use]
     pub fn gradient_ncycles(&self) -> u32 {
         self.grad_ncycles()
     }
 
     /// Get the gradient step tolerance.
+    #[must_use]
     pub fn grad_step_tol(&self) -> f64 {
-        self.grad_step_tol as f64 / 10.0
+        f64::from(self.grad_step_tol) / 10.0
     }
 
+    #[must_use]
     pub fn gradient_step_tolerance(&self) -> f64 {
         self.grad_step_tol()
     }
 
     /// Get the gradient tolerance.
+    #[must_use]
     pub fn grad_tol(&self) -> f64 {
-        self.grad_tol as f64 / 100.0
+        f64::from(self.grad_tol) / 100.0
     }
 
+    #[must_use]
     pub fn gradient_tolerance(&self) -> f64 {
         self.grad_tol()
     }
 
     /// Get the number of Hessian calculation cycles.
+    #[must_use]
     pub fn hess_ncycles(&self) -> u32 {
         self.hess_ncycles
     }
 
+    #[must_use]
     pub fn hessian_ncycles(&self) -> u32 {
         self.hess_ncycles()
     }
 
     /// Get the Hessian step tolerance.
+    #[must_use]
     pub fn hess_step_tol(&self) -> f64 {
-        self.hess_step_tol as f64 / 10.0
+        f64::from(self.hess_step_tol) / 10.0
     }
 
+    #[must_use]
     pub fn hessian_step_tolerance(&self) -> f64 {
         self.hess_step_tol()
     }
 
     /// Get the Hessian g2 tolerance.
+    #[must_use]
     pub fn hess_g2_tol(&self) -> f64 {
-        self.hess_g2_tol as f64 / 100.0
+        f64::from(self.hess_g2_tol) / 100.0
     }
 
+    #[must_use]
     pub fn hessian_g2_tolerance(&self) -> f64 {
         self.hess_g2_tol()
     }
 
     /// Get the number of Hessian gradient calculation cycles.
+    #[must_use]
     pub fn hess_grad_ncycles(&self) -> u32 {
         self.hess_grad_ncycles
     }
 
+    #[must_use]
     pub fn hessian_gradient_ncycles(&self) -> u32 {
         self.hess_grad_ncycles()
     }
 
+    #[must_use]
     pub fn storage_level(&self) -> u32 {
         self.store_level
     }
 
+    #[must_use]
     pub fn hessian_central_fd_mixed_derivatives(&self) -> u32 {
         self.hess_cfd_g2
     }
 
+    #[must_use]
     pub fn hessian_force_pos_def(&self) -> u32 {
         self.hess_force_pos_def
     }
@@ -167,10 +186,26 @@ impl MnStrategy {
         self.grad_ncycles = ncycles;
     }
 
+    #[expect(
+        clippy::cast_possible_truncation,
+        reason = "keeps the operation order of the ROOT reference"
+    )]
+    #[expect(
+        clippy::cast_sign_loss,
+        reason = "the rounded tolerance is nonnegative"
+    )]
     pub fn set_gradient_step_tolerance(&mut self, tol: f64) {
         self.grad_step_tol = (tol.max(0.0) * 10.0).round() as u32;
     }
 
+    #[expect(
+        clippy::cast_possible_truncation,
+        reason = "keeps the operation order of the ROOT reference"
+    )]
+    #[expect(
+        clippy::cast_sign_loss,
+        reason = "the rounded tolerance is nonnegative"
+    )]
     pub fn set_gradient_tolerance(&mut self, tol: f64) {
         self.grad_tol = (tol.max(0.0) * 100.0).round() as u32;
     }
@@ -179,10 +214,26 @@ impl MnStrategy {
         self.hess_ncycles = ncycles;
     }
 
+    #[expect(
+        clippy::cast_possible_truncation,
+        reason = "keeps the operation order of the ROOT reference"
+    )]
+    #[expect(
+        clippy::cast_sign_loss,
+        reason = "the rounded tolerance is nonnegative"
+    )]
     pub fn set_hessian_step_tolerance(&mut self, tol: f64) {
         self.hess_step_tol = (tol.max(0.0) * 10.0).round() as u32;
     }
 
+    #[expect(
+        clippy::cast_possible_truncation,
+        reason = "keeps the operation order of the ROOT reference"
+    )]
+    #[expect(
+        clippy::cast_sign_loss,
+        reason = "the rounded tolerance is nonnegative"
+    )]
     pub fn set_hessian_g2_tolerance(&mut self, tol: f64) {
         self.hess_g2_tol = (tol.max(0.0) * 100.0).round() as u32;
     }
@@ -204,20 +255,24 @@ impl MnStrategy {
     }
 
     /// Check if this is a low strategy.
+    #[must_use]
     pub fn is_low(&self) -> bool {
         self.strategy == 0
     }
 
     /// Check if this is a medium strategy.
+    #[must_use]
     pub fn is_medium(&self) -> bool {
         self.strategy == 1
     }
 
     /// Check if this is a high strategy.
+    #[must_use]
     pub fn is_high(&self) -> bool {
         self.strategy >= 2
     }
 
+    #[must_use]
     pub fn is_very_high(&self) -> bool {
         self.strategy >= 3
     }

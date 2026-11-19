@@ -69,6 +69,14 @@ fn call_limit_result(
 /// The supplied-Hessian path returns the first derivatives of the input state with zero step sizes.
 /// ROOT also drops the saved steps there (MnHesse.cxx:128).
 /// Before numerical Hesse, analytical gradients receive numerical curvature and steps, following MnHesse.cxx:202-210.
+#[expect(
+    clippy::many_single_char_names,
+    reason = "the names follow the matrix notation of the reference"
+)]
+#[expect(
+    clippy::too_many_lines,
+    reason = "keeps the Hessian passes together in reference order"
+)]
 pub fn calculate(
     fcn: &MnFcn,
     state: &MinimumState,
@@ -257,34 +265,31 @@ pub fn calculate(
     let (hessian_pd, was_modified) = make_pos_def(&hessian, trafo.precision());
 
     // --- Step 5: Invert Hessian → covariance ---
-    let (error, invert_failed) = match hessian_pd.clone().try_inverse() {
-        Some(cov) => {
-            let mut err = MinimumError::new(cov, 0.0);
-            if was_modified {
-                err.set_made_pos_def(true);
-            }
-            if hesse_failed {
-                err.set_hesse_failed(true);
-            }
-            if !hesse_failed && !was_modified {
-                err.set_status(ErrorMatrixStatus::Accurate);
-            }
-            (err, false)
+    let (error, invert_failed) = if let Some(cov) = hessian_pd.clone().try_inverse() {
+        let mut err = MinimumError::new(cov, 0.0);
+        if was_modified {
+            err.set_made_pos_def(true);
         }
-        None => {
-            // Inversion failed — return diagonal of 1/H_ii
-            let mut diag = DMatrix::zeros(n, n);
-            for i in 0..n {
-                if hessian_pd[(i, i)].abs() > eps2 {
-                    diag[(i, i)] = 1.0 / hessian_pd[(i, i)];
-                } else {
-                    diag[(i, i)] = 1.0;
-                }
-            }
-            let mut err = MinimumError::new(diag, 1.0);
-            err.set_invert_failed(true);
-            (err, true)
+        if hesse_failed {
+            err.set_hesse_failed(true);
         }
+        if !hesse_failed && !was_modified {
+            err.set_status(ErrorMatrixStatus::Accurate);
+        }
+        (err, false)
+    } else {
+        // Inversion failed — return diagonal of 1/H_ii
+        let mut diag = DMatrix::zeros(n, n);
+        for i in 0..n {
+            if hessian_pd[(i, i)].abs() > eps2 {
+                diag[(i, i)] = 1.0 / hessian_pd[(i, i)];
+            } else {
+                diag[(i, i)] = 1.0;
+            }
+        }
+        let mut err = MinimumError::new(diag, 1.0);
+        err.set_invert_failed(true);
+        (err, true)
     };
 
     // --- Step 6: EDM = 0.5 * g^T * V * g ---

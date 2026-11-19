@@ -18,12 +18,13 @@ pub struct MnUserTransformation {
     parameters: Vec<MinuitParameter>,
     /// Maps internal index → external index.
     int_of_ext: Vec<usize>,
-    /// For each external param: Some(internal_index) if variable, None if fixed.
+    /// For each external param: `Some(internal_index)` if variable, None if fixed.
     ext_of_int: Vec<Option<usize>>,
     cache: Vec<f64>,
 }
 
 impl MnUserTransformation {
+    #[must_use]
     pub fn new(params: Vec<MinuitParameter>) -> Self {
         let n = params.len();
         let mut ext_of_int = vec![None; n];
@@ -47,6 +48,7 @@ impl MnUserTransformation {
         }
     }
 
+    #[must_use]
     pub fn precision(&self) -> &MnMachinePrecision {
         &self.precision
     }
@@ -56,19 +58,23 @@ impl MnUserTransformation {
     }
 
     /// Number of variable (non-fixed) parameters = internal dimension.
+    #[must_use]
     pub fn variable_parameters(&self) -> usize {
         self.int_of_ext.len()
     }
 
     /// Total number of parameters (including fixed).
+    #[must_use]
     pub fn parameters_len(&self) -> usize {
         self.parameters.len()
     }
 
+    #[must_use]
     pub fn parameters(&self) -> &[MinuitParameter] {
         &self.parameters
     }
 
+    #[must_use]
     pub fn parameter(&self, ext: usize) -> &MinuitParameter {
         &self.parameters[ext]
     }
@@ -77,26 +83,38 @@ impl MnUserTransformation {
         &mut self.parameters[ext]
     }
 
+    #[must_use]
     pub fn params(&self) -> Vec<f64> {
-        self.parameters.iter().map(|p| p.value()).collect()
+        self.parameters
+            .iter()
+            .map(super::parameter::MinuitParameter::value)
+            .collect()
     }
 
+    #[must_use]
     pub fn errors(&self) -> Vec<f64> {
-        self.parameters.iter().map(|p| p.error()).collect()
+        self.parameters
+            .iter()
+            .map(super::parameter::MinuitParameter::error)
+            .collect()
     }
 
+    #[must_use]
     pub fn value(&self, ext: usize) -> f64 {
         self.parameters[ext].value()
     }
 
+    #[must_use]
     pub fn error(&self, ext: usize) -> f64 {
         self.parameters[ext].error()
     }
 
+    #[must_use]
     pub fn index(&self, name: &str) -> Option<usize> {
         self.parameters.iter().position(|p| p.name() == name)
     }
 
+    #[must_use]
     pub fn find_index(&self, name: &str) -> Option<usize> {
         self.index(name)
     }
@@ -134,16 +152,22 @@ impl MnUserTransformation {
     }
 
     /// External index → internal index. Returns None if fixed.
+    #[must_use]
     pub fn int_of_ext(&self, ext: usize) -> Option<usize> {
         self.ext_of_int[ext]
     }
 
     /// Internal index → external index.
+    #[must_use]
     pub fn ext_of_int(&self, int: usize) -> usize {
         self.int_of_ext[int]
     }
 
     /// Transform a full internal vector to external values.
+    ///
+    /// # Panics
+    /// Panics if the internal vector is too short for the variable parameters.
+    #[must_use]
     pub fn transform(&self, internal: &[f64]) -> Vec<f64> {
         let mut result = Vec::with_capacity(self.parameters.len());
         for (ext, p) in self.parameters.iter().enumerate() {
@@ -159,6 +183,7 @@ impl MnUserTransformation {
     }
 
     /// Transform a single internal value to external.
+    #[must_use]
     pub fn int2ext(&self, ext: usize, internal: f64) -> f64 {
         let p = &self.parameters[ext];
         if p.has_limits() {
@@ -173,6 +198,7 @@ impl MnUserTransformation {
     }
 
     /// Transform a single external value to internal.
+    #[must_use]
     pub fn ext2int(&self, ext: usize, value: f64) -> f64 {
         let p = &self.parameters[ext];
         if p.has_limits() {
@@ -187,6 +213,7 @@ impl MnUserTransformation {
     }
 
     /// Derivative d(external)/d(internal) for parameter `ext`.
+    #[must_use]
     pub fn dint2ext(&self, ext: usize, internal: f64) -> f64 {
         let p = &self.parameters[ext];
         if p.has_limits() {
@@ -201,6 +228,7 @@ impl MnUserTransformation {
     }
 
     /// Derivative d(internal)/d(external) for parameter `ext`.
+    #[must_use]
     pub fn dext2int(&self, ext: usize, internal: f64) -> f64 {
         let d = self.dint2ext(ext, internal);
         if d.abs() > self.precision.eps2() {
@@ -211,11 +239,15 @@ impl MnUserTransformation {
     }
 
     /// Internal error from external error, accounting for transform derivative.
+    #[must_use]
     pub fn int2ext_error(&self, ext: usize, internal: f64, err: f64) -> f64 {
         let dx = self.dint2ext(ext, internal);
         if dx > 0.0 { err / dx } else { err }
     }
 
+    #[must_use]
+    /// # Panics
+    /// Panics if the vector length or either matrix dimension differs from the number of variable parameters.
     pub fn int2ext_covariance(&self, internal: &[f64], cov: &DMatrix<f64>) -> MnUserCovariance {
         let n = self.variable_parameters();
         assert_eq!(internal.len(), n, "internal vector size mismatch");
@@ -239,6 +271,9 @@ impl MnUserTransformation {
         MnUserCovariance::from_vec(data, n)
     }
 
+    #[must_use]
+    /// # Panics
+    /// Panics if the vector length or either matrix dimension differs from the number of variable parameters.
     pub fn ext2int_covariance(&self, internal: &[f64], cov: &DMatrix<f64>) -> MnUserCovariance {
         let n = self.variable_parameters();
         assert_eq!(internal.len(), n, "internal vector size mismatch");
@@ -293,16 +328,17 @@ impl MnUserTransformation {
     fn rebuild_index(&mut self) {
         self.int_of_ext.clear();
         for (ext, p) in self.parameters.iter().enumerate() {
-            if !p.is_fixed() {
+            if p.is_fixed() {
+                self.ext_of_int[ext] = None;
+            } else {
                 self.ext_of_int[ext] = Some(self.int_of_ext.len());
                 self.int_of_ext.push(ext);
-            } else {
-                self.ext_of_int[ext] = None;
             }
         }
     }
 
     /// Build internal parameter vector from current external values.
+    #[must_use]
     pub fn initial_internal_values(&self) -> Vec<f64> {
         self.int_of_ext
             .iter()
@@ -314,6 +350,7 @@ impl MnUserTransformation {
     }
 
     /// Build internal error vector from current external errors.
+    #[must_use]
     pub fn initial_internal_errors(&self) -> Vec<f64> {
         self.int_of_ext
             .iter()

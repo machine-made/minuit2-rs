@@ -21,6 +21,7 @@ pub struct MinimumParameters {
 
 impl MinimumParameters {
     /// Create with just parameter values and function value.
+    #[must_use]
     pub fn new(vec: DVector<f64>, fval: f64) -> Self {
         let n = vec.len();
         Self {
@@ -33,6 +34,7 @@ impl MinimumParameters {
     }
 
     /// Create with parameter values, step direction, and function value.
+    #[must_use]
     pub fn with_step(vec: DVector<f64>, step: DVector<f64>, fval: f64) -> Self {
         Self {
             vec,
@@ -43,26 +45,32 @@ impl MinimumParameters {
         }
     }
 
+    #[must_use]
     pub fn vec(&self) -> &DVector<f64> {
         &self.vec
     }
 
+    #[must_use]
     pub fn step(&self) -> &DVector<f64> {
         &self.step
     }
 
+    #[must_use]
     pub fn fval(&self) -> f64 {
         self.fval
     }
 
+    #[must_use]
     pub fn is_valid(&self) -> bool {
         self.valid
     }
 
+    #[must_use]
     pub fn has_step(&self) -> bool {
         self.has_step
     }
 
+    #[must_use]
     pub fn has_step_size(&self) -> bool {
         self.has_step()
     }

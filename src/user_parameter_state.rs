@@ -21,6 +21,7 @@ pub struct MnUserParameterState {
 
 impl MnUserParameterState {
     /// Create initial state from user parameters (pre-minimization).
+    #[must_use]
     pub fn new(params: MnUserParameters) -> Self {
         Self {
             params,
@@ -34,6 +35,7 @@ impl MnUserParameterState {
         }
     }
 
+    #[must_use]
     pub fn params(&self) -> &MnUserParameters {
         &self.params
     }
@@ -43,6 +45,7 @@ impl MnUserParameterState {
     }
 
     /// Get the function value.
+    #[must_use]
     pub fn fval(&self) -> f64 {
         self.fval
     }
@@ -52,6 +55,7 @@ impl MnUserParameterState {
     }
 
     /// Get the estimated distance to minimum.
+    #[must_use]
     pub fn edm(&self) -> f64 {
         self.edm
     }
@@ -61,6 +65,7 @@ impl MnUserParameterState {
     }
 
     /// Get the total number of function calls.
+    #[must_use]
     pub fn nfcn(&self) -> usize {
         self.nfcn
     }
@@ -70,6 +75,7 @@ impl MnUserParameterState {
     }
 
     /// Check if the minimization result is valid.
+    #[must_use]
     pub fn is_valid(&self) -> bool {
         self.is_valid
     }
@@ -79,11 +85,13 @@ impl MnUserParameterState {
     }
 
     /// Check if the covariance matrix is available.
+    #[must_use]
     pub fn has_covariance(&self) -> bool {
         self.covariance_valid
     }
 
     /// Get the covariance matrix if available.
+    #[must_use]
     pub fn covariance(&self) -> Option<&MnUserCovariance> {
         self.covariance.as_ref()
     }
@@ -104,15 +112,18 @@ impl MnUserParameterState {
         }
     }
 
+    #[must_use]
     pub fn covariance_status(&self) -> i32 {
-        if self.covariance_valid { 1 } else { 0 }
+        i32::from(self.covariance_valid)
     }
 
+    #[must_use]
     pub fn hessian(&self) -> Option<MnUserCovariance> {
         self.covariance.clone()
     }
 
     /// Get the global correlation coefficients if available.
+    #[must_use]
     pub fn global_cc(&self) -> Option<&[f64]> {
         self.global_cc.as_deref()
     }
@@ -178,51 +189,63 @@ impl MnUserParameterState {
         self.params.set_precision(eps);
     }
 
+    #[must_use]
     pub fn value(&self, name: &str) -> Option<f64> {
         self.params.value(name)
     }
 
+    #[must_use]
     pub fn error(&self, name: &str) -> Option<f64> {
         self.params.error(name)
     }
 
+    #[must_use]
     pub fn errors(&self) -> Vec<f64> {
         self.params.errors()
     }
 
+    #[must_use]
     pub fn index(&self, name: &str) -> Option<usize> {
         self.params.index(name)
     }
 
+    #[must_use]
     pub fn int2ext(&self, int: usize, internal: f64) -> f64 {
         let ext = self.params.trafo().ext_of_int(int);
         self.params.trafo().int2ext(ext, internal)
     }
 
+    #[must_use]
     pub fn ext2int(&self, ext: usize, value: f64) -> f64 {
         self.params.trafo().ext2int(ext, value)
     }
 
+    #[must_use]
     pub fn int_of_ext(&self, ext: usize) -> Option<usize> {
         self.params.trafo().int_of_ext(ext)
     }
 
+    #[must_use]
     pub fn ext_of_int(&self, int: usize) -> usize {
         self.params.trafo().ext_of_int(int)
     }
 
+    #[must_use]
     pub fn parameter(&self, ext: usize) -> &MinuitParameter {
         self.params.trafo().parameter(ext)
     }
 
+    #[must_use]
     pub fn variable_parameters(&self) -> usize {
         self.params.variable_parameters()
     }
 
+    #[must_use]
     pub fn len(&self) -> usize {
         self.params.len()
     }
 
+    #[must_use]
     pub fn is_empty(&self) -> bool {
         self.params.is_empty()
     }

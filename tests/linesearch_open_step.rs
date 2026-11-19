@@ -3,9 +3,9 @@
 //!
 //! f(x) = x^4/4 - 10 x^3/3 - 23 x^2/2 - 12 x. From x = 0 with step 1 and
 //! gdel -12 the search visits 5 and then 15. The parabola through 1, 5 and 15
-//! has its vertex near 17.5. Calling MnLineSearch in ROOT Minuit2 v6-36-08
+//! has its vertex near 17.5. Calling `MnLineSearch` in ROOT Minuit2 v6-36-08
 //! on these inputs ends at x = 10.390954 with f = -2191.655428.
-//! Inputs and full-precision output: reports/verification/raw/trace/linesearch_open_step.root.json.
+//! Inputs and full-precision output: `reports/verification/raw/trace/linesearch_open_step.root.json`.
 
 use minuit2::fcn::FCN;
 use minuit2::linesearch::mn_linesearch;
@@ -40,7 +40,7 @@ fn open_step_moves_the_parabola_bounds_with_the_best_point() {
     // 1e-4 covers the six-decimal reference rounding (5e-7) and small arithmetic drift;
     // it still excludes the former endpoint 10.345059, which missed by 0.046.
     assert!(
-        (result.x - 10.390954).abs() < 1e-4,
+        (result.x - 10.390_954).abs() < 1e-4,
         "line search ended at x {}, f {}; the reference ends at x 10.390954, f -2191.655",
         result.x,
         result.y
@@ -79,10 +79,10 @@ fn zero_coordinate_does_not_pin_the_minimum_step() {
 #[test]
 fn shortening_and_refinement_share_the_root_trial_budget() {
     let (a, b, c, x0) = (
-        8.542660106212638,
-        6140.499261869658,
-        0.25126429994345456,
-        6.080884527495888,
+        8.542_660_106_212_638,
+        6_140.499_261_869_658,
+        0.251_264_299_943_454_56,
+        6.080_884_527_495_888,
     );
     let objective = |p: &[f64]| (p[0] - a).powi(2) + b * (c * p[0]).sin();
     let derivative = 2.0 * (x0 - a) + b * c * (c * x0).cos();

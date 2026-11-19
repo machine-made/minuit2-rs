@@ -1,4 +1,4 @@
-//! ContoursError: result type for 2D contour computation.
+//! `ContoursError`: result type for 2D contour computation.
 //!
 //! Contains the contour points and the MINOS errors for both axes.
 
@@ -22,22 +22,27 @@ pub struct ContoursError {
 }
 
 impl ContoursError {
+    #[must_use]
     pub fn xpar(&self) -> usize {
         self.par_x
     }
 
+    #[must_use]
     pub fn ypar(&self) -> usize {
         self.par_y
     }
 
+    #[must_use]
     pub fn nfcn(&self) -> usize {
         self.nfcn
     }
 
+    #[must_use]
     pub fn x_min(&self) -> f64 {
         self.x_minos.min()
     }
 
+    #[must_use]
     pub fn y_min(&self) -> f64 {
         self.y_minos.min()
     }
