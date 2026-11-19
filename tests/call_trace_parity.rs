@@ -17,6 +17,10 @@ impl FCN for RecordedRosenbrock {
 }
 
 #[test]
+#[expect(
+    clippy::cast_possible_truncation,
+    reason = "the reference call count is 140 and fits in usize"
+)]
 fn rosenbrock2_calls_equal_root_calls() {
     let root: serde_json::Value = serde_json::from_str(include_str!(
         "../reports/verification/raw/trace/nfcn_accounting_rosenbrock2_maxfcn140.root.json"

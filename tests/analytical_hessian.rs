@@ -282,7 +282,7 @@ fn inversion_failure_returns_original_reciprocal_diagonal() {
     // The smallest eigenvalue of the normalised matrix is 1e-6, above the threshold of about 1.2e-7.
     // The positive-definiteness step then leaves the matrix unchanged.
     let tiny: f64 = 1e-305;
-    let correlation: f64 = 0.999999;
+    let correlation: f64 = 0.999_999;
     // The exact diagonal of the inverse is 1 / (tiny * (1 - correlation^2)), about 10^310.7.
     // The largest `f64` is about 10^308.25, so the failure is genuine and not an effect of the scaling.
     let inverse_log10 = -tiny.log10() - (1.0 - correlation * correlation).log10();
@@ -360,6 +360,14 @@ fn calculate_with_diagonal(n: usize, entry: f64) -> calculator::HesseResult {
 }
 
 #[test]
+#[expect(
+    clippy::float_cmp,
+    reason = "the Hessian diagonal must be copied exactly"
+)]
+#[expect(
+    clippy::cast_precision_loss,
+    reason = "the dimension is at most five, so the conversion is exact"
+)]
 fn diagonal_hessians_of_any_size_invert_at_extreme_scales() {
     // The determinant of an n x n diagonal matrix is entry^n, so it overflows or underflows earlier for larger n.
     // Each case would give zero, NaN or a failed inversion without the scaling.
@@ -487,7 +495,7 @@ fn indefinite_hessian_is_made_positive_definite() {
 
 #[test]
 fn positive_nearly_singular_hessian_is_not_modified() {
-    let off_diagonal = 0.9999995;
+    let off_diagonal = 0.999_999_5;
     let result = calculate_at_nonzero_gradient(vec![1.0, off_diagonal, 1.0]);
     assert!(!result.made_pos_def);
     assert!(result.state.error().is_accurate());

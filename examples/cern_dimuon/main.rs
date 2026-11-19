@@ -1,11 +1,11 @@
 //! CERN dimuon mass peak fits (Z-region).
 //!
 //! Data sources:
-//! - examples/data/cern/MuRun2010B_0.csv
-//! - examples/data/cern/Zmumu.csv
+//! - `examples/data/cern/MuRun2010B_0.csv`
+//! - `examples/data/cern/Zmumu.csv`
 //!
 //! Run:
-//!   cargo run --example cern_dimuon
+//!   `cargo run --example cern_dimuon`
 
 use std::fs::{File, create_dir_all};
 use std::io::{BufRead, BufReader, Write};
@@ -175,6 +175,10 @@ fn read_masses_from_column(path: &str, column_name: &str) -> Result<Vec<f64>, St
     Ok(masses)
 }
 
+#[expect(
+    clippy::manual_let_else,
+    reason = "keeps the existing CSV parsing branches"
+)]
 fn read_zmumu_masses_from_kinematics(path: &str) -> Result<Vec<f64>, String> {
     let f = File::open(path).map_err(|e| format!("failed to open {path}: {e}"))?;
     let mut reader = BufReader::new(f);
@@ -255,6 +259,18 @@ fn read_zmumu_masses_from_kinematics(path: &str) -> Result<Vec<f64>, String> {
     Ok(masses)
 }
 
+#[expect(
+    clippy::cast_precision_loss,
+    reason = "the bin count is far below 2^53, so the conversion is exact"
+)]
+#[expect(
+    clippy::cast_possible_truncation,
+    reason = "the histogram index deliberately discards its fractional part"
+)]
+#[expect(
+    clippy::cast_sign_loss,
+    reason = "keeps the existing histogram index conversion"
+)]
 fn histogram(masses: &[f64], low: f64, high: f64, bins: usize) -> (Vec<f64>, Vec<f64>) {
     let mut counts = vec![0.0; bins];
     let width = (high - low) / bins as f64;
@@ -272,6 +288,15 @@ fn histogram(masses: &[f64], low: f64, high: f64, bins: usize) -> (Vec<f64>, Vec
     (centers, counts)
 }
 
+#[expect(
+    clippy::many_single_char_names,
+    reason = "keeps the existing fit variable names"
+)]
+#[expect(
+    clippy::cast_precision_loss,
+    reason = "the bin count is far below 2^53, so the conversion is exact"
+)]
+#[expect(clippy::cast_possible_wrap, reason = "the bin count fits in i64")]
 fn fit_histogram(
     label: &str,
     x: &[f64],
@@ -312,7 +337,7 @@ fn fit_histogram(
     }
 
     if emit_output {
-        println!("=== {} ===", label);
+        println!("=== {label} ===");
         println!("bins                : {}", x.len());
         println!("valid               : {}", hesse.is_valid());
         println!("nfcn                : {}", hesse.nfcn());
@@ -338,9 +363,9 @@ fn fit_histogram(
             create_dir_all(parent).map_err(|e| format!("failed to create output dir: {e}"))?;
         }
         let mut out = File::create(output_path)
-            .map_err(|e| format!("failed to create {}: {e}", output_path))?;
+            .map_err(|e| format!("failed to create {output_path}: {e}"))?;
         writeln!(out, "bin_center,count,sigma,model,residual")
-            .map_err(|e| format!("failed to write {}: {e}", output_path))?;
+            .map_err(|e| format!("failed to write {output_path}: {e}"))?;
         for i in 0..x.len() {
             let m = HistChi2::model(&p, x[i]);
             let r = y[i] - m;
@@ -349,7 +374,7 @@ fn fit_histogram(
                 "{:.6},{:.6},{:.6},{:.6},{:.6}",
                 x[i], y[i], sigma[i], m, r
             )
-            .map_err(|e| format!("failed to write {}: {e}", output_path))?;
+            .map_err(|e| format!("failed to write {output_path}: {e}"))?;
         }
     }
 

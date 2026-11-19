@@ -1,7 +1,7 @@
-//! NIST StRD certified-oracle integration tests.
+//! NIST `StRD` certified-oracle integration tests.
 //!
-//! These tests fit official NIST Statistical Reference Datasets (StRD) for
-//! nonlinear least-squares regression and assert that MnMigrad converges to the
+//! These tests fit official NIST Statistical Reference Datasets (`StRD`) for
+//! nonlinear least-squares regression and assert that `MnMigrad` converges to the
 //! NIST-CERTIFIED parameter values within realistic relative tolerances.
 //!
 //! The oracle (certified parameter values, recommended starting values, and the
@@ -10,7 +10,7 @@
 //! NIST. Each `.dat` file is pinned in `examples/data/SHA256SUMS` and fetched/
 //! verified by `scripts/fetch_scientific_demo_data.sh`.
 //!
-//! Source: https://www.itl.nist.gov/div898/strd/nls/data/LINKS/DATA/<NAME>.dat
+//! Source: `https://www.itl.nist.gov/div898/strd/nls/data/LINKS/DATA/<NAME>.dat`
 //!
 //! Fits start from the NIST "Start 2" values (the harder of the two recommended
 //! starts) and use a plain least-squares FCN with errordef/up = 1.0.
@@ -22,7 +22,7 @@
 //! The exact tolerance is stated in a comment at each dataset's test.
 //!
 //! Run:
-//!   cargo test --test nist_strd_certified -- --nocapture
+//!   `cargo test --test nist_strd_certified -- --nocapture`
 
 use std::fs::File;
 use std::io::{BufRead, BufReader};
@@ -35,7 +35,7 @@ fn repo_path(rel: &str) -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join(rel)
 }
 
-/// Parsed NIST StRD dataset.
+/// Parsed NIST `StRD` dataset.
 #[derive(Clone)]
 struct NistDataset {
     name: String,
@@ -100,7 +100,7 @@ fn parse_floats(text: &str) -> Vec<f64> {
         .collect()
 }
 
-/// Parse a committed NIST StRD `.dat` file.
+/// Parse a committed NIST `StRD` `.dat` file.
 ///
 /// Extracts the dataset name, Start 1 / Start 2 values, certified parameter
 /// estimates, certified residual sum of squares, and the `(x, y)` observations.
@@ -491,6 +491,14 @@ fn identity_params(p: &[f64]) -> Vec<f64> {
     p.to_vec()
 }
 
+#[expect(
+    clippy::format_push_string,
+    reason = "keeps the existing diagnostic string construction"
+)]
+#[expect(
+    clippy::map_unwrap_or,
+    reason = "keeps the existing optional fit summary construction"
+)]
 fn hard_fit(
     ds: &NistDataset,
     model: fn(&[f64], f64) -> f64,
@@ -577,6 +585,10 @@ fn hard_fit(
     ))
 }
 
+#[expect(
+    clippy::similar_names,
+    reason = "the starting points retain their existing names"
+)]
 fn hard_grid(start1: &[f64], start2: &[f64]) -> Vec<Vec<f64>> {
     let mut starts = Vec::new();
     for anchor in [start2, start1] {
@@ -631,6 +643,10 @@ fn solve_linear<const N: usize>(mut a: [[f64; N]; N], mut b: [f64; N]) -> Option
     Some(b)
 }
 
+#[expect(
+    clippy::too_many_lines,
+    reason = "keeps the existing profiled start calculation together"
+)]
 fn lanczos_profiled_start(ds: &NistDataset) -> Vec<f64> {
     let base_rates = [ds.start2[1], ds.start2[3], ds.start2[5]];
     let factors = [0.5, 0.7, 0.8, 1.0, 1.4];

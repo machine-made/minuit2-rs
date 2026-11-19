@@ -1,4 +1,4 @@
-//! Hard-mode NIST StRD recipe for Lanczos3, MGH09, and Hahn1.
+//! Hard-mode NIST `StRD` recipe for Lanczos3, MGH09, and Hahn1.
 //!
 //! Operator strategy, intentionally outside core Minuit2 numerics:
 //! 1. Start only from NIST Start 1 / Start 2 values parsed from the committed
@@ -13,7 +13,7 @@
 //! covered by `tests/nist_strd_certified.rs`.
 //!
 //! Run:
-//!   cargo run --example nist_strd_hard
+//!   `cargo run --example nist_strd_hard`
 
 use std::fs::File;
 use std::io::{BufRead, BufReader};
@@ -179,6 +179,10 @@ fn identity(p: &[f64]) -> Vec<f64> {
     p.to_vec()
 }
 
+#[expect(
+    clippy::similar_names,
+    reason = "the starting points retain their existing names"
+)]
 fn hard_grid(start1: &[f64], start2: &[f64]) -> Vec<Vec<f64>> {
     let mut starts = Vec::new();
     for anchor in [start2, start1] {
@@ -233,6 +237,10 @@ fn solve_linear<const N: usize>(mut a: [[f64; N]; N], mut b: [f64; N]) -> Option
     Some(b)
 }
 
+#[expect(
+    clippy::too_many_lines,
+    reason = "keeps the existing profiled start calculation together"
+)]
 fn lanczos_profiled_start(ds: &Dataset) -> Vec<f64> {
     let base_rates = [ds.start2[1], ds.start2[3], ds.start2[5]];
     let factors = [0.5, 0.7, 0.8, 1.0, 1.4];

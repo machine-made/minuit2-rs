@@ -2,6 +2,10 @@ use minuit2::{MnMigrad, MnScan};
 
 /// 1D scan of a quadratic: should produce parabolic profile.
 #[test]
+#[expect(
+    clippy::assert_is_empty,
+    reason = "keeps the existing scan assertion unchanged"
+)]
 fn scan_quadratic_profile() {
     let result = MnMigrad::new()
         .add("x", 5.0, 1.0)
@@ -30,6 +34,10 @@ fn scan_quadratic_profile() {
 
 /// Auto-range scan: default is ±2*error.
 #[test]
+#[expect(
+    clippy::assert_is_empty,
+    reason = "keeps the existing scan assertion unchanged"
+)]
 fn scan_auto_range() {
     let result = MnMigrad::new()
         .add("x", 0.0, 1.0)

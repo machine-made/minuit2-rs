@@ -1,10 +1,10 @@
 //! USGS earthquake catalog: Gutenberg-Richter fit.
 //!
 //! Data source:
-//! - examples/data/usgs/earthquakes_2025_m4p5.csv
+//! - `examples/data/usgs/earthquakes_2025_m4p5.csv`
 //!
 //! Run:
-//!   cargo run --example usgs_earthquakes
+//!   `cargo run --example usgs_earthquakes`
 
 use std::fs::{File, create_dir_all};
 use std::io::{BufRead, BufReader, Write};
@@ -145,6 +145,10 @@ fn parse_magnitudes(path: &str) -> Result<Vec<f64>, String> {
     Ok(mags)
 }
 
+#[expect(
+    clippy::cast_precision_loss,
+    reason = "the event count is far below 2^53, so the conversion is exact"
+)]
 fn build_cumulative_curve(mags: &[f64], m_min: f64, m_max: f64, dm: f64) -> (Vec<f64>, Vec<f64>) {
     let mut thresholds = Vec::new();
     let mut counts = Vec::new();
@@ -195,6 +199,11 @@ fn bench_solve_times(fcn: &GRChi2, repeats: usize, warmups: usize) -> Result<(),
     Ok(())
 }
 
+#[expect(clippy::cast_possible_wrap, reason = "the fit point count fits in i64")]
+#[expect(
+    clippy::cast_precision_loss,
+    reason = "the point count is far below 2^53, so the conversion is exact"
+)]
 fn main() -> Result<(), String> {
     let cli = parse_cli()?;
     let mags = parse_magnitudes(DATA_PATH)?;
@@ -259,19 +268,19 @@ fn main() -> Result<(), String> {
         "chi2/ndf            : {:.6}",
         hesse.fval() / (m_values.len() as f64 - 2.0)
     );
-    println!("a                   : {:.8} +/- {:.6}", a, a_err);
-    println!("b-value             : {:.8} +/- {:.6}", b, b_err);
+    println!("a                   : {a:.8} +/- {a_err:.6}");
+    println!("b-value             : {b:.8} +/- {b_err:.6}");
 
     if let Some(parent) = Path::new(OUTPUT_PATH).parent() {
         create_dir_all(parent).map_err(|e| format!("failed to create output dir: {e}"))?;
     }
     let mut out =
-        File::create(OUTPUT_PATH).map_err(|e| format!("failed to create {}: {e}", OUTPUT_PATH))?;
+        File::create(OUTPUT_PATH).map_err(|e| format!("failed to create {OUTPUT_PATH}: {e}"))?;
     writeln!(
         out,
         "magnitude_threshold,cumulative_count,log10_count,sigma_log10,pred_log10,residual"
     )
-    .map_err(|e| format!("failed to write {}: {e}", OUTPUT_PATH))?;
+    .map_err(|e| format!("failed to write {OUTPUT_PATH}: {e}"))?;
 
     for i in 0..m_values.len() {
         let pred = a - b * m_values[i];
@@ -281,7 +290,7 @@ fn main() -> Result<(), String> {
             "{:.3},{:.0},{:.8},{:.8},{:.8},{:.8}",
             m_values[i], counts[i], log10_n[i], sigma_log10_n[i], pred, residual
         )
-        .map_err(|e| format!("failed to write {}: {e}", OUTPUT_PATH))?;
+        .map_err(|e| format!("failed to write {OUTPUT_PATH}: {e}"))?;
     }
 
     println!("Wrote {OUTPUT_PATH}");

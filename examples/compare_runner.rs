@@ -16,6 +16,10 @@ fn number(value: &Value) -> f64 {
 }
 
 impl FCN for Objective {
+    #[expect(
+        clippy::many_single_char_names,
+        reason = "keeps the existing mathematical variable names"
+    )]
     fn value(&self, p: &[f64]) -> f64 {
         self.values.set(self.values.get() + 1);
         match self.case["function"].as_str().expect("missing function") {
@@ -100,6 +104,10 @@ fn snapshot(minimum: &FunctionMinimum, objective: &Objective) -> Value {
     })
 }
 
+#[expect(
+    clippy::cast_possible_truncation,
+    reason = "keeps the existing JSON integer conversions"
+)]
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut input = String::new();
     io::stdin().read_to_string(&mut input)?;

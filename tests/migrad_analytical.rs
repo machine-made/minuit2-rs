@@ -24,8 +24,8 @@ impl FCNGradient for Rosenbrock {
         // df/dx = -2(1-x) - 400x(y-x²)
         let dfdx = -2.0 * (1.0 - x) - 400.0 * x * (y - x * x);
         // df/dy = 200(y-x²)
-        let dfdy = 200.0 * (y - x * x);
-        vec![dfdx, dfdy]
+        let derivative_y = 200.0 * (y - x * x);
+        vec![dfdx, derivative_y]
     }
 }
 
@@ -68,8 +68,8 @@ fn migrad_analytical_quadratic() {
     let state = result.user_state();
     let x = state.value("x").unwrap();
     let y = state.value("y").unwrap();
-    assert!(x.abs() < 1e-4, "x should be near 0, got {}", x);
-    assert!(y.abs() < 1e-4, "y should be near 0, got {}", y);
+    assert!(x.abs() < 1e-4, "x should be near 0, got {x}");
+    assert!(y.abs() < 1e-4, "y should be near 0, got {y}");
 }
 
 #[test]
@@ -86,8 +86,8 @@ fn migrad_analytical_rosenbrock() {
         let x = state.value("x").unwrap();
         let y = state.value("y").unwrap();
         // Just check we're in the right ballpark
-        assert!(x > -0.5, "x should be positive region, got {}", x);
-        assert!(y > -0.5, "y should be positive region, got {}", y);
+        assert!(x > -0.5, "x should be positive region, got {x}");
+        assert!(y > -0.5, "y should be positive region, got {y}");
     }
 }
 
@@ -110,15 +110,11 @@ fn migrad_analytical_vs_numerical_quadratic() {
 
     assert!(
         (x_analytical - x_numerical).abs() < 1e-5,
-        "x should match: analytical={}, numerical={}",
-        x_analytical,
-        x_numerical
+        "x should match: analytical={x_analytical}, numerical={x_numerical}"
     );
     assert!(
         (y_analytical - y_numerical).abs() < 1e-5,
-        "y should match: analytical={}, numerical={}",
-        y_analytical,
-        y_numerical
+        "y should match: analytical={y_analytical}, numerical={y_numerical}"
     );
 
     // Analytical might use fewer function calls (not always guaranteed due to randomness)
@@ -143,10 +139,10 @@ fn migrad_analytical_with_bounds() {
 
     // For bounded quadratic, minimum is at origin but with bounds
     // we might not get exactly zero
-    assert!(x.abs() < 0.1, "x should be small, got {}", x);
-    assert!(y.abs() < 0.1, "y should be small, got {}", y);
+    assert!(x.abs() < 0.1, "x should be small, got {x}");
+    assert!(y.abs() < 0.1, "y should be small, got {y}");
 
     // Check bounds are satisfied
-    assert!((-1.0..=1.0).contains(&x), "x must be in [-1, 1], got {}", x);
-    assert!((-2.0..=2.0).contains(&y), "y must be in [-2, 2], got {}", y);
+    assert!((-1.0..=1.0).contains(&x), "x must be in [-1, 1], got {x}");
+    assert!((-2.0..=2.0).contains(&y), "y must be in [-2, 2], got {y}");
 }

@@ -223,6 +223,10 @@ fn trafo_pair(limited: bool) -> MnUserTransformation {
 /// production arithmetic. A free parameter has dirin = error. A parameter
 /// with two limits uses the sine transform, int = asin(2 (x - a) / (b - a) - 1),
 /// and dirin is half the sum of the two internal steps of plus and minus error.
+#[expect(
+    clippy::manual_midpoint,
+    reason = "keeps the operation order of the ROOT reference"
+)]
 fn step_size_g2(trafo: &MnUserTransformation, int_i: usize) -> f64 {
     let p = &trafo.parameters()[trafo.ext_of_int(int_i)];
     let (value, error) = (p.value(), p.error());

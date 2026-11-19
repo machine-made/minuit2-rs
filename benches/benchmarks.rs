@@ -47,7 +47,7 @@ fn bench_rosenbrock_migrad(c: &mut Criterion) {
                 .add("y", 0.0, 0.1)
                 .minimize(&rosenbrock);
             black_box(result);
-        })
+        });
     });
 }
 
@@ -61,7 +61,7 @@ fn bench_rosenbrock_minimize(c: &mut Criterion) {
                 .add("y", 0.0, 0.1)
                 .minimize(&rosenbrock);
             black_box(result);
-        })
+        });
     });
 }
 
@@ -75,7 +75,7 @@ fn bench_rosenbrock_simplex(c: &mut Criterion) {
                 .add("y", 0.0, 0.1)
                 .minimize(&rosenbrock);
             black_box(result);
-        })
+        });
     });
 }
 
@@ -91,7 +91,7 @@ fn bench_quadratic_4d_migrad(c: &mut Criterion) {
                 .add("x4", 4.0, 0.1)
                 .minimize(&quadratic);
             black_box(result);
-        })
+        });
     });
 }
 
@@ -106,7 +106,7 @@ fn bench_quadratic_2d_migrad_hesse(c: &mut Criterion) {
                 .minimize(&quadratic);
             let hesse_result = MnHesse::new().calculate(&quadratic, &migrad_result);
             black_box((migrad_result, hesse_result));
-        })
+        });
     });
 }
 
@@ -124,7 +124,7 @@ fn bench_gaussian_fit_migrad_hesse(c: &mut Criterion) {
                 .minimize(&fcn);
             let hesse_result = MnHesse::new().calculate(&fcn, &migrad_result);
             black_box((migrad_result, hesse_result));
-        })
+        });
     });
 }
 
@@ -140,7 +140,7 @@ fn bench_minos_error(c: &mut Criterion) {
         b.iter(|| {
             let me = MnMinos::new(&quadratic, &hesse).minos_error(0);
             black_box(me);
-        })
+        });
     });
 }
 
@@ -157,7 +157,7 @@ fn bench_contours(c: &mut Criterion) {
         b.iter(|| {
             let pts = contours.points(0, 1, 12);
             black_box(pts);
-        })
+        });
     });
 }
 
@@ -173,7 +173,7 @@ fn bench_scan_serial(c: &mut Criterion) {
         b.iter(|| {
             let pts = scan.scan_serial(0, 100, -3.0, 3.0);
             black_box(pts);
-        })
+        });
     });
 }
 
@@ -190,10 +190,14 @@ fn bench_scan_parallel(c: &mut Criterion) {
         b.iter(|| {
             let pts = scan.scan_parallel(0, 100, -3.0, 3.0);
             black_box(pts);
-        })
+        });
     });
 }
 
+#[expect(
+    clippy::cast_precision_loss,
+    reason = "the indices are below forty, so the conversions are exact"
+)]
 fn bench_kernel_posdef(c: &mut Criterion) {
     let n = 20;
     let mut matrix = DMatrix::<f64>::identity(n, n);
@@ -217,7 +221,7 @@ fn bench_kernel_posdef(c: &mut Criterion) {
         b.iter(|| {
             let out = make_pos_def(&matrix, &prec);
             black_box(out);
-        })
+        });
     });
 }
 
@@ -234,7 +238,7 @@ fn bench_kernel_linesearch(c: &mut Criterion) {
         b.iter(|| {
             let result = mn_linesearch(&fcn, &start, &step, gdel, &prec);
             black_box(result);
-        })
+        });
     });
 }
 
