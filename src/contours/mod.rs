@@ -14,6 +14,15 @@ use crate::minos::minos_error::MinosError;
 use crate::strategy::MnStrategy;
 
 /// Compute 2D confidence contours.
+/// # Examples
+///
+/// ```
+/// use minuit2::{MnMigrad, MnContours};
+/// let f = |p: &[f64]| p[0] * p[0] + p[1] * p[1];
+/// let minimum = MnMigrad::new().add("x", 0.1, 0.1).add("y", 0.1, 0.1).minimize(&f);
+/// let points = MnContours::new(&f, &minimum).points(0, 1, 4);
+/// assert_eq!(points.len(), 4);
+/// ```
 pub struct MnContours<'a> {
     fcn: &'a dyn FCN,
     minimum: &'a FunctionMinimum,
@@ -39,8 +48,20 @@ impl<'a> MnContours<'a> {
 
     /// Compute contour points for parameters `par_x` and `par_y`.
     ///
-    /// Returns `npoints` points tracing the F = Fmin + Up contour.
-    /// Minimum 4 points (the MINOS cardinal points).
+    /// Requests at least four points, beginning with the MINOS cardinal points.
+    /// Returns an empty vector if either axis has invalid MINOS errors.
+    /// # Examples
+    ///
+    /// ```
+    /// use minuit2::{MnMigrad, MnContours};
+    /// let f = |p: &[f64]| p[0] * p[0] + p[1] * p[1];
+    /// let minimum = MnMigrad::new().add("x", 0.1, 0.1).add("y", 0.1, 0.1).minimize(&f);
+    /// let points = MnContours::new(&f, &minimum).points(0, 1, 4);
+    /// assert_eq!(points.len(), 4);
+    /// ```
+    ///
+    /// # Panics
+    /// Panics if either external parameter index is out of range.
     #[must_use]
     #[expect(
         clippy::manual_midpoint,
@@ -180,6 +201,19 @@ impl<'a> MnContours<'a> {
     }
 
     /// Compute full contour with MINOS errors for both axes.
+    /// # Examples
+    ///
+    /// ```
+    /// use minuit2::{MnMigrad, MnContours};
+    /// let f = |p: &[f64]| p[0] * p[0] + p[1] * p[1];
+    /// let minimum = MnMigrad::new().add("x", 0.1, 0.1).add("y", 0.1, 0.1).minimize(&f);
+    /// let result = MnContours::new(&f, &minimum).contour(0, 1, 4);
+    /// assert_eq!(result.points.len(), 4);
+    /// assert_eq!(result.xpar(), 0);
+    /// ```
+    ///
+    /// # Panics
+    /// Panics if either external parameter index is out of range.
     #[must_use]
     pub fn contour(&self, par_x: usize, par_y: usize, npoints: usize) -> ContoursError {
         let (x_minos, y_minos) = self.minos_errors(par_x, par_y);

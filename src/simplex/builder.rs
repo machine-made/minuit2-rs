@@ -14,9 +14,24 @@ use crate::minimum::seed::MinimumSeed;
 use crate::minimum::state::MinimumState;
 use crate::mn_fcn::MnFcn;
 
+/// Run Nelder–Mead iterations from a prepared starting state.
+/// # Examples
+///
+/// ```
+/// use minuit2::{MinuitParameter, MnStrategy, MnUserTransformation};
+/// use minuit2::mn_fcn::MnFcn;
+/// let trafo = MnUserTransformation::new(vec![MinuitParameter::new(0, "x", 0.0, 0.1)]);
+/// let f = |p: &[f64]| (p[0] - 1.0).powi(2);
+/// let fcn = MnFcn::new(&f, &trafo);
+/// let strategy = MnStrategy::default();
+/// let seed = minuit2::simplex::seed::SimplexSeedGenerator::generate(&fcn, &trafo, &strategy);
+/// let states = minuit2::simplex::builder::SimplexBuilder::minimum(&fcn, &seed, 1000, 1e-8);
+/// assert!((states.last().unwrap().parameters().vec()[0] - 1.0).abs() < 1e-3);
+/// ```
 pub struct SimplexBuilder;
 
 impl SimplexBuilder {
+    /// Run simplex iterations from a seed until the EDM target or call limit is reached.
     #[expect(
         clippy::too_many_lines,
         reason = "keeps the simplex steps and stopping branches together in reference order"

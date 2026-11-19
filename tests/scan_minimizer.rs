@@ -1,3 +1,4 @@
+//! Tests scan minimization and result reporting.
 mod common;
 
 use minuit2::MnScanMinimizer;

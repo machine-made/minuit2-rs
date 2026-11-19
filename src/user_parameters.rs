@@ -8,6 +8,17 @@ use std::collections::HashMap;
 use crate::parameter::MinuitParameter;
 use crate::user_transformation::MnUserTransformation;
 
+/// Named external parameter definitions and their mapping to variable internal coordinates.
+/// # Examples
+///
+/// ```
+/// use minuit2::MnUserParameters;
+/// let mut params = MnUserParameters::new();
+/// params.add("x", 2.0, 0.1);
+/// params.add_const("offset", 1.0);
+/// assert_eq!(params.len(), 2);
+/// assert_eq!(params.variable_parameters(), 1);
+/// ```
 #[derive(Debug, Clone)]
 pub struct MnUserParameters {
     trafo: MnUserTransformation,
@@ -30,6 +41,7 @@ impl MnUserParameters {
         &self.trafo
     }
 
+    /// Return mutable access to the parameter transformation.
     pub fn trafo_mut(&mut self) -> &mut MnUserTransformation {
         &mut self.trafo
     }
@@ -104,43 +116,74 @@ impl MnUserParameters {
     }
 
     /// Fix parameter by external index.
+    ///
+    /// # Panics
+    /// Panics if the external parameter index is out of range.
     pub fn fix(&mut self, ext: usize) {
         self.trafo.fix(ext);
     }
 
     /// Release parameter by external index.
+    ///
+    /// # Panics
+    /// Panics if the external parameter index is out of range.
     pub fn release(&mut self, ext: usize) {
         self.trafo.release(ext);
     }
 
     /// Set value by external index.
+    ///
+    /// # Panics
+    /// Panics if the external parameter index is out of range.
     pub fn set_value(&mut self, ext: usize, val: f64) {
         self.trafo.parameter_mut(ext).set_value(val);
     }
 
     /// Set error by external index.
+    ///
+    /// # Panics
+    /// Panics if the external parameter index is out of range.
     pub fn set_error(&mut self, ext: usize, err: f64) {
         self.trafo.parameter_mut(ext).set_error(err);
     }
 
     /// Set limits by external index.
+    ///
+    /// # Panics
+    /// Panics if the external parameter index is out of range.
+    /// Panics if the lower bound is not less than the upper bound.
     pub fn set_limits(&mut self, ext: usize, lower: f64, upper: f64) {
         self.trafo.parameter_mut(ext).set_limits(lower, upper);
     }
 
+    /// Set the lower bound in external coordinates.
+    ///
+    /// # Panics
+    /// Panics if the external parameter index is out of range.
     pub fn set_lower_limit(&mut self, ext: usize, lower: f64) {
         self.trafo.parameter_mut(ext).set_lower_limit(lower);
     }
 
+    /// Set the upper bound in external coordinates.
+    ///
+    /// # Panics
+    /// Panics if the external parameter index is out of range.
     pub fn set_upper_limit(&mut self, ext: usize, upper: f64) {
         self.trafo.parameter_mut(ext).set_upper_limit(upper);
     }
 
     /// Remove limits by external index.
+    ///
+    /// # Panics
+    /// Panics if the external parameter index is out of range.
     pub fn remove_limits(&mut self, ext: usize) {
         self.trafo.parameter_mut(ext).remove_limits();
     }
 
+    /// Set the parameter name.
+    ///
+    /// # Panics
+    /// Panics if the external parameter index is out of range.
     pub fn set_name(&mut self, ext: usize, name: impl Into<String>) {
         let old = self.trafo.parameter(ext).name().to_string();
         let new = name.into();
@@ -149,6 +192,7 @@ impl MnUserParameters {
         self.name_map.insert(new, ext);
     }
 
+    /// Set the epsilon used to compute numerical transformation steps.
     pub fn set_precision(&mut self, eps: f64) {
         self.trafo.precision_mut().set_precision(eps);
     }
@@ -179,6 +223,7 @@ impl MnUserParameters {
             .map(super::parameter::MinuitParameter::error)
     }
 
+    /// Return parameter errors in external order and external units.
     #[must_use]
     pub fn errors(&self) -> Vec<f64> {
         self.trafo

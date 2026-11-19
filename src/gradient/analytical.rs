@@ -13,6 +13,26 @@ use crate::minimum::gradient::FunctionGradient;
 use crate::minimum::parameters::MinimumParameters;
 use crate::user_transformation::MnUserTransformation;
 
+/// Convert user derivatives to internal coordinates using the parameter transformation.
+/// # Examples
+///
+/// ```
+/// use minuit2::{FCN, FCNGradient};
+/// struct Square;
+/// impl FCN for Square {
+///     fn value(&self, p: &[f64]) -> f64 { p[0] * p[0] }
+/// }
+/// impl FCNGradient for Square {
+///     fn gradient(&self, p: &[f64]) -> Vec<f64> { vec![2.0 * p[0]] }
+/// }
+/// use minuit2::{MinuitParameter, MnUserTransformation};
+/// use minuit2::minimum::parameters::MinimumParameters;
+/// use minuit2::gradient::AnalyticalGradientCalculator;
+/// let t = MnUserTransformation::new(vec![MinuitParameter::new(0, "x", 3.0, 0.1)]);
+/// let p = MinimumParameters::new(nalgebra::DVector::from_vec(vec![3.0]), 9.0);
+/// let g = AnalyticalGradientCalculator::compute(&Square, &t, &p);
+/// assert!((g.grad()[0] - 6.0).abs() < 1e-12);
+/// ```
 pub struct AnalyticalGradientCalculator;
 
 impl AnalyticalGradientCalculator {
@@ -22,6 +42,9 @@ impl AnalyticalGradientCalculator {
     /// A user g2 is stored only when the function has no Hessian.
     /// A short or non-finite g2 is not stored.
     /// The step-size estimate stays in that case.
+    ///
+    /// # Panics
+    /// Panics if the parameter vector or returned external gradient is too short for the configured parameters.
     #[expect(
         clippy::manual_midpoint,
         reason = "keeps the operation order of the ROOT reference"
@@ -127,10 +150,12 @@ impl AnalyticalGradientCalculator {
         result
     }
 
+    /// Return whether the function advertises diagonal second derivatives.
     pub fn can_compute_g2(fcn: &dyn FCN) -> bool {
         fcn.has_g2() || fcn.has_hessian()
     }
 
+    /// Return whether the function advertises a packed Hessian.
     pub fn can_compute_hessian(fcn: &dyn FCN) -> bool {
         fcn.has_hessian()
     }

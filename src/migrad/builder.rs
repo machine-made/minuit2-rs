@@ -21,6 +21,21 @@ use crate::mn_fcn::MnFcn;
 use crate::posdef::make_pos_def;
 use crate::strategy::MnStrategy;
 
+/// Run variable metric iterations from a prepared Migrad seed.
+/// # Examples
+///
+/// ```
+/// use minuit2::{MinuitParameter, MnStrategy, MnUserTransformation};
+/// use minuit2::mn_fcn::MnFcn;
+/// let trafo = MnUserTransformation::new(vec![MinuitParameter::new(0, "x", 0.0, 0.1)]);
+/// let f = |p: &[f64]| (p[0] - 1.0).powi(2);
+/// let fcn = MnFcn::new(&f, &trafo);
+/// let strategy = MnStrategy::default();
+/// let seed = minuit2::migrad::seed::MigradSeedGenerator::generate(&fcn, &trafo, &strategy);
+/// let states = minuit2::migrad::builder::VariableMetricBuilder::minimum(&fcn, &seed, &strategy, 1000, 1e-5);
+/// assert!(!states.is_empty());
+/// assert!((states.last().unwrap().parameters().vec()[0] - 1.0).abs() < 1e-3);
+/// ```
 pub struct VariableMetricBuilder;
 
 #[cfg(feature = "trace")]
@@ -420,16 +435,19 @@ impl VariableMetricBuilder {
         Self::dfp_update(error, p_new, p_old, g_new, g_old)
     }
 
+    /// Return the number of rows in the internal inverse Hessian.
     #[must_use]
     pub fn nrow(error: &MinimumError) -> usize {
         error.matrix().nrows()
     }
 
+    /// Return whether any diagonal second derivative is nonpositive, including zero.
     #[must_use]
     pub fn has_negative_g2(gradient: &FunctionGradient) -> bool {
         gradient.g2().iter().any(|g2| *g2 <= 0.0)
     }
 
+    /// Append an iteration state to the stored history.
     pub fn add_result(states: &mut Vec<MinimumState>, state: MinimumState) {
         states.push(state);
     }

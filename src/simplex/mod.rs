@@ -16,6 +16,17 @@ use crate::strategy::MnStrategy;
 use crate::user_parameters::MnUserParameters;
 
 /// Builder for configuring and running Simplex minimization.
+///
+/// Errors come from the scaled final internal step, transformed to external coordinates.
+/// The result has no covariance; use Hesse when a covariance estimate is needed.
+/// # Examples
+///
+/// ```
+/// use minuit2::MnSimplex;
+/// let f = |p: &[f64]| (p[0] - 1.0).powi(2);
+/// let minimum = MnSimplex::new().add("x", 0.0, 0.1).tolerance(1e-8).minimize(&f);
+/// assert!((minimum.params()[0] - 1.0).abs() < 1e-3);
+/// ```
 pub struct MnSimplex {
     params: MnUserParameters,
     strategy: MnStrategy,
@@ -97,6 +108,9 @@ impl MnSimplex {
     }
 
     /// Fix parameter by index.
+    ///
+    /// # Panics
+    /// Panics if the external parameter index is out of range.
     #[must_use]
     pub fn fix(mut self, ext: usize) -> Self {
         self.params.fix(ext);
@@ -118,6 +132,14 @@ impl MnSimplex {
     }
 
     /// Run the minimization.
+    /// # Examples
+    ///
+    /// ```
+    /// use minuit2::MnSimplex;
+    /// let f = |p: &[f64]| (p[0] - 1.0).powi(2);
+    /// let minimum = MnSimplex::new().add("x", 0.0, 0.1).tolerance(1e-8).minimize(&f);
+    /// assert!((minimum.params()[0] - 1.0).abs() < 1e-3);
+    /// ```
     pub fn minimize(&self, fcn: &dyn FCN) -> FunctionMinimum {
         let n = self.params.variable_parameters();
         let max_fcn = self.max_fcn.unwrap_or_else(|| default_max_fcn(n));

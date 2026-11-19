@@ -14,9 +14,24 @@ use crate::mn_fcn::MnFcn;
 use crate::strategy::MnStrategy;
 use crate::user_transformation::MnUserTransformation;
 
+/// Create the initial internal state for Nelder–Mead.
+/// # Examples
+///
+/// ```
+/// use minuit2::{MinuitParameter, MnStrategy, MnUserTransformation};
+/// use minuit2::mn_fcn::MnFcn;
+/// let trafo = MnUserTransformation::new(vec![MinuitParameter::new(0, "x", 0.0, 0.1)]);
+/// let f = |p: &[f64]| (p[0] - 1.0).powi(2);
+/// let fcn = MnFcn::new(&f, &trafo);
+/// let strategy = MnStrategy::default();
+/// let seed = minuit2::simplex::seed::SimplexSeedGenerator::generate(&fcn, &trafo, &strategy);
+/// assert!(seed.is_valid());
+/// assert_eq!(fcn.num_of_calls(), 1);
+/// ```
 pub struct SimplexSeedGenerator;
 
 impl SimplexSeedGenerator {
+    /// Evaluate the starting point and estimate initial derivatives from parameter errors.
     pub fn generate(
         fcn: &MnFcn,
         trafo: &MnUserTransformation,

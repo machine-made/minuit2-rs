@@ -1,3 +1,4 @@
+//! Checks that serial and parallel scans produce identical results across thread counts.
 #![cfg(feature = "parallel")]
 
 use minuit2::{MnMigrad, MnScan};

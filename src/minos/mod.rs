@@ -16,6 +16,17 @@ use crate::minimum::FunctionMinimum;
 use crate::strategy::MnStrategy;
 
 /// Compute MINOS asymmetric errors.
+/// # Examples
+///
+/// ```
+/// use minuit2::MnMigrad;
+/// let f = |p: &[f64]| (p[0] - 1.0).powi(2);
+/// let minimum = MnMigrad::new().add("x", 0.0, 0.1).minimize(&f);
+/// let errors = minuit2::MnMinos::new(&f, &minimum).minos(0);
+/// assert!(errors.is_valid());
+/// assert!(errors.lower_error() < 0.0);
+/// assert!(errors.upper_error() > 0.0);
+/// ```
 pub struct MnMinos<'a> {
     fcn: &'a dyn FCN,
     minimum: &'a FunctionMinimum,
@@ -58,19 +69,56 @@ impl<'a> MnMinos<'a> {
     }
 
     /// Compute both upper and lower MINOS errors for parameter `par`.
+    /// # Examples
+    ///
+    /// ```
+    /// use minuit2::MnMigrad;
+    /// let f = |p: &[f64]| (p[0] - 1.0).powi(2);
+    /// let minimum = MnMigrad::new().add("x", 0.0, 0.1).minimize(&f);
+    /// let minos = minuit2::MnMinos::new(&f, &minimum);
+    /// let (lo, hi) = minos.errors(0);
+    /// assert!(lo < 0.0 && hi > 0.0);
+    /// ```
+    ///
+    /// # Panics
+    /// Panics if the external parameter index is out of range.
     #[must_use]
     pub fn errors(&self, par: usize) -> (f64, f64) {
         let me = self.minos_error(par);
         (me.lower_error(), me.upper_error())
     }
 
-    /// Alias for `errors`.
+    /// Return both crossing results and the resulting asymmetric errors.
+    /// # Examples
+    ///
+    /// ```
+    /// use minuit2::MnMigrad;
+    /// let f = |p: &[f64]| (p[0] - 1.0).powi(2);
+    /// let minimum = MnMigrad::new().add("x", 0.0, 0.1).minimize(&f);
+    /// let minos = minuit2::MnMinos::new(&f, &minimum);
+    /// assert!(minos.minos(0).is_valid());
+    /// ```
+    ///
+    /// # Panics
+    /// Panics if the external parameter index is out of range.
     #[must_use]
     pub fn minos(&self, par: usize) -> MinosError {
         self.minos_error(par)
     }
 
     /// Full `MinosError` (both crossings) for parameter `par`.
+    /// # Examples
+    ///
+    /// ```
+    /// use minuit2::MnMigrad;
+    /// let f = |p: &[f64]| (p[0] - 1.0).powi(2);
+    /// let minimum = MnMigrad::new().add("x", 0.0, 0.1).minimize(&f);
+    /// let minos = minuit2::MnMinos::new(&f, &minimum);
+    /// assert!(minos.minos_error(0).is_valid());
+    /// ```
+    ///
+    /// # Panics
+    /// Panics if the external parameter index is out of range.
     #[must_use]
     pub fn minos_error(&self, par: usize) -> MinosError {
         let p = self.minimum.user_state().parameter(par);
@@ -82,30 +130,90 @@ impl<'a> MnMinos<'a> {
     }
 
     /// Lower crossing only.
+    /// # Examples
+    ///
+    /// ```
+    /// use minuit2::MnMigrad;
+    /// let f = |p: &[f64]| (p[0] - 1.0).powi(2);
+    /// let minimum = MnMigrad::new().add("x", 0.0, 0.1).minimize(&f);
+    /// let minos = minuit2::MnMinos::new(&f, &minimum);
+    /// assert!(minos.lower(0).is_valid());
+    /// ```
+    ///
+    /// # Panics
+    /// Panics if the external parameter index is out of range.
     #[must_use]
     pub fn lower(&self, par: usize) -> MnCross {
         self.find_crossing(par, -1.0)
     }
 
     /// Upper crossing only.
+    /// # Examples
+    ///
+    /// ```
+    /// use minuit2::MnMigrad;
+    /// let f = |p: &[f64]| (p[0] - 1.0).powi(2);
+    /// let minimum = MnMigrad::new().add("x", 0.0, 0.1).minimize(&f);
+    /// let minos = minuit2::MnMinos::new(&f, &minimum);
+    /// assert!(minos.upper(0).is_valid());
+    /// ```
+    ///
+    /// # Panics
+    /// Panics if the external parameter index is out of range.
     #[must_use]
     pub fn upper(&self, par: usize) -> MnCross {
         self.find_crossing(par, 1.0)
     }
 
     /// Alias for the lower crossing object.
+    /// # Examples
+    ///
+    /// ```
+    /// use minuit2::MnMigrad;
+    /// let f = |p: &[f64]| (p[0] - 1.0).powi(2);
+    /// let minimum = MnMigrad::new().add("x", 0.0, 0.1).minimize(&f);
+    /// let minos = minuit2::MnMinos::new(&f, &minimum);
+    /// assert!(minos.loval(0).is_valid());
+    /// ```
+    ///
+    /// # Panics
+    /// Panics if the external parameter index is out of range.
     #[must_use]
     pub fn loval(&self, par: usize) -> MnCross {
         self.lower(par)
     }
 
     /// Alias for the upper crossing object.
+    /// # Examples
+    ///
+    /// ```
+    /// use minuit2::MnMigrad;
+    /// let f = |p: &[f64]| (p[0] - 1.0).powi(2);
+    /// let minimum = MnMigrad::new().add("x", 0.0, 0.1).minimize(&f);
+    /// let minos = minuit2::MnMinos::new(&f, &minimum);
+    /// assert!(minos.upval(0).is_valid());
+    /// ```
+    ///
+    /// # Panics
+    /// Panics if the external parameter index is out of range.
     #[must_use]
     pub fn upval(&self, par: usize) -> MnCross {
         self.upper(par)
     }
 
     /// Helper with explicit crossing direction.
+    /// # Examples
+    ///
+    /// ```
+    /// use minuit2::MnMigrad;
+    /// let f = |p: &[f64]| (p[0] - 1.0).powi(2);
+    /// let minimum = MnMigrad::new().add("x", 0.0, 0.1).minimize(&f);
+    /// let minos = minuit2::MnMinos::new(&f, &minimum);
+    /// assert!(minos.find_cross_value(1, 0, 1000, 0.1).is_valid());
+    /// ```
+    ///
+    /// # Panics
+    /// Panics if the external parameter index is out of range.
     #[must_use]
     pub fn find_cross_value(&self, dir: i32, par: usize, maxcalls: usize, toler: f64) -> MnCross {
         let direction = if dir < 0 { -1.0 } else { 1.0 };

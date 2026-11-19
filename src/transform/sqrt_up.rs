@@ -5,9 +5,19 @@ use crate::precision::MnMachinePrecision;
 ///
 /// Maps `x in (-inf, upper]` to an unconstrained internal coordinate with
 /// `x = upper + 1 - sqrt(y^2 + 1)`.
+/// # Examples
+///
+/// ```
+/// use minuit2::transform::{SqrtUpTransform, ParameterTransform};
+/// use minuit2::MnMachinePrecision;
+/// let t = SqrtUpTransform;
+/// let internal = t.ext2int(2.0, 4.0, 0.0, &MnMachinePrecision::new());
+/// assert!((t.int2ext(internal, 4.0, 0.0) - 2.0).abs() < 1e-12);
+/// ```
 pub struct SqrtUpTransform;
 
 impl SqrtUpTransform {
+    /// Return the derivative of the internal coordinate with respect to the external value.
     #[must_use]
     pub fn dext2int(&self, value: f64, upper: f64, lower: f64, prec: &MnMachinePrecision) -> f64 {
         let int = self.ext2int(value, upper, lower, prec);

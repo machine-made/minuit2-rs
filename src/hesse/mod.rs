@@ -1,9 +1,7 @@
-//! `MnHesse`: accurate error analysis via full Hessian computation.
+//! Hessian error analysis after minimization.
 //!
-//! After Migrad converges, `MnHesse` computes the full second-derivative matrix
-//! (Hessian) to get accurate parameter errors and correlations. This is
-//! especially important when Migrad's DFP-updated inverse Hessian is only
-//! approximate.
+//! Uses a supplied Hessian when the saved gradient is analytical and the function reports both a gradient and a Hessian.
+//! Otherwise, computes finite differences. Check the result flags before using errors or covariance.
 
 mod analytical;
 pub mod calculator;
@@ -19,6 +17,16 @@ use crate::user_covariance::MnUserCovariance;
 use crate::user_parameter_state::MnUserParameterState;
 
 /// Builder for running Hesse error analysis.
+/// # Examples
+///
+/// ```
+/// use minuit2::MnMigrad;
+/// let f = |p: &[f64]| (p[0] - 1.0).powi(2);
+/// let minimum = MnMigrad::new().add("x", 0.0, 0.1).minimize(&f);
+/// let result = minuit2::MnHesse::new().calculate(&f, &minimum);
+/// assert!(result.user_state().has_covariance());
+/// assert!((result.user_state().errors()[0] - 1.0).abs() < 1e-3);
+/// ```
 pub struct MnHesse {
     strategy: MnStrategy,
     max_calls: Option<usize>,
@@ -48,16 +56,19 @@ impl MnHesse {
         self
     }
 
+    /// Return the maximum number of Hessian refinement cycles.
     #[must_use]
     pub fn ncycles(&self) -> u32 {
         self.strategy.hessian_ncycles()
     }
 
+    /// Return the dimensionless Hessian step convergence tolerance.
     #[must_use]
     pub fn tolerstp(&self) -> f64 {
         self.strategy.hessian_step_tolerance()
     }
 
+    /// Return the dimensionless Hessian curvature convergence tolerance.
     #[must_use]
     pub fn toler_g2(&self) -> f64 {
         self.strategy.hessian_g2_tolerance()
@@ -65,11 +76,21 @@ impl MnHesse {
 
     /// Run Hesse on a minimization result.
     ///
-    /// Returns a new `FunctionMinimum` with accurate covariance matrix.
+    /// Returns a new `FunctionMinimum` with updated covariance and validity flags.
     ///
     /// The call limit includes calls already made by the minimum. The default is
     /// `200 + 100n + 5n²`, where `n` is the number of variable parameters.
     /// Use [`Self::with_max_calls`] to raise it if the minimum used most of that budget.
+    /// # Examples
+    ///
+    /// ```
+    /// use minuit2::MnMigrad;
+    /// let f = |p: &[f64]| (p[0] - 1.0).powi(2);
+    /// let minimum = MnMigrad::new().add("x", 0.0, 0.1).minimize(&f);
+    /// let result = minuit2::MnHesse::new().calculate(&f, &minimum);
+    /// assert!(result.user_state().has_covariance());
+    /// assert!((result.user_state().errors()[0] - 1.0).abs() < 1e-3);
+    /// ```
     pub fn calculate(&self, fcn: &dyn FCN, minimum: &FunctionMinimum) -> FunctionMinimum {
         let trafo = minimum.seed().trafo();
         let n = trafo.variable_parameters();
@@ -116,6 +137,16 @@ impl MnHesse {
     /// The call limit includes calls already made by the minimum. The default is
     /// `200 + 100n + 5n²`, where `n` is the number of variable parameters.
     /// Use [`Self::with_max_calls`] to raise it if the minimum used most of that budget.
+    /// # Examples
+    ///
+    /// ```
+    /// use minuit2::MnMigrad;
+    /// let f = |p: &[f64]| (p[0] - 1.0).powi(2);
+    /// let minimum = MnMigrad::new().add("x", 0.0, 0.1).minimize(&f);
+    /// let state = minuit2::MnHesse::new().calculate_errors(&f, &minimum);
+    /// assert!(state.has_covariance());
+    /// assert!((state.errors()[0] - 1.0).abs() < 1e-3);
+    /// ```
     pub fn calculate_errors(
         &self,
         fcn: &dyn FCN,

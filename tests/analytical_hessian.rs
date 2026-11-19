@@ -1,3 +1,4 @@
+//! Tests supplied Hessians, covariance transformations, and failure handling against stored ROOT results.
 use std::cell::Cell;
 
 use minuit2::hesse::calculator;

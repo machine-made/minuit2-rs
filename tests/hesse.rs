@@ -1,3 +1,4 @@
+//! Tests Hessian errors, covariance scaling, and fixed parameter handling.
 use minuit2::{MnHesse, MnMigrad};
 
 /// Quadratic: f(x,y) = a*x^2 + b*y^2

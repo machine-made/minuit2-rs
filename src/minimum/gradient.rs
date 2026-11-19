@@ -5,6 +5,16 @@
 
 use nalgebra::DVector;
 
+/// Internal first derivatives, diagonal second derivatives, and numerical differentiation steps.
+/// # Examples
+///
+/// ```
+/// use minuit2::minimum::gradient::FunctionGradient;
+/// use nalgebra::DVector;
+/// let g = FunctionGradient::analytical(DVector::from_vec(vec![4.0]));
+/// assert!(g.is_analytical());
+/// assert!((g.grad()[0] - 4.0).abs() < 1e-12);
+/// ```
 #[derive(Debug, Clone)]
 pub struct FunctionGradient {
     /// First derivatives ∂`f/∂p_i`.
@@ -45,35 +55,42 @@ impl FunctionGradient {
         }
     }
 
+    /// Return first derivatives with respect to internal parameters.
     #[must_use]
     pub fn grad(&self) -> &DVector<f64> {
         &self.grad
     }
 
+    /// Return diagonal second derivatives with respect to internal parameters.
     #[must_use]
     pub fn g2(&self) -> &DVector<f64> {
         &self.g2
     }
 
+    /// Return numerical differentiation steps in internal coordinates.
     #[must_use]
     pub fn gstep(&self) -> &DVector<f64> {
         &self.gstep
     }
 
+    /// Return the stored gradient validity flag.
     #[must_use]
     pub fn is_valid(&self) -> bool {
         self.valid
     }
 
+    /// Return whether the gradient came from analytical derivatives.
     #[must_use]
     pub fn is_analytical(&self) -> bool {
         self.analytical
     }
 
+    /// Set the stored validity flag.
     pub fn set_valid(&mut self, valid: bool) {
         self.valid = valid;
     }
 
+    /// Set whether the gradient came from analytical derivatives.
     pub fn set_analytical(&mut self, analytical: bool) {
         self.analytical = analytical;
     }

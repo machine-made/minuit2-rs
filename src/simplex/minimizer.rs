@@ -9,9 +9,23 @@ use crate::mn_fcn::MnFcn;
 use crate::strategy::MnStrategy;
 use crate::user_transformation::MnUserTransformation;
 
+/// Compose seed generation and Nelder–Mead iterations.
+/// # Examples
+///
+/// ```
+/// use minuit2::{MinuitParameter, MnStrategy, MnUserTransformation};
+/// use minuit2::mn_fcn::MnFcn;
+/// let trafo = MnUserTransformation::new(vec![MinuitParameter::new(0, "x", 0.0, 0.1)]);
+/// let f = |p: &[f64]| (p[0] - 1.0).powi(2);
+/// let fcn = MnFcn::new(&f, &trafo);
+/// let strategy = MnStrategy::default();
+/// let minimum = minuit2::simplex::minimizer::SimplexMinimizer::minimize(&fcn, &trafo, &strategy, 1000, 1e-8);
+/// assert!((minimum.params()[0] - 1.0).abs() < 1e-3);
+/// ```
 pub struct SimplexMinimizer;
 
 impl SimplexMinimizer {
+    /// Generate a seed and run Nelder–Mead with the objective error definition scaling the tolerance.
     pub fn minimize(
         fcn: &MnFcn,
         trafo: &MnUserTransformation,

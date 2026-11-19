@@ -1,3 +1,8 @@
+//! Benchmarks minimizers, uncertainty calculations, and supporting numerical routines.
+#![expect(
+    missing_docs,
+    reason = "the criterion_group macro generates a public function without a doc comment"
+)]
 use criterion::{Criterion, criterion_group, criterion_main};
 use minuit2::linesearch::mn_linesearch;
 use minuit2::minimum::parameters::MinimumParameters;

@@ -1,3 +1,4 @@
+//! Tests minimizers with nonfinite objectives, difficult scales, and boundary cases.
 use minuit2::{MnMigrad, MnSimplex};
 
 /// A function that returns NaN sometimes.

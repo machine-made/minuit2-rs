@@ -1,3 +1,4 @@
+//! Tests reported objective call counts and running call budgets.
 use std::cell::Cell;
 
 use minuit2::migrad::seed::MigradSeedGenerator;

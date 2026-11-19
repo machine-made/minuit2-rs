@@ -1,3 +1,7 @@
+//! Python bindings for fits, parameter views, uncertainty estimates, and objective grids.
+//!
+//! In Python, create `Minuit` from a callable, then call `migrad()` and inspect `valid`.
+
 use numpy::ndarray::Array2;
 use numpy::{IntoPyArray, PyArray1, PyArray2};
 use pyo3::exceptions::{
@@ -70,6 +74,7 @@ struct StoredMError {
     min: f64,
 }
 
+/// Fit value, objective distance, call count, and validity flags exposed to Python.
 #[pyclass(frozen, skip_from_py_object)]
 #[derive(Clone)]
 #[expect(
@@ -91,51 +96,61 @@ struct FMin {
 
 #[pymethods]
 impl FMin {
+    /// Return the objective value of the last minimum.
     #[getter]
     fn fval(&self) -> f64 {
         self.fval
     }
 
+    /// Return the estimated distance to the minimum in objective units.
     #[getter]
     fn edm(&self) -> f64 {
         self.edm
     }
 
+    /// Return the number of objective evaluations.
     #[getter]
     fn nfcn(&self) -> usize {
         self.nfcn
     }
 
+    /// Return the objective change defining an uncertainty interval.
     #[getter]
     fn errordef(&self) -> f64 {
         self.errordef
     }
 
+    /// Return the validity flag.
     #[getter]
     fn is_valid(&self) -> bool {
         self.is_valid
     }
 
+    /// Return the parameter validity flag.
     #[getter]
     fn has_valid_parameters(&self) -> bool {
         self.has_valid_parameters
     }
 
+    /// Return the covariance availability flag.
     #[getter]
     fn has_covariance(&self) -> bool {
         self.has_covariance
     }
 
+    /// Return the positive definite correction flag.
     #[getter]
     fn has_made_posdef_covar(&self) -> bool {
         self.has_made_posdef_covar
     }
 
+    /// Return the flag indicating an excessive estimated distance to the minimum.
     #[getter]
     fn is_above_max_edm(&self) -> bool {
         self.is_above_max_edm
     }
 
+    /// Return the call limit flag.
     #[getter]
     fn has_reached_call_limit(&self) -> bool {
         self.has_reached_call_limit
@@ -159,6 +174,7 @@ impl FMin {
     }
 }
 
+/// Asymmetric parameter errors and crossing validity flags exposed to Python.
 #[pyclass(frozen)]
 #[expect(
     clippy::struct_excessive_bools,
@@ -183,71 +199,85 @@ struct MError {
 
 #[pymethods]
 impl MError {
+    /// Return the parameter name.
     #[getter]
     fn name(&self) -> &str {
         &self.name
     }
 
+    /// Return the negative asymmetric error.
     #[getter]
     fn lower(&self) -> f64 {
         self.lower
     }
 
+    /// Return the positive asymmetric error.
     #[getter]
     fn upper(&self) -> f64 {
         self.upper
     }
 
+    /// Return the validity flag.
     #[getter]
     fn is_valid(&self) -> bool {
         self.is_valid
     }
 
+    /// Return the lower crossing validity flag.
     #[getter]
     fn lower_valid(&self) -> bool {
         self.lower_valid
     }
 
+    /// Return the upper crossing validity flag.
     #[getter]
     fn upper_valid(&self) -> bool {
         self.upper_valid
     }
 
+    /// Return the lower bound crossing flag.
     #[getter]
     fn at_lower_limit(&self) -> bool {
         self.at_lower_limit
     }
 
+    /// Return the upper bound crossing flag.
     #[getter]
     fn at_upper_limit(&self) -> bool {
         self.at_upper_limit
     }
 
+    /// Return the lower crossing call limit flag.
     #[getter]
     fn at_lower_max_fcn(&self) -> bool {
         self.at_lower_max_fcn
     }
 
+    /// Return the upper crossing call limit flag.
     #[getter]
     fn at_upper_max_fcn(&self) -> bool {
         self.at_upper_max_fcn
     }
 
+    /// Return the flag indicating a new minimum in the lower search.
     #[getter]
     fn lower_new_min(&self) -> bool {
         self.lower_new_min
     }
 
+    /// Return the flag indicating a new minimum in the upper search.
     #[getter]
     fn upper_new_min(&self) -> bool {
         self.upper_new_min
     }
 
+    /// Return the number of objective evaluations.
     #[getter]
     fn nfcn(&self) -> usize {
         self.nfcn
     }
 
+    /// Return the parameter value at the original minimum.
     #[getter]
     fn min(&self) -> f64 {
         self.min
@@ -275,6 +305,7 @@ impl MError {
     }
 }
 
+/// Snapshot of one external parameter and its bounds.
 #[pyclass(frozen)]
 struct Param {
     number: usize,
@@ -289,41 +320,49 @@ struct Param {
 
 #[pymethods]
 impl Param {
+    /// Return the external parameter index.
     #[getter]
     fn number(&self) -> usize {
         self.number
     }
 
+    /// Return the parameter name.
     #[getter]
     fn name(&self) -> &str {
         &self.name
     }
 
+    /// Return the external parameter value.
     #[getter]
     fn value(&self) -> f64 {
         self.value
     }
 
+    /// Return the external parameter error.
     #[getter]
     fn error(&self) -> f64 {
         self.error
     }
 
+    /// Return the fixed parameter flag.
     #[getter]
     fn is_fixed(&self) -> bool {
         self.is_fixed
     }
 
+    /// Return the lower external bound when set.
     #[getter]
     fn lower_limit(&self) -> Option<f64> {
         self.lower_limit
     }
 
+    /// Return the upper external bound when set.
     #[getter]
     fn upper_limit(&self) -> Option<f64> {
         self.upper_limit
     }
 
+    /// Return the flag indicating that at least one bound is set.
     #[getter]
     fn has_limits(&self) -> bool {
         self.has_limits
@@ -374,6 +413,7 @@ fn list_iter(list: Bound<'_, PyList>) -> PyResult<Py<PyAny>> {
     Ok(list.into_any().try_iter()?.into_any().unbind())
 }
 
+/// Mutable parameter values accessed by name or index in Python.
 #[pyclass]
 struct ValueView {
     owner: Py<Minuit>,
@@ -385,20 +425,24 @@ struct ValueView {
     reason = "the public signature stays as it is"
 )]
 impl ValueView {
+    /// Read a parameter entry by name or index.
     fn __getitem__(&self, py: Python<'_>, key: Bound<'_, PyAny>) -> PyResult<f64> {
         let m = self.owner.borrow(py);
         let name = resolve_param_name(&m.names, &key)?;
         Ok(*m.values.get(&name).unwrap_or(&0.0))
     }
+    /// Write a parameter entry by name or index.
     fn __setitem__(&self, py: Python<'_>, key: Bound<'_, PyAny>, value: f64) -> PyResult<()> {
         let mut m = self.owner.borrow_mut(py);
         let name = resolve_param_name(&m.names, &key)?;
         m.values.insert(name, value);
         Ok(())
     }
+    /// Return the number of parameter entries.
     fn __len__(&self, py: Python<'_>) -> usize {
         self.owner.borrow(py).names.len()
     }
+    /// Iterate over parameter entries in external order.
     fn __iter__(&self, py: Python<'_>) -> PyResult<Py<PyAny>> {
         let m = self.owner.borrow(py);
         let vals: Vec<f64> = m
@@ -408,6 +452,7 @@ impl ValueView {
             .collect();
         list_iter(PyList::new(py, vals)?)
     }
+    /// Copy the parameter entries into a Python dictionary.
     fn to_dict(&self, py: Python<'_>) -> HashMap<String, f64> {
         let m = self.owner.borrow(py);
         m.names
@@ -415,11 +460,13 @@ impl ValueView {
             .map(|n| (n.clone(), *m.values.get(n).unwrap_or(&0.0)))
             .collect()
     }
+    /// Return a string representation of the parameter entries.
     fn __repr__(&self, py: Python<'_>) -> String {
         format!("<ValueView {:?}>", self.to_dict(py))
     }
 }
 
+/// Mutable parameter errors accessed by name or index in Python.
 #[pyclass]
 struct ErrorView {
     owner: Py<Minuit>,
@@ -431,20 +478,24 @@ struct ErrorView {
     reason = "the public signature stays as it is"
 )]
 impl ErrorView {
+    /// Read a parameter entry by name or index.
     fn __getitem__(&self, py: Python<'_>, key: Bound<'_, PyAny>) -> PyResult<f64> {
         let m = self.owner.borrow(py);
         let name = resolve_param_name(&m.names, &key)?;
         Ok(*m.errors.get(&name).unwrap_or(&0.1))
     }
+    /// Write a parameter entry by name or index.
     fn __setitem__(&self, py: Python<'_>, key: Bound<'_, PyAny>, value: f64) -> PyResult<()> {
         let mut m = self.owner.borrow_mut(py);
         let name = resolve_param_name(&m.names, &key)?;
         m.errors.insert(name, value);
         Ok(())
     }
+    /// Return the number of parameter entries.
     fn __len__(&self, py: Python<'_>) -> usize {
         self.owner.borrow(py).names.len()
     }
+    /// Iterate over parameter entries in external order.
     fn __iter__(&self, py: Python<'_>) -> PyResult<Py<PyAny>> {
         let m = self.owner.borrow(py);
         let vals: Vec<f64> = m
@@ -454,6 +505,7 @@ impl ErrorView {
             .collect();
         list_iter(PyList::new(py, vals)?)
     }
+    /// Copy the parameter entries into a Python dictionary.
     fn to_dict(&self, py: Python<'_>) -> HashMap<String, f64> {
         let m = self.owner.borrow(py);
         m.names
@@ -461,11 +513,13 @@ impl ErrorView {
             .map(|n| (n.clone(), *m.errors.get(n).unwrap_or(&0.1)))
             .collect()
     }
+    /// Return a string representation of the parameter entries.
     fn __repr__(&self, py: Python<'_>) -> String {
         format!("<ErrorView {:?}>", self.to_dict(py))
     }
 }
 
+/// Mutable fixed parameter flags accessed by name or index in Python.
 #[pyclass]
 struct FixedView {
     owner: Py<Minuit>,
@@ -477,11 +531,13 @@ struct FixedView {
     reason = "the public signature stays as it is"
 )]
 impl FixedView {
+    /// Read a parameter entry by name or index.
     fn __getitem__(&self, py: Python<'_>, key: Bound<'_, PyAny>) -> PyResult<bool> {
         let m = self.owner.borrow(py);
         let name = resolve_param_name(&m.names, &key)?;
         Ok(m.fixed.contains(&name))
     }
+    /// Write a parameter entry by name or index.
     fn __setitem__(&self, py: Python<'_>, key: Bound<'_, PyAny>, value: bool) -> PyResult<()> {
         let mut m = self.owner.borrow_mut(py);
         let name = resolve_param_name(&m.names, &key)?;
@@ -492,14 +548,17 @@ impl FixedView {
         }
         Ok(())
     }
+    /// Return the number of parameter entries.
     fn __len__(&self, py: Python<'_>) -> usize {
         self.owner.borrow(py).names.len()
     }
+    /// Iterate over parameter entries in external order.
     fn __iter__(&self, py: Python<'_>) -> PyResult<Py<PyAny>> {
         let m = self.owner.borrow(py);
         let vals: Vec<bool> = m.names.iter().map(|n| m.fixed.contains(n)).collect();
         list_iter(PyList::new(py, vals)?)
     }
+    /// Copy the parameter entries into a Python dictionary.
     fn to_dict(&self, py: Python<'_>) -> HashMap<String, bool> {
         let m = self.owner.borrow(py);
         m.names
@@ -507,11 +566,13 @@ impl FixedView {
             .map(|n| (n.clone(), m.fixed.contains(n)))
             .collect()
     }
+    /// Return a string representation of the parameter entries.
     fn __repr__(&self, py: Python<'_>) -> String {
         format!("<FixedView {:?}>", self.to_dict(py))
     }
 }
 
+/// Mutable external parameter bounds accessed by name or index in Python.
 #[pyclass]
 struct LimitView {
     owner: Py<Minuit>,
@@ -532,11 +593,13 @@ impl LimitView {
     reason = "the public signature stays as it is"
 )]
 impl LimitView {
+    /// Read a parameter entry by name or index.
     fn __getitem__(&self, py: Python<'_>, key: Bound<'_, PyAny>) -> PyResult<(f64, f64)> {
         let m = self.owner.borrow(py);
         let name = resolve_param_name(&m.names, &key)?;
         Ok(Self::pair(&m, &name))
     }
+    /// Write a parameter entry by name or index.
     fn __setitem__(
         &self,
         py: Python<'_>,
@@ -558,14 +621,17 @@ impl LimitView {
         }
         Ok(())
     }
+    /// Return the number of parameter entries.
     fn __len__(&self, py: Python<'_>) -> usize {
         self.owner.borrow(py).names.len()
     }
+    /// Iterate over parameter entries in external order.
     fn __iter__(&self, py: Python<'_>) -> PyResult<Py<PyAny>> {
         let m = self.owner.borrow(py);
         let vals: Vec<(f64, f64)> = m.names.iter().map(|n| Self::pair(&m, n)).collect();
         list_iter(PyList::new(py, vals)?)
     }
+    /// Copy the parameter entries into a Python dictionary.
     fn to_dict(&self, py: Python<'_>) -> HashMap<String, (f64, f64)> {
         let m = self.owner.borrow(py);
         m.names
@@ -573,11 +639,13 @@ impl LimitView {
             .map(|n| (n.clone(), Self::pair(&m, n)))
             .collect()
     }
+    /// Return a string representation of the parameter entries.
     fn __repr__(&self, py: Python<'_>) -> String {
         format!("<LimitView {:?}>", self.to_dict(py))
     }
 }
 
+/// Python interface for configuring fits, running minimizers, and estimating uncertainties.
 #[pyclass(name = "Minuit")]
 struct Minuit {
     fcn: Py<PyAny>,
@@ -601,11 +669,14 @@ struct Minuit {
 
 #[pymethods]
 impl Minuit {
+    /// Objective error definition for a chi-square function.
     #[classattr]
     const LEAST_SQUARES: f64 = 1.0;
+    /// Objective error definition for a negative log likelihood.
     #[classattr]
     const LIKELIHOOD: f64 = 0.5;
 
+    /// Create a fit from a Python callable and initial parameter values.
     #[new]
     #[pyo3(signature = (fcn, *args, name=None, **kwds))]
     fn new(
@@ -706,21 +777,25 @@ impl Minuit {
         })
     }
 
+    /// Return the objective change defining an uncertainty interval.
     #[getter]
     fn get_errordef(&self) -> f64 {
         self.errordef
     }
 
+    /// Set the objective change defining an uncertainty interval.
     #[setter]
     fn set_errordef(&mut self, v: f64) {
         self.errordef = v;
     }
 
+    /// Return the derivative refinement strategy level.
     #[getter]
     fn get_strategy(&self) -> u32 {
         self.strategy
     }
 
+    /// Set the derivative refinement strategy level.
     #[setter]
     fn set_strategy(&mut self, v: u32) -> PyResult<()> {
         if v > 2 {
@@ -730,16 +805,19 @@ impl Minuit {
         Ok(())
     }
 
+    /// Return the minimization tolerance relative to the objective error definition.
     #[getter]
     fn get_tol(&self) -> f64 {
         self.tolerance
     }
 
+    /// Set the minimization tolerance relative to the objective error definition.
     #[setter]
     fn set_tol(&mut self, v: f64) {
         self.tolerance = v;
     }
 
+    /// Return the mutable view of external parameter values.
     #[getter]
     fn get_values(slf: Bound<'_, Self>) -> ValueView {
         ValueView {
@@ -747,6 +825,7 @@ impl Minuit {
         }
     }
 
+    /// Set the external parameter values.
     #[setter]
     fn set_values(&mut self, values: HashMap<String, f64>) {
         for (k, v) in values {
@@ -756,6 +835,7 @@ impl Minuit {
         }
     }
 
+    /// Return the mutable view of external parameter errors.
     #[getter]
     fn get_errors(slf: Bound<'_, Self>) -> ErrorView {
         ErrorView {
@@ -763,6 +843,7 @@ impl Minuit {
         }
     }
 
+    /// Set the external parameter errors.
     #[setter]
     fn set_errors(&mut self, errors: HashMap<String, f64>) {
         for (k, v) in errors {
@@ -772,6 +853,7 @@ impl Minuit {
         }
     }
 
+    /// Return the mutable view of external parameter bounds.
     #[getter]
     fn get_limits(slf: Bound<'_, Self>) -> LimitView {
         LimitView {
@@ -779,6 +861,7 @@ impl Minuit {
         }
     }
 
+    /// Set the external parameter bounds.
     #[setter]
     #[expect(
         clippy::needless_pass_by_value,
@@ -807,6 +890,7 @@ impl Minuit {
         Ok(())
     }
 
+    /// Return the mutable view of fixed parameter flags.
     #[getter]
     fn get_fixed(slf: Bound<'_, Self>) -> FixedView {
         FixedView {
@@ -814,6 +898,7 @@ impl Minuit {
         }
     }
 
+    /// Set the fixed parameter flags.
     #[setter]
     fn set_fixed(&mut self, fixed: Vec<String>) {
         self.fixed.clear();
@@ -824,6 +909,7 @@ impl Minuit {
         }
     }
 
+    /// Return the objective value of the last minimum.
     #[getter]
     fn get_fval(&self) -> Option<f64> {
         self.scan_fmin.as_ref().map(|m| m.fval).or_else(|| {
@@ -833,6 +919,7 @@ impl Minuit {
         })
     }
 
+    /// Return the validity flag of the last minimum.
     #[getter]
     fn get_valid(&self) -> Option<bool> {
         self.scan_fmin.as_ref().map(|m| m.is_valid).or_else(|| {
@@ -842,6 +929,7 @@ impl Minuit {
         })
     }
 
+    /// Return the external covariance matrix when available.
     #[getter]
     fn get_covariance(&self) -> Option<Vec<Vec<f64>>> {
         if self.scan_fmin.is_none() {
@@ -863,6 +951,7 @@ impl Minuit {
         None
     }
 
+    /// Return the dimensionless global correlation coefficients when available.
     #[getter]
     fn get_global_cc(&self) -> Option<Vec<f64>> {
         self.last_minimum
@@ -871,6 +960,7 @@ impl Minuit {
             .map(<[f64]>::to_vec)
     }
 
+    /// Return the last minimum statistics and validity flags.
     #[getter]
     fn get_fmin(&self) -> Option<FMin> {
         self.scan_fmin
@@ -878,6 +968,7 @@ impl Minuit {
             .or_else(|| self.last_minimum.as_ref().map(FMin::from_minimum))
     }
 
+    /// Return the parameter snapshots in external order.
     #[getter]
     fn get_params(&self) -> Vec<Param> {
         self.names
@@ -904,6 +995,7 @@ impl Minuit {
             .collect()
     }
 
+    /// Return the stored asymmetric errors by parameter name.
     #[getter]
     fn get_merrors(&self, py: Python<'_>) -> PyResult<Py<PyDict>> {
         let dict = PyDict::new(py);
@@ -913,6 +1005,7 @@ impl Minuit {
         Ok(dict.into())
     }
 
+    /// Return the number of objective evaluations.
     #[getter]
     fn get_nfcn(&self) -> usize {
         self.scan_fmin
@@ -926,11 +1019,13 @@ impl Minuit {
             .unwrap_or(0)
     }
 
+    /// Return the number of parameters.
     #[getter]
     fn get_npar(&self) -> usize {
         self.names.len()
     }
 
+    /// Return the number of parameters that are not fixed.
     #[getter]
     fn get_nfit(&self) -> usize {
         self.names
@@ -939,11 +1034,13 @@ impl Minuit {
             .count()
     }
 
+    /// Return the parameter names in external order.
     #[getter]
     fn get_parameters(&self) -> Vec<String> {
         self.names.clone()
     }
 
+    /// Return the flag indicating a valid minimum without a positive definite correction.
     #[getter]
     fn get_accurate(&self) -> Option<bool> {
         self.last_minimum
@@ -951,6 +1048,7 @@ impl Minuit {
             .map(|m| m.is_valid() && !m.has_made_pos_def_covar())
     }
 
+    /// Restore initial values, errors, bounds, and fixed flags; clear stored results.
     fn reset(mut slf: PyRefMut<'_, Self>) -> Py<Minuit> {
         let state = &mut *slf;
         state.values.clone_from(&state.init_values);
@@ -963,6 +1061,7 @@ impl Minuit {
         slf.into()
     }
 
+    /// Set parameter values and fix those parameters.
     #[pyo3(signature = (key, value))]
     #[expect(
         clippy::needless_pass_by_value,
@@ -992,6 +1091,7 @@ impl Minuit {
         Ok(slf.into())
     }
 
+    /// Run Migrad and store the resulting values, errors, and minimum flags.
     #[expect(
         clippy::unnecessary_wraps,
         reason = "the public signature stays as it is"
@@ -1012,6 +1112,7 @@ impl Minuit {
         Ok(slf.into())
     }
 
+    /// Run Nelder–Mead and store the resulting values, errors, and minimum flags.
     #[expect(
         clippy::unnecessary_wraps,
         reason = "the public signature stays as it is"
@@ -1032,6 +1133,10 @@ impl Minuit {
         Ok(slf.into())
     }
 
+    /// Estimate covariance at the stored minimum.
+    ///
+    /// # Errors
+    /// Raises `RuntimeError` if no Migrad or Simplex minimum is stored.
     fn hesse(mut slf: PyRefMut<'_, Self>, py: Python<'_>) -> PyResult<Py<Minuit>> {
         if slf.last_minimum.is_none() {
             return Err(PyRuntimeError::new_err("Run migrad/simplex first"));
@@ -1057,6 +1162,11 @@ impl Minuit {
         Ok(slf.into())
     }
 
+    /// Compute asymmetric errors for selected parameters, or all free parameters if none are named.
+    /// Fixed and unknown parameter names are skipped.
+    ///
+    /// # Errors
+    /// Raises `RuntimeError` if no Migrad or Simplex minimum is stored.
     #[pyo3(signature = (*parameters))]
     #[expect(
         clippy::needless_pass_by_value,
@@ -1129,6 +1239,7 @@ impl Minuit {
         Ok(slf.into())
     }
 
+    /// Evaluate a parameter grid with other parameter values held fixed.
     #[pyo3(signature = (vname, *, size=100, bound=2.0, subtract_min=false))]
     #[expect(
         clippy::needless_pass_by_value,
@@ -1199,6 +1310,7 @@ impl Minuit {
         Ok((PyArray1::from_vec(py, xs), PyArray1::from_vec(py, fs)))
     }
 
+    /// Evaluate a parameter grid while minimizing over the other free parameters.
     #[pyo3(signature = (vname, *, size=30, bound=2.0, subtract_min=false))]
     #[expect(
         clippy::needless_pass_by_value,
@@ -1266,6 +1378,7 @@ impl Minuit {
         ))
     }
 
+    /// Trace a contour for two parameters using profile minimization.
     #[pyo3(signature = (x, y, *, cl=None, size=100))]
     #[expect(
         clippy::needless_pass_by_value,
@@ -1316,6 +1429,7 @@ impl Minuit {
         Ok(arr.into_pyarray(py))
     }
 
+    /// Evaluate the objective on a grid of two parameters with other values held fixed.
     #[pyo3(signature = (x, y, *, size=50, bound=2.0, subtract_min=false))]
     #[expect(
         clippy::needless_pass_by_value,
@@ -1400,6 +1514,7 @@ impl Minuit {
         ))
     }
 
+    /// Search a parameter grid and store the best point as the current result.
     #[pyo3(signature = (ncall=None))]
     #[expect(
         clippy::too_many_lines,

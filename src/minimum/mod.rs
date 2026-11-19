@@ -18,6 +18,15 @@ use crate::user_parameter_state::MnUserParameterState;
 use crate::user_parameters::MnUserParameters;
 
 /// Result of a minimization.
+/// # Examples
+///
+/// ```
+/// use minuit2::MnMigrad;
+/// let f = |p: &[f64]| (p[0] - 1.0).powi(2);
+/// let minimum = MnMigrad::new().add("x", 0.0, 0.1).minimize(&f);
+/// assert!(minimum.is_valid());
+/// assert!((minimum.params()[0] - 1.0).abs() < 1e-3);
+/// ```
 #[derive(Debug, Clone)]
 pub struct FunctionMinimum {
     seed: MinimumSeed,
@@ -29,6 +38,7 @@ pub struct FunctionMinimum {
 }
 
 impl FunctionMinimum {
+    /// Build a result from a seed, iteration states, and objective error definition.
     #[must_use]
     pub fn new(seed: MinimumSeed, states: Vec<MinimumState>, up: f64) -> Self {
         // Build user state from the final internal state
@@ -185,6 +195,7 @@ impl FunctionMinimum {
         &self.seed
     }
 
+    /// Return the saved iteration states, excluding the seed.
     #[must_use]
     pub fn states(&self) -> &[MinimumState] {
         &self.states
@@ -232,11 +243,13 @@ impl FunctionMinimum {
         self.state().is_valid() && !self.is_above_max_edm && !self.reached_call_limit
     }
 
+    /// Return whether the final state contains parameters.
     #[must_use]
     pub fn has_valid_parameters(&self) -> bool {
         self.state().has_parameters()
     }
 
+    /// Return whether the final inverse Hessian was forced positive definite.
     #[must_use]
     pub fn has_made_pos_def_covar(&self) -> bool {
         self.state().error().is_made_pos_def()
@@ -268,6 +281,7 @@ impl FunctionMinimum {
         self.seed.n_variable_params()
     }
 
+    /// Set the objective error definition and rebuild external errors and covariance.
     pub fn set_error_def(&mut self, up: f64) {
         self.up = up;
         let rebuilt = Self::build_user_state(&self.seed, self.state(), up);

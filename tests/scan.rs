@@ -1,3 +1,4 @@
+//! Tests serial and parallel parameter scans and automatic scan ranges.
 use minuit2::{MnMigrad, MnScan};
 
 /// 1D scan of a quadratic: should produce parabolic profile.

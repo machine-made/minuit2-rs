@@ -15,11 +15,29 @@ use crate::mn_fcn::MnFcn;
 use crate::strategy::MnStrategy;
 use crate::user_transformation::MnUserTransformation;
 
+/// Estimate initial internal derivatives from external parameter errors.
+/// # Examples
+///
+/// ```
+/// use minuit2::{MinuitParameter, MnStrategy, MnUserTransformation};
+/// use minuit2::mn_fcn::MnFcn;
+/// let trafo = MnUserTransformation::new(vec![MinuitParameter::new(0, "x", 0.0, 0.1)]);
+/// let f = |p: &[f64]| (p[0] - 1.0).powi(2);
+/// let fcn = MnFcn::new(&f, &trafo);
+/// let strategy = MnStrategy::default();
+/// use minuit2::gradient::InitialGradientCalculator;
+/// use minuit2::minimum::parameters::MinimumParameters;
+/// let p = MinimumParameters::new(nalgebra::DVector::from_vec(vec![0.0]), 1.0);
+/// let g = InitialGradientCalculator::new(strategy).compute(&fcn, &p, &trafo);
+/// assert!(g.g2()[0] > 0.0);
+/// assert_eq!(fcn.num_of_calls(), 0);
+/// ```
 pub struct InitialGradientCalculator {
     _strategy: MnStrategy,
 }
 
 impl InitialGradientCalculator {
+    /// Create a step based derivative estimator with the supplied strategy.
     #[must_use]
     pub fn new(strategy: MnStrategy) -> Self {
         Self {
@@ -27,6 +45,10 @@ impl InitialGradientCalculator {
         }
     }
 
+    /// Estimate internal derivatives from parameter errors without evaluating the objective.
+    ///
+    /// # Panics
+    /// Panics if the internal parameter vector is shorter than the variable parameter count.
     #[expect(
         clippy::manual_midpoint,
         reason = "keeps the operation order of the ROOT reference"

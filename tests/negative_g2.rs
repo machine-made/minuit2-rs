@@ -1,3 +1,4 @@
+//! Tests the seed escape from negative curvature before gradient recomputation.
 use minuit2::fcn::FCN;
 use minuit2::migrad::seed::MigradSeedGenerator;
 use minuit2::mn_fcn::MnFcn;

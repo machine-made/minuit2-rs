@@ -16,11 +16,28 @@ use crate::mn_fcn::MnFcn;
 use crate::strategy::MnStrategy;
 use crate::user_transformation::MnUserTransformation;
 
+/// Estimate internal derivatives with adaptive two point central differences.
+/// # Examples
+///
+/// ```
+/// use minuit2::{MinuitParameter, MnStrategy, MnUserTransformation};
+/// use minuit2::mn_fcn::MnFcn;
+/// let trafo = MnUserTransformation::new(vec![MinuitParameter::new(0, "x", 0.0, 0.1)]);
+/// let f = |p: &[f64]| (p[0] - 1.0).powi(2);
+/// let fcn = MnFcn::new(&f, &trafo);
+/// let strategy = MnStrategy::default();
+/// let seed = minuit2::migrad::seed::MigradSeedGenerator::generate(&fcn, &trafo, &strategy);
+/// use minuit2::gradient::Numerical2PGradientCalculator;
+/// let g = Numerical2PGradientCalculator::new(strategy)
+///     .compute(&fcn, seed.parameters(), &trafo, seed.gradient());
+/// assert!((g.grad()[0] + 2.0).abs() < 1e-3);
+/// ```
 pub struct Numerical2PGradientCalculator {
     strategy: MnStrategy,
 }
 
 impl Numerical2PGradientCalculator {
+    /// Create a central difference calculator using the supplied refinement strategy.
     #[must_use]
     pub fn new(strategy: MnStrategy) -> Self {
         Self { strategy }
@@ -28,6 +45,10 @@ impl Numerical2PGradientCalculator {
 
     /// Compute gradient from scratch (no previous gradient available).
     /// Uses the heuristic gradient's gstep as initial step sizes.
+    ///
+    /// # Panics
+    /// Panics if parameter or derivative vectors are shorter than the variable parameter count.
+    /// Panics if a numerical step has an invalid clamp range.
     pub fn compute(
         &self,
         fcn: &MnFcn,
@@ -120,6 +141,10 @@ impl Numerical2PGradientCalculator {
 
     /// Compute gradient using previous gradient's step sizes as starting point.
     /// More efficient than `compute()` since step sizes are already tuned.
+    ///
+    /// # Panics
+    /// Panics if parameter or derivative vectors are shorter than the variable parameter count.
+    /// Panics if a numerical step has an invalid clamp range.
     pub fn compute_with_previous(
         &self,
         fcn: &MnFcn,

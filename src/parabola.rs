@@ -4,23 +4,35 @@
 //! search to interpolate function values along a search direction.
 
 /// A point (x, y) on the parabola.
+/// # Examples
+///
+/// ```
+/// use minuit2::parabola::MnParabolaPoint;
+/// let p = MnParabolaPoint::new(2.0, 4.0);
+/// assert!((p.y() - p.x() * p.x()).abs() < 1e-12);
+/// ```
 #[derive(Debug, Clone, Copy)]
 pub struct MnParabolaPoint {
+    /// Point coordinate.
     pub x: f64,
+    /// Objective value at the point.
     pub y: f64,
 }
 
 impl MnParabolaPoint {
+    /// Construct a point from its coordinate and objective value.
     #[must_use]
     pub fn new(x: f64, y: f64) -> Self {
         Self { x, y }
     }
 
+    /// Return the point coordinate.
     #[must_use]
     pub fn x(&self) -> f64 {
         self.x
     }
 
+    /// Return the objective value at the point.
     #[must_use]
     pub fn y(&self) -> f64 {
         self.y
@@ -28,6 +40,14 @@ impl MnParabolaPoint {
 }
 
 /// Quadratic f(x) = a*x² + b*x + c.
+/// # Examples
+///
+/// ```
+/// use minuit2::parabola::MnParabola;
+/// let p = MnParabola::new(1.0, -2.0, 1.0);
+/// assert!((p.min() - 1.0).abs() < 1e-12);
+/// assert!(p.y_min().abs() < 1e-12);
+/// ```
 #[derive(Debug, Clone, Copy)]
 pub struct MnParabola {
     a: f64,
@@ -36,6 +56,7 @@ pub struct MnParabola {
 }
 
 impl MnParabola {
+    /// Construct a quadratic from its quadratic, linear, and constant coefficients.
     #[must_use]
     pub fn new(a: f64, b: f64, c: f64) -> Self {
         Self { a, b, c }
