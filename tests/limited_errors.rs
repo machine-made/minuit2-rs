@@ -164,21 +164,16 @@ fn limited_error_formula_matches_root_state() {
     assert_no_mismatch(&mismatches, TOLERANCE);
 }
 
-/// The Rust fit reports the errors that ROOT reports, for the workloads where the two fits
-/// end at the same point.
+/// The Rust fit reports ROOT's errors for lower, upper, and two-sided limits.
 ///
-/// The fit of `quadratic2_upper_limited_migrad` ends at a different point than ROOT's: it
-/// takes 43 function calls where ROOT takes 61, and its covariance differs by about 3e-4. Its
-/// errors are therefore not compared end to end here. The test above covers its
-/// error formula.
-///
-/// The worst relative difference measured is 8e-11, against a tolerance of 1e-6.
+/// The worst relative difference measured is 1.2e-10, against a tolerance of 1e-6.
 #[test]
 fn limited_errors_match_root_end_to_end() {
     const TOLERANCE: f64 = 1e-6;
     let mut mismatches = Vec::new();
     for id in [
         "quadratic2_lower_limited_migrad",
+        "quadratic2_upper_limited_migrad",
         "quadratic2_limited_migrad",
     ] {
         let rust = numbers(&rust_report(id)["errors"], id);

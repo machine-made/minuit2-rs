@@ -15,6 +15,8 @@
 //     > reports/verification/raw/trace/nfcn_accounting_rosenbrock2_maxfcn140.rust.json
 //   target/nfcn-accounting-4/nfcn_accounting_rust --trace quadratic2_minos_before_minos \
 //     > reports/verification/raw/trace/nfcn_accounting_quadratic2_minos_before_minos.rust.json
+//   target/nfcn-accounting-4/nfcn_accounting_rust --trace quadratic2_upper_limited_migrad \
+//     > reports/verification/raw/trace/nfcn_accounting_quadratic2_upper_limited_migrad.rust.json
 // The document holds "provenance" (the build and run commands above) and "result".
 // The program exits with 1 if reported_nfcn and user_calls differ.
 // Pass --trace to include every evaluation and phase; M2_TRACE_STACKS adds stacks.
@@ -79,7 +81,7 @@ mod runner {
 
     pub fn counts() -> Result<(), String> {
         let usage = "usage: nfcn_accounting_rust [--trace] \
-            quadratic2_no_g2_migrad|rosenbrock2_maxfcn140|quadratic2_minos_before_minos";
+            quadratic2_no_g2_migrad|rosenbrock2_maxfcn140|quadratic2_minos_before_minos|quadratic2_upper_limited_migrad";
         let mut trace = false;
         let mut workload = None;
         let mut command = String::from("target/nfcn-accounting-4/nfcn_accounting_rust");
@@ -94,11 +96,35 @@ mod runner {
             }
         }
         match workload.as_deref() {
+            Some("quadratic2_upper_limited_migrad") => quadratic2_upper_limited_migrad(trace, &command),
             Some("quadratic2_no_g2_migrad") => quadratic2_no_g2_migrad(trace, &command),
             Some("rosenbrock2_maxfcn140") => rosenbrock2_maxfcn140(trace, &command),
             Some("quadratic2_minos_before_minos") => quadratic2_minos_before_minos(trace, &command),
             _ => Err(usage.to_owned()),
         }
+    }
+
+    fn quadratic2_upper_limited_migrad(trace: bool, command: &str) -> Result<(), String> {
+        let quadratic = Counted {
+            objective: Quadratic2,
+            counts: RefCell::new(PhaseCounts::new(trace)),
+            hessian_calls: Cell::new(0),
+        };
+        let minimum = MnMigrad::new()
+            .add_upper_limited("x", 0.4, 0.1, 1.8)
+            .add_upper_limited("y", -1.0, 0.1, -1.5)
+            .tolerance(0.1)
+            .minimize(&quadratic);
+        begin_record(
+            &provenance(PROGRAM, BUILD_COMMAND, command),
+            "quadratic2_upper_limited_migrad",
+        );
+        field("reported_nfcn", minimum.nfcn());
+        field("valid", minimum.is_valid());
+        field("edm", minimum.edm());
+        quadratic.counts.borrow().print();
+        end_record();
+        quadratic.counts.borrow().check_reported(minimum.nfcn())
     }
 
     fn quadratic2_no_g2_migrad(trace: bool, command: &str) -> Result<(), String> {
