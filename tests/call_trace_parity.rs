@@ -40,6 +40,11 @@ fn rosenbrock2_calls_equal_root_calls() {
             .iter()
             .map(|value| value.as_f64().unwrap())
             .collect();
+        // The bound is relative to the larger coordinate. The measured largest difference
+        // over the 140 calls is 2.5e-10 (call 104, second coordinate): both sides run the same
+        // steps and differ in the last digits of the floating-point path. 1e-9 leaves a margin
+        // of four. A wrong step moves a coordinate by far more, as the failure at call 4 showed
+        // (relative difference 2.7e-7).
         assert!(
             actual.len() == vector.len()
                 && actual

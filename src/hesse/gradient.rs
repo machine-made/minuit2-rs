@@ -50,7 +50,9 @@ impl HessianGradientCalculator {
                 let old = grad[i];
                 let new = (fp - fm) / (2.0 * d);
                 let roundoff = precision.eps() * (fp.abs() + fm.abs()) / d;
-                if new == 0.0 {
+                // ROOT stops on an exactly zero gradient; classify() avoids a float comparison
+                // and keeps both signed zeros, with no epsilon.
+                if matches!(new.classify(), std::num::FpCategory::Zero) {
                     break;
                 }
                 let change = ((old - new) / new).abs();
