@@ -214,19 +214,7 @@ fn hahn1_core_start2_matches_root_and_stays_near_certified_solution() {
         );
     }
 
-    // Measured: Rust 470 calls against ROOT 456. Temporary user-side stack
-    // counters found one Hesse pass per run, both starting after 294 calls.
-    // Hesse gradient refinement uses 28 calls in Rust and 14 in ROOT;
-    // both make 1 centre, 14 diagonal and 21 mixed-derivative calls.
-    // Both continuations take 112 calls: refinement explains all 14 extra calls,
-    // leaving zero unexplained. The seed gradient step differs from call 4
-    // in the Rosenbrock call trace.
-    // D-005 in reports/verification/known_differences.md records the follow-up
-    // that aligns these steps and tightens this bound to zero.
-    assert!(
-        min.nfcn().abs_diff(ROOT_NFCN) <= 14,
-        "Hahn1 nfcn {} differs from ROOT {} by more than 14",
-        min.nfcn(),
-        ROOT_NFCN,
-    );
+    // Both start Hesse after 294 calls and use fourteen gradient refinement calls.
+    // Both continuations take 112 calls, reaching the same total.
+    assert_eq!(min.nfcn(), ROOT_NFCN);
 }

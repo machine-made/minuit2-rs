@@ -1,0 +1,27 @@
+{
+  "provenance": {
+    "program": "tools/root_evidence/repeated_hesse.cpp",
+    "root_tag": "v6-36-08",
+    "library_build_command": "scripts/build_root_reference_runner.sh v6-36-08",
+    "build_command": "mkdir -p target/nfcn-accounting-4 && g++ -O2 -g -rdynamic -std=c++23 -Ithird_party/root_ref/math/minuit2/inc tools/root_evidence/repeated_hesse.cpp third_party/root_ref_build/minuit2/lib/libMinuit2.a third_party/root_ref_build/minuit2/lib/libMinuit2Math.a -lpthread -o target/nfcn-accounting-4/repeated_hesse_root",
+    "command": "target/nfcn-accounting-4/repeated_hesse_root"
+  },
+  "result": {
+    "workload": "rosenbrock2_strategy2_repeated_hesse",
+    "migrad_valid": true,
+    "migrad_nfcn": 211,
+    "migrad_fval": 2.7782473732611484e-06,
+    "migrad_x": 0.9983897986298017,
+    "migrad_y": 0.9968252595936905,
+    "migrad_inverse_hessian": [
+      [0.5094002615280409, 1.017172600092039],
+      [1.017172600092039, 2.036094556713421]
+    ],
+    "hesse_valid": true,
+    "hesse_nfcn": 221,
+    "hesse_inverse_hessian": [
+      [0.5053474996457947, 1.0090700670429817],
+      [1.0090700670429817, 2.019895494517758]
+    ]
+  }
+}

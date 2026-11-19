@@ -9,6 +9,7 @@
 
 use nalgebra::{DMatrix, DVector};
 
+use crate::gradient::{InitialGradientCalculator, Numerical2PGradientCalculator};
 use crate::minimum::error::{ErrorMatrixStatus, MinimumError};
 use crate::minimum::gradient::FunctionGradient;
 use crate::minimum::state::MinimumState;
@@ -66,10 +67,8 @@ fn call_limit_result(
 /// Otherwise, compute finite differences. Invert the Hessian and return an updated state.
 ///
 /// The supplied-Hessian path returns the first derivatives of the input state with zero step sizes.
-/// ROOT also drops the saved steps there (MnHesse.cxx:128). Its numerical pass then recomputes the steps (MnHesse.cxx:202-210).
-/// The numerical path in this crate does not. It takes its starting step from the gradient of the state it receives.
-/// A later numerical Hesse on a returned or analytical state therefore needs a nonzero step, set by the caller.
-/// With a zero step the first probe distance is only 8 * eps2 * (|x| + eps2). For 1 + x^2 at x = 0 every probe rounds to the centre and Hesse fails.
+/// ROOT also drops the saved steps there (MnHesse.cxx:128).
+/// Before numerical Hesse, analytical gradients receive numerical curvature and steps, following MnHesse.cxx:202-210.
 pub fn calculate(
     fcn: &MnFcn,
     state: &MinimumState,
@@ -97,6 +96,20 @@ pub fn calculate(
     let mut g2 = g.g2().clone();
     let mut gstep = g.gstep().clone();
     let mut grad = g.grad().clone();
+
+    // ROOT MnHesse.cxx:202-210 recomputes numerical steps for an analytical gradient.
+    if g.is_analytical() {
+        let initial =
+            InitialGradientCalculator::new(*strategy).compute(fcn, state.parameters(), trafo);
+        let numerical = Numerical2PGradientCalculator::new(*strategy).compute(
+            fcn,
+            state.parameters(),
+            trafo,
+            &initial,
+        );
+        g2 = numerical.g2().clone();
+        gstep = numerical.gstep().clone();
+    }
 
     // --- Step 1: Diagonal Hessian elements ---
     let mut hessian_g2 = DVector::zeros(n);
@@ -201,14 +214,14 @@ pub fn calculate(
     }
 
     // --- Step 2: Refine gradient using Hessian info (strategy > 0) ---
-    if strategy.strategy() > 0 && !hesse_failed && grad.norm() > eps2 {
+    if strategy.strategy() > 0 {
+        let diagonal_gradient = FunctionGradient::new(grad, g2, gstep);
         let refined_grad = HessianGradientCalculator::compute(
             fcn,
             state.parameters(),
             trafo,
             strategy,
-            &hessian_g2,
-            &hessian_gstep,
+            &diagonal_gradient,
         );
         grad = refined_grad.grad().clone();
         g2 = refined_grad.g2().clone();

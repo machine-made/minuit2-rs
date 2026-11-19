@@ -217,7 +217,7 @@ assert!(result.is_valid());
 
 ### MnHesse (Exact Covariance)
 
-Computes the full Hessian matrix at the minimum for parabolic parameter errors, correlations, and global correlation coefficients. When the saved gradient is analytical and the function reports a gradient and Hessian, Hesse uses that Hessian without function evaluations. Other cases use finite differences. Run Hesse after Migrad for reliable error estimates, since Migrad's covariance is approximate.
+Computes the full Hessian matrix at the minimum for parabolic parameter errors, correlations, and global correlation coefficients. When the saved gradient is analytical and the function reports a gradient and Hessian, Hesse uses that Hessian without function evaluations. Other cases use finite differences. Analytical gradients receive numerical curvature and steps before that pass, following ROOT. Gradient refinement follows ROOT's steps and stopping rule. Run Hesse after Migrad for reliable error estimates, since Migrad's covariance is approximate.
 
 ```rust
 use minuit2::{MnMigrad, MnHesse};
@@ -866,27 +866,25 @@ ROOT `v6-36-08` differential harness — the only apples-to-apples measurement):
 
 | Workload | C++ (ROOT) | Rust | Δ |
 |----------|-----------:|-----:|---|
-| Rosenbrock — Migrad | 140 | 144 | +3% |
-| Rosenbrock — Migrad, strategy 2 | 162 | 170 | +5% |
-| Quadratic, lower-limited — Migrad | 45 | 49 | +9% |
+| Rosenbrock — Migrad | 140 | 140 | 0% |
+| Rosenbrock — Migrad, strategy 2 | 162 | 162 | 0% |
+| Quadratic, lower-limited — Migrad | 45 | 45 | 0% |
 | Simplex | 19 | 19 | 0% |
 | Quadratic, analytical Hessian without g2 — Migrad | 2 | 2 | 0% |
-| Minos (p0) | 38 | 46 | +21% ([Hesse refinement](reports/verification/known_differences.md#d-006-minos-row-counts-before-minos)) |
-| Quadratic (fixed param) — Hesse | 39 | 36 | -8% |
-| Quadratic (fixed param) — Migrad | 29 | 22 | -24% ([different stopping EDM](reports/verification/known_differences.md#d-001-waived-nfcn-divergence-on-quadratic-fixed-parameter-workloads): Rust 1.5e-5, ROOT 1e-25) |
+| Minos (p0) | 38 | 38 | 0% |
+| Quadratic (fixed param) — Hesse | 39 | 34 | -13% |
+| Quadratic (fixed param) — Migrad | 29 | 24 | -17% ([different stopping EDM](reports/verification/known_differences.md#d-001-waived-nfcn-divergence-on-quadratic-fixed-parameter-workloads): Rust 1.5e-5, ROOT 1e-25) |
 
-The Rosenbrock and lower-limited minimization workloads use call counts within about ±10% of ROOT's.
-The Hahn1 fit from start 2 used 470 calls against ROOT's 456 (+3.1%) and stops at ROOT's point.
+The Rosenbrock and lower-limited minimization workloads now match ROOT's call counts.
+The Hahn1 fit from start 2 uses 456 calls, matching ROOT, and stops at ROOT's point.
 ROOT's result comes from the [Hahn1 probe](tools/hahn1_probe/hahn1_probe.cpp).
-[`tests/hahn1_core_parity.rs`](tests/hahn1_core_parity.rs) requires a count within 14 calls of ROOT's and does not pin 470.
-Hesse gradient refinement explains all 14 extra calls.
-The Hesse gradient refinement follow-up in
-[`reports/verification/known_differences.md`](reports/verification/known_differences.md) would tighten the bound to zero.
+[`tests/hahn1_core_parity.rs`](tests/hahn1_core_parity.rs) requires exactly 456 calls.
+Each runner's Hesse pass uses fourteen gradient refinement calls.
 This count does not come from `compare_ref_vs_rust.py`.
 
 Counts after Hesse include Migrad and Hesse evaluations, including the centre evaluation used by ROOT's numerical Hesse.
 The Minos row reports that total before Minos runs.
-Its eight extra calls come from four extra refinement evaluations in each of two Hesse passes.
+Both runners use four refinement calls in each of two Hesse passes, reaching 38 calls before Minos.
 The fixed-parameter Migrad rows and their different stopping EDM are explained in
 [`reports/verification/known_differences.md`](reports/verification/known_differences.md).
 The analytical workload without g2 now reports 2 calls, matching ROOT, because Hesse uses its supplied Hessian without function evaluations.

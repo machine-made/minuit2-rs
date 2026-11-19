@@ -69,8 +69,45 @@ fn hesse_rosenbrock_valid() {
     assert!(err_y > 0.01, "err_y should be positive, got {err_y}");
 }
 
+// ROOT Minuit2 v6-36-08 on the same workload: strategy-2 Migrad on Rosenbrock, then a
+// second explicit strategy-2 Hesse pass. ROOT keeps the refined gradient steps of the
+// first pass and the second pass starts from them, so the error matrix moves.
+// The constants below are the `migrad_inverse_hessian` and `hesse_inverse_hessian`
+// entries of reports/verification/raw/trace/repeated_hesse_strategy2.root.json.
+const ROOT_AFTER_MIGRAD: [[f64; 2]; 2] = [
+    [0.5094002615280409, 1.017172600092039],
+    [1.017172600092039, 2.036094556713421],
+];
+const ROOT_AFTER_HESSE: [[f64; 2]; 2] = [
+    [0.5053474996457947, 1.0090700670429817],
+    [1.0090700670429817, 2.019895494517758],
+];
+
+/// Every entry of `matrix` must be within a relative 1e-5 of the ROOT entry.
+/// The scale is the absolute value of the ROOT entry or 1.0, whichever is larger.
+/// Rust and ROOT run the same algorithm in floating point and differ in the seventh
+/// digit. For entry [0,0], whose scale is 1.0, the measured differences are 6.6e-8 and
+/// 5.2e-8; the largest over all entries is 1.2e-7. The tolerance leaves a margin of
+/// about 80. It still fails if a refinement step is wrong. A first probe step of 0.5
+/// times the stored step instead of 0.2 moves entry [0,0] by 3.8e-4. Ignoring the
+/// stored steps in the second pass moves it by 0.004.
+fn assert_matches_root(matrix: &nalgebra::DMatrix<f64>, root: &[[f64; 2]; 2], label: &str) {
+    assert_eq!(matrix.shape(), (2, 2));
+    for i in 0..2 {
+        for j in 0..2 {
+            let got = matrix[(i, j)];
+            let want = root[i][j];
+            let scale = want.abs().max(1.0);
+            assert!(
+                (got - want).abs() <= 1e-5 * scale,
+                "{label}[{i},{j}] is {got:.16e}, ROOT has {want:.16e}"
+            );
+        }
+    }
+}
+
 #[test]
-fn strategy2_migrad_returns_hesse_verified_covariance() {
+fn strategy2_repeated_hesse_matches_root() {
     let rosenbrock = |p: &[f64]| (1.0 - p[0]).powi(2) + 100.0 * (p[1] - p[0] * p[0]).powi(2);
 
     let result = MnMigrad::new()
@@ -94,20 +131,17 @@ fn strategy2_migrad_returns_hesse_verified_covariance() {
         .calculate(&rosenbrock, &result);
     assert!(explicit.is_valid());
 
-    let returned_cov = result.state().error().matrix();
-    let explicit_cov = explicit.state().error().matrix();
-    assert_eq!(returned_cov.shape(), explicit_cov.shape());
-    for i in 0..returned_cov.nrows() {
-        for j in 0..returned_cov.ncols() {
-            let got = returned_cov[(i, j)];
-            let want = explicit_cov[(i, j)];
-            let scale = want.abs().max(1.0);
-            assert!(
-                (got - want).abs() <= 2e-3 * scale,
-                "cov[{i},{j}] returned {got:.12e} vs explicit Hesse {want:.12e}"
-            );
-        }
-    }
+    let returned = result.state().error().matrix();
+    let repeated = explicit.state().error().matrix();
+    assert_matches_root(returned, &ROOT_AFTER_MIGRAD, "Migrad error matrix");
+    assert_matches_root(repeated, &ROOT_AFTER_HESSE, "second Hesse error matrix");
+
+    // ROOT's second pass lowers entry [0,0] by 0.0040528.
+    let shift = returned[(0, 0)] - repeated[(0, 0)];
+    assert!(
+        (0.004..0.0041).contains(&shift),
+        "second Hesse should lower entry [0,0] by about 0.0040528, got {shift:.7e}"
+    );
 }
 
 /// Global correlations on correlated quadratic.

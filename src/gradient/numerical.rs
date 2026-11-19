@@ -63,10 +63,11 @@ impl Numerical2PGradientCalculator {
             let mut g2i = initial_gradient.g2()[i];
 
             // Ncycles of refinement
+            // ROOT keeps this curvature floor fixed across the parameter's cycles.
+            let epspri = eps2 + (grad[i] * eps2).abs();
             let mut stepb4 = 0.0;
             for _cycle in 0..ncycles {
                 // Optimal step: balance truncation vs roundoff error
-                let epspri = eps2 + (grad[i] * eps2).abs();
                 let optstp = (dfmin / (g2i.abs() + epspri)).sqrt();
                 let mut step = optstp.max(0.1 * gstepi.abs());
 
@@ -98,7 +99,7 @@ impl Numerical2PGradientCalculator {
 
                 let grdb4 = grad[i];
                 let grdi = 0.5 * (fp - fm) / step;
-                let g2i_new = (fp + fm - 2.0 * fcnmin) / (step * step);
+                let g2i_new = (fp + fm - 2.0 * fcnmin) / step / step;
 
                 grad[i] = grdi;
                 g2[i] = g2i_new;
@@ -153,9 +154,10 @@ impl Numerical2PGradientCalculator {
             let mut gstepi = previous.gstep()[i].max(vrysml);
             let mut g2i = previous.g2()[i];
 
+            // ROOT keeps this curvature floor fixed across the parameter's cycles.
+            let epspri = eps2 + (grad[i] * eps2).abs();
             let mut stepb4 = 0.0;
             for _cycle in 0..ncycles {
-                let epspri = eps2 + (grad[i] * eps2).abs();
                 let optstp = (dfmin / (g2i.abs() + epspri)).sqrt();
                 let mut step = optstp.max(0.1 * gstepi.abs());
 
@@ -184,7 +186,7 @@ impl Numerical2PGradientCalculator {
 
                 let grdb4 = grad[i];
                 let grdi = 0.5 * (fp - fm) / step;
-                let g2i_new = (fp + fm - 2.0 * fcnmin) / (step * step);
+                let g2i_new = (fp + fm - 2.0 * fcnmin) / step / step;
 
                 grad[i] = grdi;
                 g2[i] = g2i_new;
