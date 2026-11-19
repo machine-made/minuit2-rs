@@ -68,6 +68,9 @@ fn migrad_analytical_quadratic() {
     let state = result.user_state();
     let x = state.value("x").unwrap();
     let y = state.value("y").unwrap();
+    // Measured |x| is 6.0e-14 and |y| is 1.6e-13, so the bound 1e-4 has a margin of 6e8 or more.
+    // The bound follows from the fval limit 1e-8 above: f = x^2 + 4y^2 < 1e-8 gives |x| < 1e-4.
+    // It is a generous sanity limit; a result that did not move would sit at 3 and 2.
     assert!(x.abs() < 1e-4, "x should be near 0, got {x}");
     assert!(y.abs() < 1e-4, "y should be near 0, got {y}");
 }
@@ -86,6 +89,9 @@ fn migrad_analytical_rosenbrock() {
         let x = state.value("x").unwrap();
         let y = state.value("y").unwrap();
         // Just check we're in the right ballpark
+        // Measured x = 0.9966 and y = 0.9930, which are 3.4e-3 and 7.0e-3 below the minimum (1, 1).
+        // The bound -0.5 is 1.5 below them, so it is a generous sanity limit.
+        // It rejects a result in the negative region but not the start point (0, 0).
         assert!(x > -0.5, "x should be positive region, got {x}");
         assert!(y > -0.5, "y should be positive region, got {y}");
     }
@@ -108,6 +114,10 @@ fn migrad_analytical_vs_numerical_quadratic() {
     let y_analytical = state_analytical.value("y").unwrap();
     let y_numerical = state_numerical.value("y").unwrap();
 
+    // The two runs differ by 7.0e-10 in x and 2.8e-10 in y, so the bound 1e-5 has a margin of
+    // 1.4e4 or more. Both end within 1e-9 of the minimum at the origin; the numerical run is
+    // the one off by 7e-10. The bound is a generous sanity limit: a run that did not move
+    // differs by order 1.
     assert!(
         (x_analytical - x_numerical).abs() < 1e-5,
         "x should match: analytical={x_analytical}, numerical={x_numerical}"
@@ -139,6 +149,9 @@ fn migrad_analytical_with_bounds() {
 
     // For bounded quadratic, minimum is at origin but with bounds
     // we might not get exactly zero
+    // Measured |x| is 2.7e-3 and |y| is 1.4e-3, so the bound 0.1 has a margin of 37 and 71.
+    // Migrad works in sine-transformed variables here and stops at an EDM of 1.5e-5 (goal 2e-4),
+    // not near machine precision as in the unbounded case.
     assert!(x.abs() < 0.1, "x should be small, got {x}");
     assert!(y.abs() < 0.1, "y should be small, got {y}");
 

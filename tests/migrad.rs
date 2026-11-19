@@ -77,6 +77,9 @@ fn nd_quadratic() {
         .minimize(&|p: &[f64]| p.iter().map(|x| x * x).sum());
 
     assert!(result.is_valid(), "N-dim quadratic should converge");
+    // The largest |x_i| is 2.1e-9, so the bound 1e-3 has a margin of 4.7e5. Migrad ends at an EDM
+    // of 7.9e-18, far below its goal 0.1 * 0.002 = 2e-4. The bound is a generous sanity limit:
+    // a run that stops early keeps values of order 1 (the starts are 1 to 7 in size).
     for (i, &val) in result.params().iter().enumerate() {
         assert!(val.abs() < 1e-3, "x{i} should be near 0, got {val}");
     }

@@ -167,6 +167,10 @@ fn hahn1_core_start2_matches_root_and_stays_near_certified_solution() {
         min.edm(),
         min.nfcn()
     );
+    // The residual sum of squares (RSS) is 1.5325568, which is 1.2e-4 above the certified NIST
+    // value 1.5324383, as in ROOT. The fit stops at an EDM of 1.4e-4, under the Migrad goal
+    // 0.1 * 0.002 = 2e-4. The bound of 1 percent is 129 times the excess; a fit that stops early
+    // ends far higher (the start RSS is 2.1e6).
     assert!(
         (min.fval() - 1.532_438_285_4).abs() <= 1.532_438_285_4e-2,
         "Hahn1 fval {} did not reach the certified RSS basin",

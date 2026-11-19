@@ -31,6 +31,9 @@ fn hesse_quadratic_errors() {
     let err_x = state.error("x").unwrap();
     let err_y = state.error("y").unwrap();
 
+    // The measured errors equal the closed form 0.7071068 and 0.3535534 to double precision.
+    // The bounds 0.05 and 0.03 are generous sanity limits. Dropping the factor 2 of
+    // V = 2 * up * H^-1 would give sigma_x = 0.5 and sigma_y = 0.25, outside both bounds.
     assert!(
         (err_x - std::f64::consts::FRAC_1_SQRT_2).abs() < 0.05,
         "sigma_x should be ~0.707, got {err_x}"
