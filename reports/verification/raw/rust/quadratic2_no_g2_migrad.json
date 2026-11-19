@@ -2,24 +2,24 @@
   "algorithm": "migrad_no_g2",
   "covariance": [
     [
-      0.9999999999999989,
+      1.0,
       -0.0
     ],
     [
       -0.0,
-      1.000000000000008
+      1.0
     ]
   ],
   "edm": 0.0,
   "errors": [
-    0.9999999999999994,
-    1.000000000000004
+    1.0,
+    1.0
   ],
   "fval": 0.0,
   "has_covariance": true,
   "has_minos": false,
   "minos": null,
-  "nfcn": 12,
+  "nfcn": 2,
   "params": [
     1.0,
     -2.0

@@ -41,35 +41,6 @@ This ledger records currently observed differences from differential verificatio
 - Details: the strategy-2 seed Hesse, triangular covariance-update sum, and line-search corrections closed the former 0.13–0.18 gap.
 - Disposition: retain this entry for the measured residuals; their precise rounding source remains unisolated.
 
-## D-004: No-g2 warning reflects numerical Hesse work, not a ROOT undercount
-
-- Workload: `quadratic2_no_g2_migrad`.
-- Classification: `algorithmic/hessian-path`.
-- Severity: `low` (numerical metrics pass; call-count warning open).
-- Evidence programs: `tools/root_evidence/nfcn_accounting.cpp` and `tools/root_evidence/nfcn_accounting.rs` reuse the runners' objectives.
-- Stored output:
-  - [nfcn_accounting_quadratic2_no_g2_migrad.root.json](raw/trace/nfcn_accounting_quadratic2_no_g2_migrad.root.json)
-  - [nfcn_accounting_quadratic2_no_g2_migrad.rust.json](raw/trace/nfcn_accounting_quadratic2_no_g2_migrad.rust.json)
-- Measurements:
-
-  | Runner | Reported `nfcn` | User-side function calls | Analytical Hessian calls | State call totals |
-  |---|---:|---:|---:|---|
-  | ROOT `v6-36-08` | 2 | 2 | 2 | 1, 2, 2 |
-  | Rust | 12 | 12 | 1 | 2, 12 |
-
-- ROOT's count is accurate. Rust's ten extra evaluations occur during numerical Hesse verification after iteration reaches two calls.
-- ROOT `MnHesse.cxx:87-95,100-168` uses the supplied analytical Hessian without objective evaluations during verification.
-  Rust `src/hesse/calculator.rs::calculate` uses finite differences, even when the objective supplies a Hessian.
-- Rust's 12 calls comprise 1 seed, 1 Migrad iteration, 1 Hesse centre, 8 diagonal, 0 refinement, and 1 mixed-derivative evaluation.
-  ROOT makes 1 seed and 1 iteration evaluation, with no objective calls during analytical Hesse.
-  Rust adds the centre evaluation to match ROOT's numerical Hesse.
-  The old Rust count omitted its seed and centre evaluations.
-- Before the call count included the seed and the centre call, Rust reported 10 calls against ROOT's 2.
-  That is a relative difference of exactly `0.8`, which does not exceed the threshold.
-  The honest count of 12 gives `10/12 = 0.833333`, above the unchanged threshold of `0.8`.
-- Disposition: leave the warning open. Using the supplied analytical Hessian in Hesse changes the numerical path.
-  Matching ROOT's analytical path is a separate change. No waiver is added.
-
 ## D-005: Hesse gradient refinement and seed gradient steps differ from ROOT
 
 - Follow-up: aligning the steps with ROOT's would tighten the Rosenbrock and Hahn1 call-count bounds to zero.

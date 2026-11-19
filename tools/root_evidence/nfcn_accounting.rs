@@ -49,6 +49,10 @@ mod runner {
             self.objective.value(p)
         }
 
+        fn has_gradient(&self) -> bool {
+            self.objective.has_gradient()
+        }
+
         fn has_g2(&self) -> bool {
             self.objective.has_g2()
         }

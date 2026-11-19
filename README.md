@@ -217,7 +217,7 @@ assert!(result.is_valid());
 
 ### MnHesse (Exact Covariance)
 
-Computes the full Hessian matrix at the minimum using finite differences, yielding exact (parabolic) parameter errors, correlations, and the global correlation coefficients. Always run Hesse after Migrad if you need reliable error estimates — Migrad's covariance is only approximate.
+Computes the full Hessian matrix at the minimum for parabolic parameter errors, correlations, and global correlation coefficients. When the saved gradient is analytical and the function reports a gradient and Hessian, Hesse uses that Hessian without function evaluations. Other cases use finite differences. Run Hesse after Migrad for reliable error estimates, since Migrad's covariance is approximate.
 
 ```rust
 use minuit2::{MnMigrad, MnHesse};
@@ -870,6 +870,7 @@ ROOT `v6-36-08` differential harness — the only apples-to-apples measurement):
 | Rosenbrock — Migrad, strategy 2 | 162 | 170 | +5% |
 | Quadratic, lower-limited — Migrad | 45 | 49 | +9% |
 | Simplex | 19 | 19 | 0% |
+| Quadratic, analytical Hessian without g2 — Migrad | 2 | 2 | 0% |
 | Minos (p0) | 38 | 46 | +21% ([Hesse refinement](reports/verification/known_differences.md#d-006-minos-row-counts-before-minos)) |
 | Quadratic (fixed param) — Hesse | 39 | 36 | -8% |
 | Quadratic (fixed param) — Migrad | 29 | 22 | -24% ([different stopping EDM](reports/verification/known_differences.md#d-001-waived-nfcn-divergence-on-quadratic-fixed-parameter-workloads): Rust 1.5e-5, ROOT 1e-25) |
@@ -888,8 +889,7 @@ The Minos row reports that total before Minos runs.
 Its eight extra calls come from four extra refinement evaluations in each of two Hesse passes.
 The fixed-parameter Migrad rows and their different stopping EDM are explained in
 [`reports/verification/known_differences.md`](reports/verification/known_differences.md).
-The analytical workload without g2 reports 12 calls against ROOT's 2, exceeding its existing warning threshold.
-Its numerical results still match.
+The analytical workload without g2 now reports 2 calls, matching ROOT, because Hesse uses its supplied Hessian without function evaluations.
 
 **Wall-clock vs C++** is measured on the four scientific demo cases with a
 same-harness, in-process timing protocol (interleaved batches, trimmed medians,

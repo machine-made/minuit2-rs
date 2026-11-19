@@ -182,6 +182,10 @@ impl FCN for Quadratic2 {
 struct QuadraticNoG2;
 
 impl FCN for QuadraticNoG2 {
+    fn has_gradient(&self) -> bool {
+        true
+    }
+
     fn value(&self, p: &[f64]) -> f64 {
         let (x, y) = (p[0], p[1]);
         let dx = x - 1.0;
