@@ -9,6 +9,18 @@ use crate::fcn::FCN;
 use crate::user_transformation::MnUserTransformation;
 
 /// FCN wrapper that counts calls and operates in internal parameter space.
+/// # Examples
+///
+/// ```
+/// use minuit2::{MinuitParameter, MnStrategy, MnUserTransformation};
+/// use minuit2::mn_fcn::MnFcn;
+/// let trafo = MnUserTransformation::new(vec![MinuitParameter::new(0, "x", 0.0, 0.1)]);
+/// let f = |p: &[f64]| (p[0] - 1.0).powi(2);
+/// let fcn = MnFcn::new(&f, &trafo);
+/// let strategy = MnStrategy::default();
+/// assert!((fcn.call(&[0.0]) - 1.0).abs() < 1e-12);
+/// assert_eq!(fcn.num_of_calls(), 1);
+/// ```
 pub struct MnFcn<'a> {
     fcn: &'a dyn FCN,
     trafo: &'a MnUserTransformation,
@@ -36,6 +48,9 @@ impl<'a> MnFcn<'a> {
 
     /// Evaluate the function given internal-space parameters.
     /// Transforms to external space, then calls the user's FCN.
+    ///
+    /// # Panics
+    /// Panics if the internal vector is too short for the variable parameters.
     pub fn call(&self, internal: &[f64]) -> f64 {
         self.num_calls.set(self.num_calls.get() + 1);
         let external = self.trafo.transform(internal);

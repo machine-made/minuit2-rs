@@ -1,7 +1,16 @@
 /// User-level covariance matrix stored as upper triangle.
 ///
-/// The C++ `MnUserCovariance` stores an n×n symmetric matrix as n*(n+1)/2
-/// elements in row-major upper-triangle order.
+/// Stores a symmetric matrix as `n * (n + 1) / 2` entries, by columns of its upper triangle.
+/// Each entry has the product of the corresponding external parameter units.
+/// # Examples
+///
+/// ```
+/// use minuit2::MnUserCovariance;
+/// let mut cov = MnUserCovariance::new(2);
+/// cov.set(0, 1, 0.25);
+/// assert!((cov.get(1, 0) - 0.25).abs() < 1e-12);
+/// assert_eq!(cov.size(), 3);
+/// ```
 #[derive(Debug, Clone)]
 pub struct MnUserCovariance {
     data: Vec<f64>,
@@ -35,6 +44,9 @@ impl MnUserCovariance {
     }
 
     /// Access element (row, col). Symmetric: (i,j) == (j,i).
+    ///
+    /// # Panics
+    /// Panics if the computed packed index is outside the stored covariance data.
     #[must_use]
     pub fn get(&self, row: usize, col: usize) -> f64 {
         let (r, c) = if row <= col { (row, col) } else { (col, row) };
@@ -42,6 +54,9 @@ impl MnUserCovariance {
     }
 
     /// Set element (row, col). Also sets (col, row).
+    ///
+    /// # Panics
+    /// Panics if the computed packed index is outside the stored covariance data.
     pub fn set(&mut self, row: usize, col: usize, val: f64) {
         let (r, c) = if row <= col { (row, col) } else { (col, row) };
         self.data[r + c * (c + 1) / 2] = val;
@@ -53,16 +68,19 @@ impl MnUserCovariance {
         &self.data
     }
 
+    /// Return mutable packed covariance data in column order of the upper triangle.
     pub fn data_mut(&mut self) -> &mut [f64] {
         &mut self.data
     }
 
+    /// Multiply every covariance entry by the supplied dimensionless factor.
     pub fn scale(&mut self, value: f64) {
         for x in &mut self.data {
             *x *= value;
         }
     }
 
+    /// Return the number of stored upper triangle entries.
     #[must_use]
     pub fn size(&self) -> usize {
         self.data.len()

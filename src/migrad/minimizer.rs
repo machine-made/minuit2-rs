@@ -11,6 +11,19 @@ use crate::mn_fcn::MnFcn;
 use crate::strategy::MnStrategy;
 use crate::user_transformation::MnUserTransformation;
 
+/// Compose Migrad seed generation and variable metric iterations.
+/// # Examples
+///
+/// ```
+/// use minuit2::{MinuitParameter, MnStrategy, MnUserTransformation};
+/// use minuit2::mn_fcn::MnFcn;
+/// let trafo = MnUserTransformation::new(vec![MinuitParameter::new(0, "x", 0.0, 0.1)]);
+/// let f = |p: &[f64]| (p[0] - 1.0).powi(2);
+/// let fcn = MnFcn::new(&f, &trafo);
+/// let strategy = MnStrategy::default();
+/// let minimum = minuit2::migrad::minimizer::VariableMetricMinimizer::minimize(&fcn, &trafo, &strategy, 1000, 0.1);
+/// assert!((minimum.params()[0] - 1.0).abs() < 1e-3);
+/// ```
 pub struct VariableMetricMinimizer;
 
 impl VariableMetricMinimizer {

@@ -268,6 +268,7 @@ fn replace_worst_point(points: &mut [MnParabolaPoint; 3], new_point: MnParabolaP
     points[worst_index] = new_point;
 }
 
+/// Evaluate an internal parameter point and increment the objective call count.
 pub fn do_eval(fcn: &MnFcn, x: &[f64]) -> f64 {
     fcn.call(x)
 }

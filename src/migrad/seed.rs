@@ -21,6 +21,20 @@ use crate::mn_fcn::MnFcn;
 use crate::strategy::MnStrategy;
 use crate::user_transformation::MnUserTransformation;
 
+/// Create a starting state with numerical or analytical derivatives for Migrad.
+/// # Examples
+///
+/// ```
+/// use minuit2::{MinuitParameter, MnStrategy, MnUserTransformation};
+/// use minuit2::mn_fcn::MnFcn;
+/// let trafo = MnUserTransformation::new(vec![MinuitParameter::new(0, "x", 0.0, 0.1)]);
+/// let f = |p: &[f64]| (p[0] - 1.0).powi(2);
+/// let fcn = MnFcn::new(&f, &trafo);
+/// let strategy = MnStrategy::default();
+/// let seed = minuit2::migrad::seed::MigradSeedGenerator::generate(&fcn, &trafo, &strategy);
+/// assert!(seed.is_valid());
+/// assert_eq!(seed.gradient().grad().len(), 1);
+/// ```
 pub struct MigradSeedGenerator;
 
 impl MigradSeedGenerator {
@@ -125,6 +139,7 @@ impl MigradSeedGenerator {
         MinimumSeed::new(state, trafo.clone())
     }
 
+    /// Generate the starting state using the supplied analytical gradient calculator.
     pub fn call_with_analytical_gradient_calculator(
         fcn: &dyn FCNGradient,
         trafo: &MnUserTransformation,

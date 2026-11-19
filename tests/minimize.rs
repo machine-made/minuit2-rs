@@ -1,3 +1,4 @@
+//! Tests combined Migrad and Simplex minimization.
 use minuit2::{MnMigrad, MnMinimize};
 
 #[test]

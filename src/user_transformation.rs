@@ -12,6 +12,15 @@ use crate::transform::{ParameterTransform, SinTransform, SqrtLowTransform, SqrtU
 use crate::user_covariance::MnUserCovariance;
 use nalgebra::DMatrix;
 
+/// Coordinate mappings for free, bounded, fixed, and constant parameters.
+/// # Examples
+///
+/// ```
+/// use minuit2::{MinuitParameter, MnUserTransformation};
+/// let t = MnUserTransformation::new(vec![MinuitParameter::with_limits(0, "x", 2.0, 0.1, 0.0, 4.0)]);
+/// let internal = t.ext2int(0, 2.0);
+/// assert!((t.int2ext(0, internal) - 2.0).abs() < 1e-12);
+/// ```
 #[derive(Debug, Clone)]
 pub struct MnUserTransformation {
     precision: MnMachinePrecision,
@@ -24,6 +33,7 @@ pub struct MnUserTransformation {
 }
 
 impl MnUserTransformation {
+    /// Build coordinate mappings from external parameters, excluding fixed and constant parameters from internal space.
     #[must_use]
     pub fn new(params: Vec<MinuitParameter>) -> Self {
         let n = params.len();
@@ -48,11 +58,13 @@ impl MnUserTransformation {
         }
     }
 
+    /// Return the precision used for coordinate transformations.
     #[must_use]
     pub fn precision(&self) -> &MnMachinePrecision {
         &self.precision
     }
 
+    /// Return mutable access to the coordinate transformation precision.
     pub fn precision_mut(&mut self) -> &mut MnMachinePrecision {
         &mut self.precision
     }
@@ -69,20 +81,30 @@ impl MnUserTransformation {
         self.parameters.len()
     }
 
+    /// Return all parameter definitions in external order.
     #[must_use]
     pub fn parameters(&self) -> &[MinuitParameter] {
         &self.parameters
     }
 
+    /// Return a parameter by external index.
+    ///
+    /// # Panics
+    /// Panics if the external parameter index is out of range.
     #[must_use]
     pub fn parameter(&self, ext: usize) -> &MinuitParameter {
         &self.parameters[ext]
     }
 
+    /// Return mutable access to a parameter by external index.
+    ///
+    /// # Panics
+    /// Panics if the external parameter index is out of range.
     pub fn parameter_mut(&mut self, ext: usize) -> &mut MinuitParameter {
         &mut self.parameters[ext]
     }
 
+    /// Return all parameter values in external order.
     #[must_use]
     pub fn params(&self) -> Vec<f64> {
         self.parameters
@@ -91,6 +113,7 @@ impl MnUserTransformation {
             .collect()
     }
 
+    /// Return parameter errors in external order and external units.
     #[must_use]
     pub fn errors(&self) -> Vec<f64> {
         self.parameters
@@ -99,65 +122,111 @@ impl MnUserTransformation {
             .collect()
     }
 
+    /// Return the parameter value in external coordinates.
+    ///
+    /// # Panics
+    /// Panics if the external parameter index is out of range.
     #[must_use]
     pub fn value(&self, ext: usize) -> f64 {
         self.parameters[ext].value()
     }
 
+    /// Return the parameter error in external coordinates.
+    ///
+    /// # Panics
+    /// Panics if the external parameter index is out of range.
     #[must_use]
     pub fn error(&self, ext: usize) -> f64 {
         self.parameters[ext].error()
     }
 
+    /// Find a parameter by name, returning its external index if present.
     #[must_use]
     pub fn index(&self, name: &str) -> Option<usize> {
         self.parameters.iter().position(|p| p.name() == name)
     }
 
+    /// Find a parameter by name, returning its external index if present.
     #[must_use]
     pub fn find_index(&self, name: &str) -> Option<usize> {
         self.index(name)
     }
 
+    /// Set the parameter value in external coordinates.
+    ///
+    /// # Panics
+    /// Panics if the external parameter index is out of range.
     pub fn set_value(&mut self, ext: usize, val: f64) {
         self.parameters[ext].set_value(val);
     }
 
+    /// Set the parameter error in external coordinates.
+    ///
+    /// # Panics
+    /// Panics if the external parameter index is out of range.
     pub fn set_error(&mut self, ext: usize, err: f64) {
         self.parameters[ext].set_error(err);
     }
 
+    /// Set both bounds in external coordinates.
+    ///
+    /// # Panics
+    /// Panics if the external parameter index is out of range.
+    /// Panics if the lower bound is not less than the upper bound.
     pub fn set_limits(&mut self, ext: usize, lower: f64, upper: f64) {
         self.parameters[ext].set_limits(lower, upper);
     }
 
+    /// Set the lower bound in external coordinates.
+    ///
+    /// # Panics
+    /// Panics if the external parameter index is out of range.
     pub fn set_lower_limit(&mut self, ext: usize, lower: f64) {
         self.parameters[ext].set_lower_limit(lower);
     }
 
+    /// Set the upper bound in external coordinates.
+    ///
+    /// # Panics
+    /// Panics if the external parameter index is out of range.
     pub fn set_upper_limit(&mut self, ext: usize, upper: f64) {
         self.parameters[ext].set_upper_limit(upper);
     }
 
+    /// Remove both parameter bounds.
+    ///
+    /// # Panics
+    /// Panics if the external parameter index is out of range.
     pub fn remove_limits(&mut self, ext: usize) {
         self.parameters[ext].remove_limits();
     }
 
+    /// Set the parameter name.
+    ///
+    /// # Panics
+    /// Panics if the external parameter index is out of range.
     pub fn set_name(&mut self, ext: usize, name: impl Into<String>) {
         self.parameters[ext].set_name(name);
     }
 
+    /// Set the epsilon used to compute numerical transformation steps.
     pub fn set_precision(&mut self, eps: f64) {
         self.precision.set_precision(eps);
     }
 
     /// External index → internal index. Returns None if fixed.
+    ///
+    /// # Panics
+    /// Panics if the external parameter index is out of range.
     #[must_use]
     pub fn int_of_ext(&self, ext: usize) -> Option<usize> {
         self.ext_of_int[ext]
     }
 
     /// Internal index → external index.
+    ///
+    /// # Panics
+    /// Panics if the internal parameter index is out of range.
     #[must_use]
     pub fn ext_of_int(&self, int: usize) -> usize {
         self.int_of_ext[int]
@@ -183,6 +252,9 @@ impl MnUserTransformation {
     }
 
     /// Transform a single internal value to external.
+    ///
+    /// # Panics
+    /// Panics if the external parameter index is out of range.
     #[must_use]
     pub fn int2ext(&self, ext: usize, internal: f64) -> f64 {
         let p = &self.parameters[ext];
@@ -198,6 +270,9 @@ impl MnUserTransformation {
     }
 
     /// Transform a single external value to internal.
+    ///
+    /// # Panics
+    /// Panics if the external parameter index is out of range.
     #[must_use]
     pub fn ext2int(&self, ext: usize, value: f64) -> f64 {
         let p = &self.parameters[ext];
@@ -213,6 +288,9 @@ impl MnUserTransformation {
     }
 
     /// Derivative d(external)/d(internal) for parameter `ext`.
+    ///
+    /// # Panics
+    /// Panics if the external parameter index is out of range.
     #[must_use]
     pub fn dint2ext(&self, ext: usize, internal: f64) -> f64 {
         let p = &self.parameters[ext];
@@ -228,6 +306,9 @@ impl MnUserTransformation {
     }
 
     /// Derivative d(internal)/d(external) for parameter `ext`.
+    ///
+    /// # Panics
+    /// Panics if the external parameter index is out of range.
     #[must_use]
     pub fn dext2int(&self, ext: usize, internal: f64) -> f64 {
         let d = self.dint2ext(ext, internal);
@@ -241,6 +322,9 @@ impl MnUserTransformation {
     /// External error from the internal error `err`, as ROOT `MnUserTransformation::Int2extError`.
     /// The transform is not linear, so a parameter with limits takes the mean of the two
     /// one-sided changes of its external value at `internal + err` and `internal - err`.
+    ///
+    /// # Panics
+    /// Panics if the external parameter index is out of range.
     #[must_use]
     pub fn int2ext_error(&self, ext: usize, internal: f64, err: f64) -> f64 {
         let p = &self.parameters[ext];
@@ -325,12 +409,18 @@ impl MnUserTransformation {
     }
 
     /// Fix parameter at external index. Removes from internal space.
+    ///
+    /// # Panics
+    /// Panics if the external parameter index is out of range.
     pub fn fix(&mut self, ext: usize) {
         self.parameters[ext].fix();
         self.rebuild_index();
     }
 
     /// Release parameter at external index. Adds back to internal space.
+    ///
+    /// # Panics
+    /// Panics if the external parameter index is out of range.
     pub fn release(&mut self, ext: usize) {
         self.parameters[ext].release();
         self.rebuild_index();

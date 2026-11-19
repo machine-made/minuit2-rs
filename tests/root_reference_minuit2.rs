@@ -1,3 +1,4 @@
+//! Checks minimization, Hessian indexing, and call accounting against ROOT reference behavior.
 use minuit2::{FCN, FCNGradient, MnHesse, MnMigrad, MnMinimize, MnSimplex};
 use std::cell::Cell;
 

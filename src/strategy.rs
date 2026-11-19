@@ -2,6 +2,12 @@
 ///
 /// Three Minuit-style effort levels: low (0), medium (1), high (2).
 /// Medium is the default.
+/// # Examples
+///
+/// ```
+/// use minuit2::MnStrategy;
+/// assert!(MnStrategy::new(2).grad_ncycles() > MnStrategy::new(0).grad_ncycles());
+/// ```
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct MnStrategy {
     strategy: u32,
@@ -96,6 +102,7 @@ impl MnStrategy {
         self.grad_ncycles
     }
 
+    /// Return the maximum gradient refinement cycle count.
     #[must_use]
     pub fn gradient_ncycles(&self) -> u32 {
         self.grad_ncycles()
@@ -107,6 +114,7 @@ impl MnStrategy {
         f64::from(self.grad_step_tol) / 10.0
     }
 
+    /// Return the dimensionless gradient step tolerance.
     #[must_use]
     pub fn gradient_step_tolerance(&self) -> f64 {
         self.grad_step_tol()
@@ -118,6 +126,7 @@ impl MnStrategy {
         f64::from(self.grad_tol) / 100.0
     }
 
+    /// Return the dimensionless gradient convergence tolerance.
     #[must_use]
     pub fn gradient_tolerance(&self) -> f64 {
         self.grad_tol()
@@ -129,6 +138,7 @@ impl MnStrategy {
         self.hess_ncycles
     }
 
+    /// Return the maximum Hessian refinement cycle count.
     #[must_use]
     pub fn hessian_ncycles(&self) -> u32 {
         self.hess_ncycles()
@@ -140,6 +150,7 @@ impl MnStrategy {
         f64::from(self.hess_step_tol) / 10.0
     }
 
+    /// Return the dimensionless Hessian step tolerance.
     #[must_use]
     pub fn hessian_step_tolerance(&self) -> f64 {
         self.hess_step_tol()
@@ -151,6 +162,7 @@ impl MnStrategy {
         f64::from(self.hess_g2_tol) / 100.0
     }
 
+    /// Return the dimensionless Hessian curvature tolerance.
     #[must_use]
     pub fn hessian_g2_tolerance(&self) -> f64 {
         self.hess_g2_tol()
@@ -162,30 +174,37 @@ impl MnStrategy {
         self.hess_grad_ncycles
     }
 
+    /// Return the maximum Hessian gradient refinement cycle count.
     #[must_use]
     pub fn hessian_gradient_ncycles(&self) -> u32 {
         self.hess_grad_ncycles()
     }
 
+    /// Return the iteration storage level.
     #[must_use]
     pub fn storage_level(&self) -> u32 {
         self.store_level
     }
 
+    /// Return the central difference mixed derivative flag.
     #[must_use]
     pub fn hessian_central_fd_mixed_derivatives(&self) -> u32 {
         self.hess_cfd_g2
     }
 
+    /// Return the positive definite correction flag.
     #[must_use]
     pub fn hessian_force_pos_def(&self) -> u32 {
         self.hess_force_pos_def
     }
 
+    /// Set the maximum gradient refinement cycle count.
     pub fn set_gradient_ncycles(&mut self, ncycles: u32) {
         self.grad_ncycles = ncycles;
     }
 
+    /// Set the dimensionless gradient step tolerance.
+    /// Negative values are clamped to zero; values are rounded to the stored decimal precision.
     #[expect(
         clippy::cast_possible_truncation,
         reason = "keeps the operation order of the ROOT reference"
@@ -198,6 +217,8 @@ impl MnStrategy {
         self.grad_step_tol = (tol.max(0.0) * 10.0).round() as u32;
     }
 
+    /// Set the dimensionless gradient convergence tolerance.
+    /// Negative values are clamped to zero; values are rounded to the stored decimal precision.
     #[expect(
         clippy::cast_possible_truncation,
         reason = "keeps the operation order of the ROOT reference"
@@ -210,10 +231,13 @@ impl MnStrategy {
         self.grad_tol = (tol.max(0.0) * 100.0).round() as u32;
     }
 
+    /// Set the maximum Hessian refinement cycle count.
     pub fn set_hessian_ncycles(&mut self, ncycles: u32) {
         self.hess_ncycles = ncycles;
     }
 
+    /// Set the dimensionless Hessian step tolerance.
+    /// Negative values are clamped to zero; values are rounded to the stored decimal precision.
     #[expect(
         clippy::cast_possible_truncation,
         reason = "keeps the operation order of the ROOT reference"
@@ -226,6 +250,8 @@ impl MnStrategy {
         self.hess_step_tol = (tol.max(0.0) * 10.0).round() as u32;
     }
 
+    /// Set the dimensionless Hessian curvature tolerance.
+    /// Negative values are clamped to zero; values are rounded to the stored decimal precision.
     #[expect(
         clippy::cast_possible_truncation,
         reason = "keeps the operation order of the ROOT reference"
@@ -238,18 +264,22 @@ impl MnStrategy {
         self.hess_g2_tol = (tol.max(0.0) * 100.0).round() as u32;
     }
 
+    /// Set the maximum Hessian gradient refinement cycle count.
     pub fn set_hessian_gradient_ncycles(&mut self, ncycles: u32) {
         self.hess_grad_ncycles = ncycles;
     }
 
+    /// Set the central difference mixed derivative flag.
     pub fn set_hessian_central_fd_mixed_derivatives(&mut self, flag: u32) {
         self.hess_cfd_g2 = flag;
     }
 
+    /// Set the positive definite correction flag.
     pub fn set_hessian_force_pos_def(&mut self, flag: u32) {
         self.hess_force_pos_def = flag;
     }
 
+    /// Set the iteration storage level.
     pub fn set_storage_level(&mut self, level: u32) {
         self.store_level = level;
     }
@@ -272,11 +302,13 @@ impl MnStrategy {
         self.strategy >= 2
     }
 
+    /// Return whether the stored strategy level is at least three.
     #[must_use]
     pub fn is_very_high(&self) -> bool {
         self.strategy >= 3
     }
 
+    /// Apply the high strategy settings and store level three.
     pub fn set_very_high_strategy(&mut self) {
         self.set_high_strategy();
         self.strategy = 3;

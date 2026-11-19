@@ -1,3 +1,4 @@
+//! Checks covariance transformations against ROOT reference behavior.
 use minuit2::MnUserParameters;
 use nalgebra::DMatrix;
 

@@ -63,6 +63,7 @@ harness = false
 all-features = true
 
 [lints.rust]
+missing_docs = "deny"
 # No module allows unsafe code, the Python bindings included.
 unsafe_code = "deny"
 

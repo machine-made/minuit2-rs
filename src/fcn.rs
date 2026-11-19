@@ -1,14 +1,32 @@
-/// Function to be minimized.
+/// Coordinate space used for supplied derivatives.
+/// # Examples
 ///
-/// The core trait that users implement. `error_def()` returns the change in FCN
-/// that corresponds to one standard deviation (1.0 for chi-square, 0.5 for
-/// log-likelihood).
+/// ```
+/// use minuit2::fcn::GradientParameterSpace;
+/// use minuit2::FCN;
+/// let f = |p: &[f64]| p[0] * p[0];
+/// assert_eq!(f.grad_parameter_space(), GradientParameterSpace::External);
+/// ```
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum GradientParameterSpace {
+    /// Derivatives with respect to variable internal coordinates.
     Internal,
+    /// Derivatives with respect to all external parameters.
     External,
 }
 
+/// Objective function with an error definition and optional derivative information.
+///
+/// `error_def` gives the objective change used for uncertainties: one for chi-square, or one half for negative log likelihood.
+/// Parameter values use external coordinates and units chosen by the caller.
+/// # Examples
+///
+/// ```
+/// use minuit2::FCN;
+/// let f = |p: &[f64]| p[0] * p[0];
+/// assert!((f.value(&[2.0]) - 4.0).abs() < 1e-12);
+/// assert!((f.error_def() - 1.0).abs() < 1e-12);
+/// ```
 pub trait FCN {
     /// Evaluate the function at the given parameter values.
     fn value(&self, par: &[f64]) -> f64;
@@ -81,6 +99,19 @@ where
 }
 
 /// FCN that also provides analytical gradients.
+/// # Examples
+///
+/// ```
+/// use minuit2::{FCN, FCNGradient};
+/// struct Square;
+/// impl FCN for Square {
+///     fn value(&self, p: &[f64]) -> f64 { p[0] * p[0] }
+/// }
+/// impl FCNGradient for Square {
+///     fn gradient(&self, p: &[f64]) -> Vec<f64> { vec![2.0 * p[0]] }
+/// }
+/// assert_eq!(Square.gradient(&[3.0]), vec![6.0]);
+/// ```
 pub trait FCNGradient: FCN {
     /// Compute the gradient vector at the given parameter values.
     fn gradient(&self, par: &[f64]) -> Vec<f64>;

@@ -17,6 +17,14 @@ use crate::strategy::MnStrategy;
 use crate::user_parameters::MnUserParameters;
 
 /// Builder for configuring and running hybrid Simplex+Migrad minimization.
+/// # Examples
+///
+/// ```
+/// use minuit2::MnMinimize;
+/// let f = |p: &[f64]| (p[0] - 1.0).powi(2);
+/// let minimum = MnMinimize::new().add("x", 0.0, 0.1).tolerance(1e-8).minimize(&f);
+/// assert!((minimum.params()[0] - 1.0).abs() < 1e-3);
+/// ```
 pub struct MnMinimize {
     params: MnUserParameters,
     strategy: MnStrategy,
@@ -98,6 +106,9 @@ impl MnMinimize {
     }
 
     /// Fix parameter by index.
+    ///
+    /// # Panics
+    /// Panics if the external parameter index is out of range.
     #[must_use]
     pub fn fix(mut self, ext: usize) -> Self {
         self.params.fix(ext);
@@ -133,6 +144,14 @@ impl MnMinimize {
     /// 2) If Migrad fails, run Simplex with strategy 2.
     /// 3) If Simplex succeeds, run Migrad again from that point (strategy 2).
     /// 4) If second Migrad fails, return the Simplex minimum.
+    /// # Examples
+    ///
+    /// ```
+    /// use minuit2::MnMinimize;
+    /// let f = |p: &[f64]| (p[0] - 1.0).powi(2);
+    /// let minimum = MnMinimize::new().add("x", 0.0, 0.1).tolerance(1e-8).minimize(&f);
+    /// assert!((minimum.params()[0] - 1.0).abs() < 1e-3);
+    /// ```
     pub fn minimize(&self, fcn: &dyn FCN) -> FunctionMinimum {
         let n = self.params.variable_parameters();
         let max_fcn = self.max_fcn.unwrap_or_else(|| default_max_fcn(n));

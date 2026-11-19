@@ -1,6 +1,12 @@
 /// Machine precision of the numerical steps.
 ///
 /// `eps` is four times `f64::EPSILON`. `eps2` is `2 * sqrt(eps)`.
+/// # Examples
+///
+/// ```
+/// use minuit2::MnMachinePrecision;
+/// assert!(MnMachinePrecision::new().eps() > f64::EPSILON);
+/// ```
 #[derive(Debug, Clone, Copy)]
 pub struct MnMachinePrecision {
     eps: f64,

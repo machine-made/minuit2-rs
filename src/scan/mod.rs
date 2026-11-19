@@ -23,6 +23,14 @@ use rayon::prelude::*;
 /// pre-pass for bad starting values, often before running `MnMigrad`.  `SCAn` does
 /// not calculate parameter errors or a covariance matrix; run `MnHesse` after it
 /// when uncertainties are needed.
+/// # Examples
+///
+/// ```
+/// use minuit2::MnScanMinimizer;
+/// let f = |p: &[f64]| p[0] * p[0];
+/// let minimum = MnScanMinimizer::new().add("x", 0.0, 0.1).minimize(&f);
+/// assert!(minimum.fval().abs() < 1e-3);
+/// ```
 pub struct MnScanMinimizer {
     params: MnUserParameters,
     strategy: MnStrategy,
@@ -76,6 +84,14 @@ impl MnScanMinimizer {
     }
 
     /// Run the `SCAn` minimization.
+    /// # Examples
+    ///
+    /// ```
+    /// use minuit2::MnScanMinimizer;
+    /// let f = |p: &[f64]| p[0] * p[0];
+    /// let minimum = MnScanMinimizer::new().add("x", 0.0, 0.1).minimize(&f);
+    /// assert!(minimum.fval().abs() < 1e-3);
+    /// ```
     pub fn minimize(&self, fcn: &dyn FCN) -> FunctionMinimum {
         let n = self.params.variable_parameters();
         let max_fcn = self.max_fcn.unwrap_or_else(|| default_max_fcn(n));
@@ -92,6 +108,16 @@ impl Default for MnScanMinimizer {
 }
 
 /// Low-level 1D parameter scan.
+/// # Examples
+///
+/// ```
+/// use minuit2::{MnUserParameters, scan::MnParameterScan};
+/// let f = |p: &[f64]| p[0] * p[0];
+/// let mut params = MnUserParameters::new();
+/// params.add("x", 0.0, 0.1);
+/// let mut scan = MnParameterScan::new(&f, params, 0.0);
+/// assert_eq!(scan.scan(0, 10, -1.0, 1.0).len(), 11);
+/// ```
 pub struct MnParameterScan<'a, F: FCN + ?Sized> {
     fcn: &'a F,
     params: MnUserParameters,
@@ -99,20 +125,49 @@ pub struct MnParameterScan<'a, F: FCN + ?Sized> {
 }
 
 impl<'a, F: FCN + ?Sized> MnParameterScan<'a, F> {
+    /// Start a scan with user parameters and their known objective value.
     pub fn new(fcn: &'a F, params: MnUserParameters, fval: f64) -> Self {
         Self { fcn, params, fval }
     }
 
-    /// Scan parameter `par` over `nsteps` points between `low` and `high`.
+    /// Scan an external parameter, returning pairs of external values and objective values.
     ///
-    /// If `low == high == 0.0`, auto-range to +/- 2*error.
-    /// Returns `Vec<(parameter_value, function_value)>`.
-    /// Updates internal fval and param value if a better point is found.
+    /// `nsteps` is clamped to 2 through 101 intervals; both endpoints are included.
+    /// Nearly equal bounds select the current value plus or minus twice its error.
+    /// Bounds are clipped to parameter limits. The best value updates this scanner.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use minuit2::{MnUserParameters, scan::MnParameterScan};
+    /// let f = |p: &[f64]| p[0] * p[0];
+    /// let mut params = MnUserParameters::new();
+    /// params.add("x", 0.0, 0.1);
+    /// let mut scan = MnParameterScan::new(&f, params, 0.0);
+    /// assert_eq!(scan.scan(0, 10, -1.0, 1.0).len(), 11);
+    /// ```
+    ///
+    /// # Panics
+    /// Panics if the external parameter index is out of range.
     pub fn scan(&mut self, par: usize, nsteps: usize, low: f64, high: f64) -> Vec<(f64, f64)> {
         self.scan_serial(par, nsteps, low, high)
     }
 
     /// Serial implementation of 1D scan.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use minuit2::{MnUserParameters, scan::MnParameterScan};
+    /// let f = |p: &[f64]| p[0] * p[0];
+    /// let mut params = MnUserParameters::new();
+    /// params.add("x", 0.0, 0.1);
+    /// let mut scan = MnParameterScan::new(&f, params, 0.0);
+    /// assert_eq!(scan.scan_serial(0, 10, -1.0, 1.0).len(), 11);
+    /// ```
+    ///
+    /// # Panics
+    /// Panics if the external parameter index is out of range.
     pub fn scan_serial(
         &mut self,
         par: usize,
@@ -128,6 +183,23 @@ impl<'a, F: FCN + ?Sized> MnParameterScan<'a, F> {
     }
 
     /// Parallel implementation of 1D scan (requires `parallel` feature).
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # #[cfg(feature = "parallel")]
+    /// # {
+    /// use minuit2::{MnUserParameters, scan::MnParameterScan};
+    /// let f = |p: &[f64]| p[0] * p[0];
+    /// let mut params = MnUserParameters::new();
+    /// params.add("x", 0.0, 0.1);
+    /// let mut scan = MnParameterScan::new(&f, params, 0.0);
+    /// assert_eq!(scan.scan_parallel(0, 10, -1.0, 1.0).len(), 11);
+    /// # }
+    /// ```
+    ///
+    /// # Panics
+    /// Panics if the external parameter index is out of range.
     #[cfg(feature = "parallel")]
     pub fn scan_parallel(
         &mut self,
@@ -270,6 +342,15 @@ impl<'a, F: FCN + ?Sized> MnParameterScan<'a, F> {
 }
 
 /// High-level scan builder working with a `FunctionMinimum`.
+/// # Examples
+///
+/// ```
+/// use minuit2::MnMigrad;
+/// let f = |p: &[f64]| (p[0] - 1.0).powi(2);
+/// let minimum = MnMigrad::new().add("x", 0.0, 0.1).minimize(&f);
+/// let points = minuit2::MnScan::new(&f, &minimum).scan(0, 10, 0.0, 2.0);
+/// assert_eq!(points.len(), 11);
+/// ```
 pub struct MnScan<'a, F: FCN + ?Sized> {
     fcn: &'a F,
     minimum: &'a FunctionMinimum,
@@ -281,15 +362,43 @@ impl<'a, F: FCN + ?Sized> MnScan<'a, F> {
         Self { fcn, minimum }
     }
 
-    /// Scan parameter `par` over `nsteps` points.
+    /// Scan an external parameter, returning pairs of external values and objective values.
     ///
-    /// If `low == high == 0.0`, auto-range to +/- 2*error.
+    /// `nsteps` is clamped to 2 through 101 intervals; both endpoints are included.
+    /// Nearly equal bounds select the current value plus or minus twice its error.
+    /// Bounds are clipped to parameter limits.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use minuit2::MnMigrad;
+    /// let f = |p: &[f64]| (p[0] - 1.0).powi(2);
+    /// let minimum = MnMigrad::new().add("x", 0.0, 0.1).minimize(&f);
+    /// let points = minuit2::MnScan::new(&f, &minimum).scan(0, 10, 0.0, 2.0);
+    /// assert_eq!(points.len(), 11);
+    /// ```
+    ///
+    /// # Panics
+    /// Panics if the external parameter index is out of range.
     #[must_use]
     pub fn scan(&self, par: usize, nsteps: usize, low: f64, high: f64) -> Vec<(f64, f64)> {
         self.scan_serial(par, nsteps, low, high)
     }
 
     /// Serial scan implementation.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use minuit2::MnMigrad;
+    /// let f = |p: &[f64]| (p[0] - 1.0).powi(2);
+    /// let minimum = MnMigrad::new().add("x", 0.0, 0.1).minimize(&f);
+    /// let points = minuit2::MnScan::new(&f, &minimum).scan_serial(0, 10, 0.0, 2.0);
+    /// assert_eq!(points.len(), 11);
+    /// ```
+    ///
+    /// # Panics
+    /// Panics if the external parameter index is out of range.
     #[must_use]
     pub fn scan_serial(&self, par: usize, nsteps: usize, low: f64, high: f64) -> Vec<(f64, f64)> {
         let mut scanner =
@@ -298,6 +407,22 @@ impl<'a, F: FCN + ?Sized> MnScan<'a, F> {
     }
 
     /// Parallel scan implementation (requires `parallel` feature).
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # #[cfg(feature = "parallel")]
+    /// # {
+    /// use minuit2::MnMigrad;
+    /// let f = |p: &[f64]| (p[0] - 1.0).powi(2);
+    /// let minimum = MnMigrad::new().add("x", 0.0, 0.1).minimize(&f);
+    /// let points = minuit2::MnScan::new(&f, &minimum).scan_parallel(0, 10, 0.0, 2.0);
+    /// assert_eq!(points.len(), 11);
+    /// # }
+    /// ```
+    ///
+    /// # Panics
+    /// Panics if the external parameter index is out of range.
     #[cfg(feature = "parallel")]
     #[must_use]
     pub fn scan_parallel(&self, par: usize, nsteps: usize, low: f64, high: f64) -> Vec<(f64, f64)>

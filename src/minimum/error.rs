@@ -1,11 +1,19 @@
 //! Error matrix (inverse Hessian) at the minimum.
 //!
-//! The error matrix is the covariance matrix in internal parameter space.
+//! The stored matrix is an internal inverse Hessian.
+//! External covariance also needs the coordinate Jacobian and scaling by twice the objective error definition.
 //! Status flags track how it was obtained and whether it is reliable.
 
 use nalgebra::DMatrix;
 
 /// How the error matrix was obtained.
+/// # Examples
+///
+/// ```
+/// use minuit2::minimum::error::{MinimumError, ErrorMatrixStatus};
+/// let e = MinimumError::from_diagonal(1);
+/// assert_eq!(e.status(), ErrorMatrixStatus::ApproximateFromSteps);
+/// ```
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ErrorMatrixStatus {
     /// Not calculated yet.
@@ -18,6 +26,16 @@ pub enum ErrorMatrixStatus {
     Accurate,
 }
 
+/// Internal inverse Hessian with flags describing its availability and validity.
+/// # Examples
+///
+/// ```
+/// use minuit2::minimum::error::MinimumError;
+/// use nalgebra::DMatrix;
+/// let error = MinimumError::new(DMatrix::identity(2, 2), 0.0);
+/// assert!(error.is_accurate());
+/// assert_eq!(error.matrix().nrows(), 2);
+/// ```
 #[derive(Debug, Clone)]
 #[expect(
     clippy::struct_excessive_bools,
@@ -43,7 +61,7 @@ pub struct MinimumError {
 }
 
 impl MinimumError {
-    /// Create an approximate error matrix from a diagonal (step sizes squared).
+    /// Create an identity inverse Hessian marked as an approximation from steps.
     #[must_use]
     pub fn from_diagonal(n: usize) -> Self {
         Self {
@@ -89,11 +107,13 @@ impl MinimumError {
         }
     }
 
+    /// Return the internal inverse Hessian, before scaling by twice the objective error definition.
     #[must_use]
     pub fn matrix(&self) -> &DMatrix<f64> {
         &self.matrix
     }
 
+    /// Return the dimensionless covariance change estimate.
     #[must_use]
     pub fn dcovar(&self) -> f64 {
         self.dcovar
@@ -105,10 +125,12 @@ impl MinimumError {
         self.status
     }
 
+    /// Set how the matrix was obtained.
     pub fn set_status(&mut self, status: ErrorMatrixStatus) {
         self.status = status;
     }
 
+    /// Return whether the inverse Hessian is marked valid.
     #[must_use]
     pub fn is_valid(&self) -> bool {
         self.valid
@@ -120,6 +142,7 @@ impl MinimumError {
         self.status == ErrorMatrixStatus::Accurate && !self.reached_call_limit
     }
 
+    /// Return whether no positive definite correction was made; this does not check eigenvalues.
     #[must_use]
     pub fn is_pos_def(&self) -> bool {
         !self.made_pos_def
@@ -131,6 +154,7 @@ impl MinimumError {
         self.hesse_failed
     }
 
+    /// Set the Hessian failure flag and clear validity when it is true.
     pub fn set_hesse_failed(&mut self, failed: bool) {
         self.hesse_failed = failed;
         if failed {
@@ -138,16 +162,19 @@ impl MinimumError {
         }
     }
 
+    /// Return whether matrix inversion failed.
     #[must_use]
     pub fn invert_failed(&self) -> bool {
         self.invert_failed
     }
 
+    /// Return whether matrix construction reached its call limit.
     #[must_use]
     pub fn has_reached_call_limit(&self) -> bool {
         self.reached_call_limit
     }
 
+    /// Set the call limit flag and clear validity when it is true.
     pub fn set_reached_call_limit(&mut self, reached: bool) {
         self.reached_call_limit = reached;
         if reached {
@@ -155,21 +182,25 @@ impl MinimumError {
         }
     }
 
+    /// Return the matrix validity flag, also used to report availability.
     #[must_use]
     pub fn is_available(&self) -> bool {
         self.valid
     }
 
+    /// Return whether the matrix was forced positive definite.
     #[must_use]
     pub fn is_made_pos_def(&self) -> bool {
         self.made_pos_def
     }
 
+    /// Return the inversion failure flag; this does not check eigenvalues.
     #[must_use]
     pub fn is_not_pos_def(&self) -> bool {
         self.invert_failed
     }
 
+    /// Set the positive definite correction flag and update the matrix status.
     pub fn set_made_pos_def(&mut self, made: bool) {
         self.made_pos_def = made;
         if made {
@@ -177,6 +208,7 @@ impl MinimumError {
         }
     }
 
+    /// Set the inversion failure flag and clear validity when it is true.
     pub fn set_invert_failed(&mut self, failed: bool) {
         self.invert_failed = failed;
         if failed {

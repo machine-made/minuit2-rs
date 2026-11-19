@@ -21,10 +21,29 @@ use crate::user_transformation::MnUserTransformation;
 use super::gradient::HessianGradientCalculator;
 
 /// Result of a Hesse calculation.
+/// # Examples
+///
+/// ```
+/// use minuit2::{MinuitParameter, MnStrategy, MnUserTransformation};
+/// use minuit2::mn_fcn::MnFcn;
+/// let trafo = MnUserTransformation::new(vec![MinuitParameter::new(0, "x", 0.0, 0.1)]);
+/// let f = |p: &[f64]| (p[0] - 1.0).powi(2);
+/// let fcn = MnFcn::new(&f, &trafo);
+/// let strategy = MnStrategy::default();
+/// let seed = minuit2::migrad::seed::MigradSeedGenerator::generate(&fcn, &trafo, &strategy);
+/// let result = minuit2::hesse::calculator::calculate(&fcn, seed.state(), &trafo, &strategy, 1000);
+/// assert!(!result.hesse_failed);
+/// assert!(!result.invert_failed);
+/// assert!(result.state.error().is_valid());
+/// ```
 pub struct HesseResult {
+    /// Updated internal minimization state.
     pub state: MinimumState,
+    /// Whether Hessian construction failed.
     pub hesse_failed: bool,
+    /// Whether Hessian inversion failed.
     pub invert_failed: bool,
+    /// Whether the Hessian required a positive definite correction.
     pub made_pos_def: bool,
 }
 

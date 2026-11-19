@@ -1,3 +1,4 @@
+//! Provides shared assertions for the minimization result display.
 use std::fmt::Display;
 
 /// Shared assertion for the `FunctionMinimum` `Display` contract.

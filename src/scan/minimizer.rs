@@ -7,9 +7,23 @@ use crate::mn_fcn::MnFcn;
 use crate::strategy::MnStrategy;
 use crate::user_transformation::MnUserTransformation;
 
+/// Compose seed generation and coordinate scanning.
+/// # Examples
+///
+/// ```
+/// use minuit2::{MinuitParameter, MnStrategy, MnUserTransformation};
+/// use minuit2::mn_fcn::MnFcn;
+/// let trafo = MnUserTransformation::new(vec![MinuitParameter::new(0, "x", 0.0, 0.1)]);
+/// let f = |p: &[f64]| (p[0] - 1.0).powi(2);
+/// let fcn = MnFcn::new(&f, &trafo);
+/// let strategy = MnStrategy::default();
+/// let minimum = minuit2::scan::minimizer::ScanMinimizer::minimize(&fcn, &trafo, &strategy, 1000);
+/// assert!(minimum.fval() < 1.0);
+/// ```
 pub struct ScanMinimizer;
 
 impl ScanMinimizer {
+    /// Generate a seed, scan each variable coordinate, and return the resulting minimum.
     pub fn minimize(
         fcn: &MnFcn,
         trafo: &MnUserTransformation,

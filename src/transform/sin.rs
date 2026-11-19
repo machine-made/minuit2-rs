@@ -10,9 +10,19 @@ use crate::precision::MnMachinePrecision;
 /// `x = lower + (upper - lower) * (sin(theta) + 1) / 2`.
 /// Near exact bounds, the inverse is clamped away from `+/- pi/2` so the
 /// derivative remains numerically usable.
+/// # Examples
+///
+/// ```
+/// use minuit2::transform::{SinTransform, ParameterTransform};
+/// use minuit2::MnMachinePrecision;
+/// let t = SinTransform;
+/// let internal = t.ext2int(2.0, 4.0, 0.0, &MnMachinePrecision::new());
+/// assert!((t.int2ext(internal, 4.0, 0.0) - 2.0).abs() < 1e-12);
+/// ```
 pub struct SinTransform;
 
 impl SinTransform {
+    /// Return the derivative of the internal coordinate with respect to the external value.
     #[must_use]
     pub fn dext2int(&self, value: f64, upper: f64, lower: f64, prec: &MnMachinePrecision) -> f64 {
         let int = self.ext2int(value, upper, lower, prec);

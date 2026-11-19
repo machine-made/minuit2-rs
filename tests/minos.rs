@@ -1,3 +1,4 @@
+//! Tests asymmetric MINOS errors and crossing status flags.
 use minuit2::{MnHesse, MnMigrad, MnMinos};
 
 /// Symmetric case: Gaussian/quadratic fit → Minos errors ≈ Hesse errors.

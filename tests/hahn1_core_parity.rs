@@ -1,3 +1,4 @@
+//! Checks the Hahn1 fit against ROOT and the NIST certified solution.
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::path::{Path, PathBuf};

@@ -1,3 +1,4 @@
+//! Checks the upper limited quadratic objective call sequence against ROOT.
 use std::cell::RefCell;
 
 use minuit2::{FCN, MnMigrad};

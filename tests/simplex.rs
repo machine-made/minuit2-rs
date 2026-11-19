@@ -1,3 +1,4 @@
+//! Tests Simplex convergence, fixed parameters, and result reporting.
 mod common;
 
 use minuit2::{FCN, MnSimplex};

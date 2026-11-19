@@ -7,6 +7,17 @@ use super::error::MinimumError;
 use super::gradient::FunctionGradient;
 use super::parameters::MinimumParameters;
 
+/// Parameters, derivatives, inverse Hessian, objective distance, and call count at one iteration.
+/// # Examples
+///
+/// ```
+/// use minuit2::minimum::{parameters::MinimumParameters, state::MinimumState};
+/// use nalgebra::DVector;
+/// let p = MinimumParameters::new(DVector::from_vec(vec![0.0]), 0.0);
+/// let state = MinimumState::from_params_edm(p, 0.01, 3);
+/// assert_eq!(state.nfcn(), 3);
+/// assert_eq!(state.size(), 1);
+/// ```
 #[derive(Debug, Clone)]
 pub struct MinimumState {
     parameters: MinimumParameters,
@@ -17,6 +28,7 @@ pub struct MinimumState {
 }
 
 impl MinimumState {
+    /// Combine internal parameters, inverse Hessian, gradient, objective distance, and cumulative call count.
     #[must_use]
     pub fn new(
         parameters: MinimumParameters,
@@ -34,8 +46,7 @@ impl MinimumState {
         }
     }
 
-    /// Create a minimal state with just parameters (no gradient/error info).
-    /// Used by Simplex which doesn't compute a Hessian.
+    /// Create a state with zero derivative vectors and an approximate identity inverse Hessian.
     #[must_use]
     pub fn from_params_edm(parameters: MinimumParameters, edm: f64, nfcn: usize) -> Self {
         let n = parameters.vec().len();
@@ -70,36 +81,43 @@ impl MinimumState {
         &self.gradient
     }
 
+    /// Return the objective value.
     #[must_use]
     pub fn fval(&self) -> f64 {
         self.parameters.fval()
     }
 
+    /// Return the estimated distance to the minimum, in objective units.
     #[must_use]
     pub fn edm(&self) -> f64 {
         self.edm
     }
 
+    /// Return the number of objective evaluations.
     #[must_use]
     pub fn nfcn(&self) -> usize {
         self.nfcn
     }
 
+    /// Return whether the stored parameters are valid.
     #[must_use]
     pub fn is_valid(&self) -> bool {
         self.parameters.is_valid()
     }
 
+    /// Return true; every state stores a parameter object.
     #[must_use]
     pub fn has_parameters(&self) -> bool {
         true
     }
 
+    /// Return whether an inverse Hessian is available.
     #[must_use]
     pub fn has_covariance(&self) -> bool {
         self.error.is_available()
     }
 
+    /// Return the number of internal parameters.
     #[must_use]
     pub fn size(&self) -> usize {
         self.parameters.vec().len()

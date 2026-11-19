@@ -1,3 +1,4 @@
+//! Tests how Migrad and Hesse results behave under equivalent objective transformations.
 use minuit2::{MnHesse, MnMigrad};
 
 fn assert_close(got: f64, want: f64, tol: f64, label: &str) {

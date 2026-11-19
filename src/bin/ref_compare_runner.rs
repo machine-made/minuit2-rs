@@ -1,3 +1,5 @@
+//! Run local numerical reference comparisons from command line arguments.
+
 use minuit2::{
     FCN, FCNGradient, MnContours, MnHesse, MnMigrad, MnMinimize, MnMinos, MnScan, MnSimplex,
 };

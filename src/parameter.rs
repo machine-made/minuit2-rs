@@ -2,6 +2,16 @@
 ///
 /// Parameters can be free, fixed, or constant.
 /// "Constant" means permanently fixed (never released during minimization).
+/// # Examples
+///
+/// ```
+/// use minuit2::MinuitParameter;
+/// let mut x = MinuitParameter::new(0, "x", 2.0, 0.1);
+/// x.fix();
+/// assert!(x.is_fixed());
+/// x.release();
+/// assert!(!x.is_fixed());
+/// ```
 #[derive(Debug, Clone)]
 #[expect(
     clippy::struct_excessive_bools,
@@ -120,34 +130,41 @@ impl MinuitParameter {
         }
     }
 
+    /// Return the external parameter index.
     #[must_use]
     pub fn number(&self) -> usize {
         self.num
     }
 
+    /// Return the parameter name.
     #[must_use]
     pub fn name(&self) -> &str {
         &self.name
     }
 
+    /// Set the parameter name.
     pub fn set_name(&mut self, name: impl Into<String>) {
         self.name = name.into();
     }
 
+    /// Return the parameter value in external coordinates.
     #[must_use]
     pub fn value(&self) -> f64 {
         self.value
     }
 
+    /// Return the parameter error in external coordinates.
     #[must_use]
     pub fn error(&self) -> f64 {
         self.error
     }
 
+    /// Set the parameter value in external coordinates.
     pub fn set_value(&mut self, val: f64) {
         self.value = val;
     }
 
+    /// Set the parameter error in external coordinates.
     pub fn set_error(&mut self, err: f64) {
         self.error = err;
     }
@@ -165,41 +182,49 @@ impl MinuitParameter {
         self.upper_limit = upper;
     }
 
+    /// Set the lower bound in external coordinates.
     pub fn set_lower_limit(&mut self, lower: f64) {
         self.has_lower_limit = true;
         self.lower_limit = lower;
     }
 
+    /// Set the upper bound in external coordinates.
     pub fn set_upper_limit(&mut self, upper: f64) {
         self.has_upper_limit = true;
         self.upper_limit = upper;
     }
 
+    /// Remove both parameter bounds.
     pub fn remove_limits(&mut self) {
         self.has_lower_limit = false;
         self.has_upper_limit = false;
     }
 
+    /// Return whether a lower bound is set.
     #[must_use]
     pub fn has_lower_limit(&self) -> bool {
         self.has_lower_limit
     }
 
+    /// Return whether an upper bound is set.
     #[must_use]
     pub fn has_upper_limit(&self) -> bool {
         self.has_upper_limit
     }
 
+    /// Return whether both bounds are set.
     #[must_use]
     pub fn has_limits(&self) -> bool {
         self.has_lower_limit && self.has_upper_limit
     }
 
+    /// Return the stored lower bound; check `has_lower_limit` before using it.
     #[must_use]
     pub fn lower_limit(&self) -> f64 {
         self.lower_limit
     }
 
+    /// Return the stored upper bound; check `has_upper_limit` before using it.
     #[must_use]
     pub fn upper_limit(&self) -> f64 {
         self.upper_limit
@@ -207,21 +232,25 @@ impl MinuitParameter {
 
     // --- Fixed/Const ---
 
+    /// Exclude the parameter from subsequent minimization steps.
     pub fn fix(&mut self) {
         self.is_fixed = true;
     }
 
+    /// Release a fixed parameter unless it is constant.
     pub fn release(&mut self) {
         if !self.is_const {
             self.is_fixed = false;
         }
     }
 
+    /// Return whether the parameter is fixed.
     #[must_use]
     pub fn is_fixed(&self) -> bool {
         self.is_fixed
     }
 
+    /// Return whether the parameter is constant.
     #[must_use]
     pub fn is_const(&self) -> bool {
         self.is_const

@@ -6,6 +6,17 @@
 use super::cross::MnCross;
 
 /// Asymmetric MINOS errors for a single parameter.
+/// # Examples
+///
+/// ```
+/// use minuit2::MnMigrad;
+/// let f = |p: &[f64]| (p[0] - 1.0).powi(2);
+/// let minimum = MnMigrad::new().add("x", 0.0, 0.1).minimize(&f);
+/// let errors = minuit2::MnMinos::new(&f, &minimum).minos(0);
+/// assert!(errors.is_valid());
+/// assert!(errors.lower_error() < 0.0);
+/// assert!(errors.upper_error() > 0.0);
+/// ```
 #[derive(Debug, Clone)]
 pub struct MinosError {
     /// External parameter index.
@@ -21,6 +32,7 @@ pub struct MinosError {
 }
 
 impl MinosError {
+    /// Store both crossings, the external parameter index, the minimum value, and its parabolic error.
     #[must_use]
     pub fn new(
         parameter: usize,
@@ -62,16 +74,19 @@ impl MinosError {
         }
     }
 
+    /// Return the external parameter index.
     #[must_use]
     pub fn parameter(&self) -> usize {
         self.parameter
     }
 
+    /// Return the lower crossing result.
     #[must_use]
     pub fn lower(&self) -> &MnCross {
         &self.lower
     }
 
+    /// Return the upper crossing result.
     #[must_use]
     pub fn upper(&self) -> &MnCross {
         &self.upper
@@ -83,11 +98,13 @@ impl MinosError {
         self.lower.is_valid() && self.upper.is_valid()
     }
 
+    /// Return whether the lower crossing is valid.
     #[must_use]
     pub fn lower_valid(&self) -> bool {
         self.lower.is_valid()
     }
 
+    /// Return whether the upper crossing is valid.
     #[must_use]
     pub fn upper_valid(&self) -> bool {
         self.upper.is_valid()
@@ -105,26 +122,31 @@ impl MinosError {
         self.upper.at_limit()
     }
 
+    /// Return whether the lower crossing reached its call limit.
     #[must_use]
     pub fn at_lower_max_fcn(&self) -> bool {
         self.lower.at_max_fcn()
     }
 
+    /// Return whether the upper crossing reached its call limit.
     #[must_use]
     pub fn at_upper_max_fcn(&self) -> bool {
         self.upper.at_max_fcn()
     }
 
+    /// Return whether the lower search found a new minimum.
     #[must_use]
     pub fn lower_new_min(&self) -> bool {
         self.lower.new_minimum()
     }
 
+    /// Return whether the upper search found a new minimum.
     #[must_use]
     pub fn upper_new_min(&self) -> bool {
         self.upper.new_minimum()
     }
 
+    /// Return the number of objective evaluations.
     #[must_use]
     pub fn nfcn(&self) -> usize {
         self.lower.nfcn() + self.upper.nfcn()

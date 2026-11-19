@@ -1,3 +1,4 @@
+//! Tests default minimizer tolerances and function call budgets.
 use minuit2::application::{DEFAULT_TOLERANCE, default_max_fcn};
 
 #[test]

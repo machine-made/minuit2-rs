@@ -5,6 +5,16 @@
 
 use nalgebra::DVector;
 
+/// Internal parameter values, objective value, and an optional step vector.
+/// # Examples
+///
+/// ```
+/// use minuit2::minimum::parameters::MinimumParameters;
+/// use nalgebra::DVector;
+/// let p = MinimumParameters::new(DVector::from_vec(vec![2.0]), 4.0);
+/// assert!(p.is_valid());
+/// assert!((p.fval() - 4.0).abs() < 1e-12);
+/// ```
 #[derive(Debug, Clone)]
 pub struct MinimumParameters {
     /// Parameter values in internal space.
@@ -45,31 +55,37 @@ impl MinimumParameters {
         }
     }
 
+    /// Return the internal parameter vector.
     #[must_use]
     pub fn vec(&self) -> &DVector<f64> {
         &self.vec
     }
 
+    /// Return the stored step vector in internal coordinates.
     #[must_use]
     pub fn step(&self) -> &DVector<f64> {
         &self.step
     }
 
+    /// Return the objective value.
     #[must_use]
     pub fn fval(&self) -> f64 {
         self.fval
     }
 
+    /// Return the stored point validity flag.
     #[must_use]
     pub fn is_valid(&self) -> bool {
         self.valid
     }
 
+    /// Return whether a step vector was supplied.
     #[must_use]
     pub fn has_step(&self) -> bool {
         self.has_step
     }
 
+    /// Return whether a step vector was supplied.
     #[must_use]
     pub fn has_step_size(&self) -> bool {
         self.has_step()

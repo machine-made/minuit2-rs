@@ -1,3 +1,4 @@
+//! Tests numerical Migrad minimization and result reporting.
 use nalgebra::DVector;
 mod common;
 

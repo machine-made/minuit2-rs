@@ -1,3 +1,4 @@
+//! Tests contour points and MINOS errors for quadratic objectives.
 use minuit2::MnMinos;
 use minuit2::{MnContours, MnHesse, MnMigrad};
 

@@ -6,6 +6,15 @@
 use crate::user_parameter_state::MnUserParameterState;
 
 /// Result of searching for one crossing point (upper or lower).
+/// # Examples
+///
+/// ```
+/// use minuit2::minos::MnCross;
+/// let crossing = MnCross::call_limit_reached(25);
+/// assert!(crossing.at_max_fcn());
+/// assert!(!crossing.is_valid());
+/// assert_eq!(crossing.nfcn(), 25);
+/// ```
 #[derive(Debug, Clone)]
 #[expect(
     clippy::struct_excessive_bools,
@@ -105,11 +114,13 @@ impl MnCross {
         self.value
     }
 
+    /// Return the external parameter state at the crossing.
     #[must_use]
     pub fn state(&self) -> &MnUserParameterState {
         &self.state
     }
 
+    /// Return the number of objective evaluations.
     #[must_use]
     pub fn nfcn(&self) -> usize {
         self.nfcn
@@ -127,6 +138,7 @@ impl MnCross {
         self.is_at_limit
     }
 
+    /// Return whether the crossing search reached its call limit.
     #[must_use]
     pub fn at_max_fcn(&self) -> bool {
         self.is_at_max_fcn
