@@ -45,7 +45,7 @@ This ledger records currently observed differences from differential verificatio
 
 - Workload: `quadratic2_no_g2_migrad`.
 - Classification: `algorithmic/hessian-path`.
-- Severity: `low` (numerical metrics pass; call-count warning remains).
+- Severity: `low` (numerical metrics pass; call-count warning open).
 - Evidence programs: `tools/root_evidence/nfcn_accounting.cpp` and `tools/root_evidence/nfcn_accounting.rs` reuse the runners' objectives.
 - Stored output:
   - [nfcn_accounting_quadratic2_no_g2_migrad.root.json](raw/trace/nfcn_accounting_quadratic2_no_g2_migrad.root.json)
@@ -64,7 +64,9 @@ This ledger records currently observed differences from differential verificatio
   ROOT makes 1 seed and 1 iteration evaluation, with no objective calls during analytical Hesse.
   Rust adds the centre evaluation to match ROOT's numerical Hesse.
   The old Rust count omitted its seed and centre evaluations.
-- The relative difference is `10/12 = 0.833333`, above the unchanged threshold of `0.8`.
+- Before the call count included the seed and the centre call, Rust reported 10 calls against ROOT's 2.
+  That is a relative difference of exactly `0.8`, which does not exceed the threshold.
+  The honest count of 12 gives `10/12 = 0.833333`, above the unchanged threshold of `0.8`.
 - Disposition: leave the warning open. Using the supplied analytical Hessian in Hesse changes the numerical path.
   Matching ROOT's analytical path is a separate change. No waiver is added.
 

@@ -2,9 +2,9 @@
   "provenance": {
     "program": "tools/root_evidence/nfcn_accounting.cpp",
     "root_tag": "v6-36-08",
-    "library_build_command": null,
+    "library_build_command": "scripts/build_root_reference_runner.sh v6-36-08",
     "build_command": "g++ -O2 -g -rdynamic -std=c++23 -Ithird_party/root_ref/math/minuit2/inc tools/root_evidence/nfcn_accounting.cpp third_party/root_ref_build/minuit2/lib/libMinuit2.a third_party/root_ref_build/minuit2/lib/libMinuit2Math.a -lpthread -o target/nfcn-accounting-4/nfcn_accounting_root",
-    "command": "target/nfcn-accounting-4/nfcn_accounting_root --trace"
+    "command": "target/nfcn-accounting-4/nfcn_accounting_root --trace quadratic2_minos_before_minos"
   },
   "result": {
     "workload": "quadratic2_minos_before_minos",
