@@ -1,0 +1,42 @@
+{
+  "provenance": {
+    "program": "tools/root_evidence/nfcn_accounting.rs",
+    "root_tag": null,
+    "library_build_command": "cargo build --locked --lib --message-format=json",
+    "build_command": "CARGO_MANIFEST_DIR=. rustc --edition=2024 -g tools/root_evidence/nfcn_accounting.rs --extern minuit2=target/debug/libminuit2.rlib -L dependency=target/debug -L dependency=target/debug/build/approx/ae756affa66063e7/out -L dependency=target/debug/build/autocfg/db3ddf52084941e9/out -L dependency=target/debug/build/bytemuck/fb88dbf8f174cb20/out -L dependency=target/debug/build/matrixmultiply/07aca27ce1528356/out -L dependency=target/debug/build/matrixmultiply/21780b50a3c869f5/out -L dependency=target/debug/build/nalgebra-macros/93f5c15ad2200aa6/out -L dependency=target/debug/build/nalgebra/71486ad080791c7e/out -L dependency=target/debug/build/num-complex/19354f383e7fd3c6/out -L dependency=target/debug/build/num-integer/f7a05dbf37ad634c/out -L dependency=target/debug/build/num-rational/93ed78972d763baa/out -L dependency=target/debug/build/num-traits/afa7579ddca81479/out -L dependency=target/debug/build/num-traits/f858ef500fa974dd/out -L dependency=target/debug/build/paste/9152c0b747beafe0/out -L dependency=target/debug/build/paste/c7a2f9ff65452e58/out -L dependency=target/debug/build/proc-macro2/7087cafe3b79026b/out -L dependency=target/debug/build/proc-macro2/f2dcb255d983262e/out -L dependency=target/debug/build/quote/74c49a9aa759c326/out -L dependency=target/debug/build/quote/b450c34496a18f7a/out -L dependency=target/debug/build/rawpointer/828449d69d708521/out -L dependency=target/debug/build/safe_arch/ed4a5b6f2a78d439/out -L dependency=target/debug/build/simba/12069caa99492e09/out -L dependency=target/debug/build/syn/342075c7e8a4cd0a/out -L dependency=target/debug/build/typenum/29412cdfc22825a8/out -L dependency=target/debug/build/typenum/f94d76537903f5a8/out -L dependency=target/debug/build/unicode-ident/a78bc1677b239d69/out -L dependency=target/debug/build/wide/bc09ade96768e038/out -o target/nfcn-accounting-4/nfcn_accounting_rust",
+    "command": "target/nfcn-accounting-4/nfcn_accounting_rust --trace"
+  },
+  "result": {
+    "workload": "quadratic2_no_g2_migrad",
+    "reported_nfcn": 12,
+    "hessian_calls": 1,
+    "state_nfcn": [
+      2,
+      12
+    ],
+    "user_calls": 12,
+    "hesse_passes": 1,
+    "before_hesse": 2,
+    "phases": {
+      "hesse_centre": 1,
+      "hesse_diagonal": 8,
+      "hesse_mixed": 1,
+      "migrad_iteration": 1,
+      "seed": 1
+    },
+    "trace": [
+      {"call":1,"phase":"seed","p":[0.4,-1.0]},
+      {"call":2,"phase":"migrad_iteration","p":[1.0,-2.0]},
+      {"call":3,"phase":"hesse_centre","p":[1.0,-2.0]},
+      {"call":4,"phase":"hesse_diagonal","p":[1.01,-2.0]},
+      {"call":5,"phase":"hesse_diagonal","p":[0.99,-2.0]},
+      {"call":6,"phase":"hesse_diagonal","p":[1.015625,-2.0]},
+      {"call":7,"phase":"hesse_diagonal","p":[0.984375,-2.0]},
+      {"call":8,"phase":"hesse_diagonal","p":[1.0,-1.99]},
+      {"call":9,"phase":"hesse_diagonal","p":[1.0,-2.01]},
+      {"call":10,"phase":"hesse_diagonal","p":[1.0,-1.9843749999999998]},
+      {"call":11,"phase":"hesse_diagonal","p":[1.0,-2.015625]},
+      {"call":12,"phase":"hesse_mixed","p":[1.015625,-1.9843749999999998]}
+    ]
+  }
+}

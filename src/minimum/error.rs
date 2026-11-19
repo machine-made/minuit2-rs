@@ -88,8 +88,9 @@ impl MinimumError {
         self.valid
     }
 
+    /// An error matrix that stopped at the call limit is never accurate.
     pub fn is_accurate(&self) -> bool {
-        self.status == ErrorMatrixStatus::Accurate
+        self.status == ErrorMatrixStatus::Accurate && !self.reached_call_limit
     }
 
     pub fn is_pos_def(&self) -> bool {

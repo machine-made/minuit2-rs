@@ -1,0 +1,30 @@
+{
+  "provenance": {
+    "program": "tools/root_evidence/nfcn_accounting.cpp",
+    "root_tag": "v6-36-08",
+    "library_build_command": null,
+    "build_command": "g++ -O2 -g -rdynamic -std=c++23 -Ithird_party/root_ref/math/minuit2/inc tools/root_evidence/nfcn_accounting.cpp third_party/root_ref_build/minuit2/lib/libMinuit2.a third_party/root_ref_build/minuit2/lib/libMinuit2Math.a -lpthread -o target/nfcn-accounting-4/nfcn_accounting_root",
+    "command": "target/nfcn-accounting-4/nfcn_accounting_root --trace"
+  },
+  "result": {
+    "workload": "quadratic2_no_g2_migrad",
+    "reported_nfcn": 2,
+    "hessian_calls": 2,
+    "state_nfcn": [
+      1,
+      2,
+      2
+    ],
+    "user_calls": 2,
+    "hesse_passes": 0,
+    "before_hesse": 0,
+    "phases": {
+      "migrad_iteration": 1,
+      "seed": 1
+    },
+    "trace": [
+      {"call":1,"phase":"seed","p":[0.4,-1]},
+      {"call":2,"phase":"migrad_iteration","p":[1,-2]}
+    ]
+  }
+}

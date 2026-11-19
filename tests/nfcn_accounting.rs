@@ -195,3 +195,17 @@ fn failed_hesse_errors_keep_running_count() {
     assert_eq!(result.nfcn(), f.calls.get());
     assert_eq!(result.errors(), minimum.user_state().errors());
 }
+
+#[test]
+fn hesse_call_limit_error_is_neither_accurate_nor_valid() {
+    let f = CountedQuadratic::default();
+    let minimum = migrad(1, 420).minimize(&f);
+    assert!(minimum.state().error().is_accurate());
+    let result = MnHesse::new()
+        .with_max_calls(minimum.nfcn())
+        .calculate(&f, &minimum);
+    let error = result.state().error();
+    assert!(!error.is_accurate());
+    assert!(!error.is_valid());
+    assert!(error.has_reached_call_limit());
+}

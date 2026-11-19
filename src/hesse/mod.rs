@@ -59,6 +59,10 @@ impl MnHesse {
     /// Run Hesse on a minimization result.
     ///
     /// Returns a new FunctionMinimum with accurate covariance matrix.
+    ///
+    /// The call limit includes calls already made by the minimum. The default is
+    /// `200 + 100n + 5n²`, where `n` is the number of variable parameters.
+    /// Use [`Self::with_max_calls`] to raise it if the minimum used most of that budget.
     pub fn calculate(&self, fcn: &dyn FCN, minimum: &FunctionMinimum) -> FunctionMinimum {
         let trafo = minimum.seed().trafo();
         let n = trafo.variable_parameters();
@@ -101,6 +105,10 @@ impl MnHesse {
     /// Compute errors and covariance without modifying the FunctionMinimum.
     ///
     /// Returns an MnUserParameterState with updated errors and covariance.
+    ///
+    /// The call limit includes calls already made by the minimum. The default is
+    /// `200 + 100n + 5n²`, where `n` is the number of variable parameters.
+    /// Use [`Self::with_max_calls`] to raise it if the minimum used most of that budget.
     pub fn calculate_errors(
         &self,
         fcn: &dyn FCN,
