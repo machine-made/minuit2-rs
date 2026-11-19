@@ -49,6 +49,58 @@ jobs:
       - name: Run tests (no default features)
         run: cargo test --no-default-features
 
+  python:
+    name: Python tests
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        # ubuntu-latest is Ubuntu 26.04, which has no Python 3.9 build for setup-python.
+        os: [ubuntu-24.04, macos-latest, windows-latest]
+        python-version: ["3.9", "3.13"]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0  # v7.1.0
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8  # stable
+
+      - uses: Swatinem/rust-cache@eedcf2fb1c22f010a0eb66b92f378c110977f266  # v2
+
+      # RUNNER_OS is the environment form of runner.os. The virtual
+      # environment keeps its interpreter in Scripts on Windows and in bin
+      # elsewhere; later steps read the path from VENV_PYTHON.
+      - name: Create virtual environment
+        shell: bash
+        run: |
+          python -m venv .venv
+          if [ "$RUNNER_OS" = "Windows" ]; then
+            echo "VENV_PYTHON=.venv/Scripts/python" >> "$GITHUB_ENV"
+          else
+            echo "VENV_PYTHON=.venv/bin/python" >> "$GITHUB_ENV"
+          fi
+
+      - name: Install maturin, numpy and pytest
+        shell: bash
+        run: |
+          "$VENV_PYTHON" -m pip install "maturin>=1.7,<2" numpy pytest
+
+      - name: Build the extension
+        shell: bash
+        env:
+          VIRTUAL_ENV: ${{ github.workspace }}/.venv
+        run: |
+          "$VENV_PYTHON" -m maturin develop --features python
+
+      - name: Run Python tests
+        shell: bash
+        run: |
+          "$VENV_PYTHON" -m pytest python/tests -q
+
   lint:
     name: Lint
     runs-on: ubuntu-latest

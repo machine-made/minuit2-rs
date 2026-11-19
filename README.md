@@ -594,6 +594,8 @@ maturin develop --features python
 maturin build --features python
 ```
 
+After `maturin develop`, run the Python tests with `pytest python/tests -q`.
+
 ---
 
 ## Parallel Processing
