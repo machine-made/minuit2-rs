@@ -27,6 +27,12 @@ impl VariableMetricMinimizer {
         // Generate seed: FCN eval + numerical gradient + V₀
         let seed = MigradSeedGenerator::generate(fcn, trafo, strategy);
 
+        // ROOT checks the budget after the whole seed, before iterating
+        // (ModularFunctionMinimizer.cxx:79-85).
+        if fcn.num_of_calls() >= maxfcn {
+            return FunctionMinimum::with_call_limit(seed, Vec::new(), up);
+        }
+
         if !seed.is_valid() {
             return FunctionMinimum::new(seed, Vec::new(), up);
         }
@@ -72,6 +78,10 @@ impl VariableMetricMinimizer {
         // Generate seed: FCN eval + analytical gradient + V₀
         let seed = MigradSeedGenerator::generate_with_gradient(fcn, trafo, strategy);
 
+        if seed.nfcn() >= maxfcn {
+            return FunctionMinimum::with_call_limit(seed, Vec::new(), up);
+        }
+
         if !seed.is_valid() {
             return FunctionMinimum::new(seed, Vec::new(), up);
         }
@@ -79,8 +89,8 @@ impl VariableMetricMinimizer {
         // EDM tolerance: F77 Minuit compatibility factor
         let edmval = tolerance * up * 0.002;
 
-        // Create a temporary MnFcn for call counting during iteration
-        let mn_fcn = MnFcn::new(fcn, trafo);
+        // Continue the seed's count through iteration and Hesse verification.
+        let mn_fcn = MnFcn::with_num_calls(fcn, trafo, seed.nfcn());
 
         // Run variable-metric iteration with analytical gradient calculator
         let states = VariableMetricBuilder::minimum_with_gradient(

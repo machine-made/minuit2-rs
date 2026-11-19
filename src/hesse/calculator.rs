@@ -27,6 +27,39 @@ pub struct HesseResult {
     pub made_pos_def: bool,
 }
 
+/// Keep the diagonal estimate when the running call budget is exhausted.
+fn call_limit_result(
+    state: &MinimumState,
+    g2: &DVector<f64>,
+    eps2: f64,
+    nfcn: usize,
+) -> HesseResult {
+    // ROOT MnHesse.cxx:296-307 returns the old gradient and EDM, with a
+    // diagonal covariance and a call-limit error status.
+    let diagonal = g2.map(|curvature| {
+        let inverse = if curvature < eps2 {
+            1.0
+        } else {
+            1.0 / curvature
+        };
+        if inverse < eps2 { 1.0 } else { inverse }
+    });
+    let mut error = MinimumError::new(DMatrix::from_diagonal(&diagonal), 1.0);
+    error.set_reached_call_limit(true);
+    HesseResult {
+        state: MinimumState::new(
+            state.parameters().clone(),
+            error,
+            state.gradient().clone(),
+            state.edm(),
+            nfcn,
+        ),
+        hesse_failed: false,
+        invert_failed: false,
+        made_pos_def: false,
+    }
+}
+
 /// Run the full Hesse algorithm.
 ///
 /// Computes the second derivative matrix (Hessian) at the minimum using
@@ -42,9 +75,9 @@ pub fn calculate(
     let n = trafo.variable_parameters();
     let eps2 = trafo.precision().eps2();
     let up = fcn.up();
-    let amin = state.fval();
-
     let x = state.parameters().vec().clone();
+    // ROOT MnHesse.cxx:184 evaluates the center before the diagonal probes.
+    let amin = fcn.call(x.as_slice());
     let ncycles = strategy.hess_ncycles();
     let hess_step_tol = strategy.hess_step_tol();
     let hess_g2_tol = strategy.hess_g2_tol();
@@ -62,10 +95,6 @@ pub fn calculate(
     let hesse_failed = false;
 
     for i in 0..n {
-        if fcn.num_of_calls() >= maxcalls {
-            break;
-        }
-
         let ext_idx = trafo.ext_of_int(i);
         let xi = x[i];
         let p = &trafo.parameters()[ext_idx];
@@ -77,10 +106,6 @@ pub fn calculate(
         let mut g2i = g2[i];
 
         for _cycle in 0..ncycles as usize {
-            if fcn.num_of_calls() >= maxcalls {
-                break;
-            }
-
             let mut fp = 0.0;
             let mut fm = 0.0;
             let mut sag = 0.0;
@@ -159,6 +184,10 @@ pub fn calculate(
         hessian_g2[i] = g2i;
         hessian_gstep[i] = gstep[i];
         g2[i] = g2i;
+        // ROOT MnHesse.cxx:296 checks only after each parameter's diagonal cycles.
+        if fcn.num_of_calls() > maxcalls {
+            return call_limit_result(state, &g2, eps2, fcn.num_of_calls());
+        }
     }
 
     // --- Step 2: Refine gradient using Hessian info (strategy > 0) ---
@@ -187,10 +216,6 @@ pub fn calculate(
     // Off-diagonal: H(i,j) = (f(x+di*ei+dj*ej) + f0 - f(x+di*ei) - f(x+dj*ej)) / (di*dj)
     for i in 0..n {
         for j in (i + 1)..n {
-            if fcn.num_of_calls() >= maxcalls {
-                break;
-            }
-
             let di = hessian_gstep[i];
             let dj = hessian_gstep[j];
 

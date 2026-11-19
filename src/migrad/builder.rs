@@ -113,9 +113,7 @@ impl VariableMetricBuilder {
         edmval: f64,
         mut next_grad: impl FnMut(&MinimumParameters, &FunctionGradient) -> FunctionGradient,
     ) -> Vec<MinimumState> {
-        // Emit the seed once, before any continuation passes. Analytical
-        // iteration uses a fresh MnFcn; keep its trace relative to the seed.
-        // Full seed call accounting remains separate from this trace offset.
+        // Emit the seed once, before any continuation passes.
         trace_iteration(
             0,
             seed.nfcn(),
@@ -125,17 +123,8 @@ impl VariableMetricBuilder {
             seed.gradient().grad().norm(),
             seed.error().dcovar(),
         );
-        let trace_nfcn_offset = seed.nfcn().saturating_sub(fcn.num_of_calls());
         let mut trace_iter = 1;
-        let mut states = Self::iterate(
-            fcn,
-            seed,
-            maxfcn,
-            edmval,
-            &mut next_grad,
-            &mut trace_iter,
-            trace_nfcn_offset,
-        );
+        let mut states = Self::iterate(fcn, seed, maxfcn, edmval, &mut next_grad, &mut trace_iter);
 
         // ROOT Minuit2 verifies a nominally converged variable-metric result
         // with MnHesse for strategy >= 2, and for strategy 1 when the updated
@@ -216,7 +205,6 @@ impl VariableMetricBuilder {
                 edmval,
                 &mut next_grad,
                 &mut trace_iter,
-                trace_nfcn_offset,
             );
             if states2.is_empty() {
                 return states;
@@ -235,7 +223,6 @@ impl VariableMetricBuilder {
         edmval: f64,
         next_grad: &mut impl FnMut(&MinimumParameters, &FunctionGradient) -> FunctionGradient,
         trace_iter: &mut usize,
-        trace_nfcn_offset: usize,
     ) -> Vec<MinimumState> {
         let n = seed.n_variable_params();
         let prec = seed.precision();
@@ -291,7 +278,7 @@ impl VariableMetricBuilder {
                 );
                 trace_iteration(
                     *trace_iter,
-                    trace_nfcn_offset + fcn.num_of_calls(),
+                    fcn.num_of_calls(),
                     f_new,
                     edm,
                     lambda,
@@ -370,7 +357,7 @@ impl VariableMetricBuilder {
 
             trace_iteration(
                 *trace_iter,
-                trace_nfcn_offset + fcn.num_of_calls(),
+                fcn.num_of_calls(),
                 new_params.fval(),
                 edm,
                 lambda,

@@ -19,7 +19,7 @@
   "has_covariance": true,
   "has_minos": false,
   "minos": null,
-  "nfcn": 10,
+  "nfcn": 12,
   "params": [
     1.0,
     -2.0

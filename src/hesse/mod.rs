@@ -64,7 +64,7 @@ impl MnHesse {
         let n = trafo.variable_parameters();
         let maxcalls = self.max_calls.unwrap_or_else(|| default_max_fcn(n));
 
-        let mn_fcn = MnFcn::new(fcn, trafo);
+        let mn_fcn = MnFcn::with_num_calls(fcn, trafo, minimum.nfcn());
         let state = minimum.state();
 
         let result = calculator::calculate(&mn_fcn, state, trafo, &self.strategy, maxcalls);
@@ -72,6 +72,13 @@ impl MnHesse {
         // Build new FunctionMinimum with the Hesse state
         let mut states = minimum.states().to_vec();
         states.push(result.state);
+
+        if states
+            .last()
+            .is_some_and(|state| state.error().has_reached_call_limit())
+        {
+            return FunctionMinimum::with_call_limit(minimum.seed().clone(), states, minimum.up());
+        }
 
         if !states.last().is_some_and(|state| state.error().is_valid()) {
             return FunctionMinimum::above_max_edm(minimum.seed().clone(), states, minimum.up());
@@ -85,6 +92,7 @@ impl MnHesse {
             hesse_state.error().matrix(),
             minimum.up(),
             trafo,
+            hesse_state.nfcn(),
         );
         min.set_user_state(user_state);
         min
@@ -102,13 +110,15 @@ impl MnHesse {
         let n = trafo.variable_parameters();
         let maxcalls = self.max_calls.unwrap_or_else(|| default_max_fcn(n));
 
-        let mn_fcn = MnFcn::new(fcn, trafo);
+        let mn_fcn = MnFcn::with_num_calls(fcn, trafo, minimum.nfcn());
         let state = minimum.state();
 
         let result = calculator::calculate(&mn_fcn, state, trafo, &self.strategy, maxcalls);
 
         if !result.state.error().is_valid() {
-            return minimum.user_state().clone();
+            let mut user_state = minimum.user_state().clone();
+            user_state.set_nfcn(result.state.nfcn());
+            return user_state;
         }
 
         build_user_state_with_covariance(
@@ -116,6 +126,7 @@ impl MnHesse {
             result.state.error().matrix(),
             minimum.up(),
             trafo,
+            result.state.nfcn(),
         )
     }
 }
@@ -132,8 +143,10 @@ fn build_user_state_with_covariance(
     internal_cov: &nalgebra::DMatrix<f64>,
     up: f64,
     trafo: &crate::user_transformation::MnUserTransformation,
+    nfcn: usize,
 ) -> MnUserParameterState {
     let mut user_state = minimum.user_state().clone();
+    user_state.set_nfcn(nfcn);
     let n = trafo.variable_parameters();
 
     // Transform internal covariance to external covariance.
