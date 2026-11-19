@@ -238,11 +238,22 @@ impl MnUserTransformation {
         }
     }
 
-    /// Internal error from external error, accounting for transform derivative.
+    /// External error from the internal error `err`, as ROOT `MnUserTransformation::Int2extError`.
+    /// The transform is not linear, so a parameter with limits takes the mean of the two
+    /// one-sided changes of its external value at `internal + err` and `internal - err`.
     #[must_use]
     pub fn int2ext_error(&self, ext: usize, internal: f64, err: f64) -> f64 {
-        let dx = self.dint2ext(ext, internal);
-        if dx > 0.0 { err / dx } else { err }
+        let p = &self.parameters[ext];
+        if !p.has_lower_limit() && !p.has_upper_limit() {
+            return err;
+        }
+        let ui = self.int2ext(ext, internal);
+        let mut du1 = self.int2ext(ext, internal + err) - ui;
+        let du2 = self.int2ext(ext, internal - err) - ui;
+        if p.has_limits() && err > 1.0 {
+            du1 = p.upper_limit() - p.lower_limit();
+        }
+        du1.abs().midpoint(du2.abs())
     }
 
     #[must_use]
