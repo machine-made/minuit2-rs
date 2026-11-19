@@ -84,7 +84,7 @@
       },
       {
         "path": ".tmp/parity_run/raw/rust/quadratic2_lower_limited_migrad.json",
-        "sha256": "8a035ab447d96cc56c8678f898e1b120dcdf101af5a50450098102c47f2f0acc"
+        "sha256": "41dec730b04dbe153ec33c1f2df57185ba9f315d3ffd802ac4899495dfd74977"
       },
       {
         "path": ".tmp/parity_run/raw/rust/rosenbrock2_migrad_strategy2.json",
@@ -336,8 +336,8 @@
         "fields_failed": 0,
         "values": 14,
         "failures": 0,
-        "max_rel_err": 0.504020931759634,
-        "max_ulp": 4572765057909765
+        "max_rel_err": 6.089708018610674e-09,
+        "max_ulp": 54769693
       },
       "fields": [
         "quadratic2_lower_limited_migrad.covariance[0][0]",
@@ -3263,9 +3263,9 @@
       "failures": 0,
       "tolerance": null,
       "reason": "no tolerance in the manifest; distance reported only",
-      "max_abs_err": 0.25768110240770137,
-      "max_rel_err": 0.2086770387840435,
-      "max_ulp": 1263395353547447,
+      "max_abs_err": 6.722755685473203e-11,
+      "max_rel_err": 6.879955933919793e-11,
+      "max_ulp": 605532,
       "worst_abs_index": "errors[0]",
       "nonfinite_mismatch": 0,
       "sign_mismatch": 0,
@@ -3283,9 +3283,9 @@
       "failures": 0,
       "tolerance": null,
       "reason": "no tolerance in the manifest; distance reported only",
-      "max_abs_err": 0.48127265773230266,
-      "max_rel_err": 0.504020931759634,
-      "max_ulp": 4572765057909765,
+      "max_abs_err": 6.765255022855854e-12,
+      "max_rel_err": 1.4284933001581853e-11,
+      "max_ulp": 121872,
       "worst_abs_index": "errors[1]",
       "nonfinite_mismatch": 0,
       "sign_mismatch": 0,
